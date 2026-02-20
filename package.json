@@ -13,11 +13,3 @@
     "react-dom": "^18.3.1"
   }
 }
-```
-
-**When done, your repo should look like:**
-```
-app/                 ← folder icon
-components/          ← folder icon
-next.config.js
-package.json
