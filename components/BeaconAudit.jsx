@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-/* â”€â”€ Brand Palette â”€â”€ */
+/* ── Brand Palette ── */
 const brand = {
   growthGray: "#333333",
   pipelineRed: "#FF210F",
@@ -16,7 +16,7 @@ const brand = {
 const accent = brand.talentTeal;
 const accentAlt = brand.cloudBlue;
 
-/* â”€â”€ Theme tokens â”€â”€ */
+/* ── Theme tokens ── */
 function getTheme(mode) {
   if (mode === "dark") return {
     bg: "#111114", bgGrad: "linear-gradient(180deg, #111114 0%, #0d0d12 50%, #0f1015 100%)",
@@ -50,7 +50,7 @@ const tabs = [
   "Social & AI Visibility",
 ];
 
-/* â”€â”€ Mock Data â”€â”€ */
+/* ── Mock Data ── */
 const webPerfMetrics = [
   { label: "Site Health", value: "68%", status: "poor", detail: "Measures crawlability, technical errors, and optimization issues. Best-in-class sites score 90%+.", weighted: true, impact: "high",
     why: "Site health directly influences how effectively search engines crawl and index your pages. A low score means critical pages may never appear in search results.",
@@ -58,12 +58,12 @@ const webPerfMetrics = [
     expectedImpact: "Improving site health to 90%+ can increase indexed pages by 15-25% and improve crawl efficiency.",
     difficulty: "Medium" },
   { label: "Page Speed & Performance", value: "62%", status: "poor", detail: "Evaluates load speed, performance efficiency, and user experience impact. Target: 90%+.", impact: "high",
-    why: "Page speed is a confirmed Google ranking factor. Slow sites lose visitors â€” 53% of mobile users abandon pages that take over 3 seconds to load.",
+    why: "Page speed is a confirmed Google ranking factor. Slow sites lose visitors — 53% of mobile users abandon pages that take over 3 seconds to load.",
     fix: "Compress images, implement lazy loading, enable browser caching, and defer non-critical JavaScript.",
     expectedImpact: "Reaching 90%+ performance can reduce bounce rates by 20-30% and improve conversion rates.",
     difficulty: "Medium" },
   { label: "Mobile Optimization", value: "Yes", status: "good", detail: "Confirms your site is optimized for mobile users and Google's mobile-first indexing.", impact: "foundational",
-    why: "Google uses mobile-first indexing â€” your mobile site IS your site for ranking purposes.",
+    why: "Google uses mobile-first indexing — your mobile site IS your site for ranking purposes.",
     fix: "No action needed. Continue testing across devices when making site changes.",
     expectedImpact: "Maintains eligibility for mobile search rankings, which represent 60%+ of all searches.",
     difficulty: "N/A" },
@@ -75,7 +75,7 @@ const webPerfMetrics = [
   { label: "HTTP/2 Support", value: "Enabled", status: "good", detail: "Improves load performance through faster resource delivery.", impact: "foundational",
     why: "HTTP/2 enables multiplexed connections, reducing page load times significantly over HTTP/1.1.",
     fix: "No action needed. HTTP/2 is properly configured.",
-    expectedImpact: "Supports faster page delivery â€” particularly beneficial for resource-heavy pages.",
+    expectedImpact: "Supports faster page delivery — particularly beneficial for resource-heavy pages.",
     difficulty: "N/A" },
   { label: "Image Optimization", value: "34% Improvement Needed", status: "poor", detail: "17 of 50 images are slowing down load time. Slower pages reduce conversions and search performance.", impact: "high",
     why: "Unoptimized images are the #1 cause of slow page loads. They increase bandwidth costs and hurt Core Web Vitals scores.",
@@ -112,12 +112,12 @@ const mockSEO = {
       expectedImpact: "Expanding from 312 to 500+ keywords could increase organic traffic by 30-50%.",
       difficulty: "Medium" },
     { label: "Branded Traffic Share", value: "24%", status: "poor", detail: "24% of organic traffic comes from branded searches. Low branded traffic may indicate limited brand awareness or weak demand capture.", impact: "high",
-      why: "Low branded search volume means fewer people are actively looking for your company â€” a sign of weak brand awareness.",
+      why: "Low branded search volume means fewer people are actively looking for your company — a sign of weak brand awareness.",
       fix: "Invest in brand visibility campaigns, PR mentions, and thought leadership content to drive branded search demand.",
       expectedImpact: "Increasing branded traffic to 40%+ signals stronger brand recognition and higher conversion potential.",
       difficulty: "High" },
     { label: "Indexation Efficiency", value: "77%", status: "warning", detail: "156 of 203 pages are indexed. Unindexed pages cannot rank in search results, limiting organic growth.", impact: "high",
-      why: "If Google hasn't indexed a page, it cannot appear in search results â€” those pages generate zero organic traffic.",
+      why: "If Google hasn't indexed a page, it cannot appear in search results — those pages generate zero organic traffic.",
       fix: "Review unindexed pages for thin content, crawl blocks, or noindex tags. Submit priority pages via Search Console.",
       expectedImpact: "Indexing all quality pages could unlock rankings for 47 additional pages.",
       difficulty: "Low" },
@@ -137,7 +137,7 @@ const mockSEO = {
       expectedImpact: "Maintains efficient crawl discovery for new and updated content.",
       difficulty: "N/A" },
     { label: "Robots.txt Configuration", value: "Yes", status: "good", detail: "Crawl directives are properly structured.", impact: "foundational",
-      why: "Robots.txt controls which pages search engines can access â€” misconfiguration can block important content.",
+      why: "Robots.txt controls which pages search engines can access — misconfiguration can block important content.",
       fix: "No action needed. Crawl directives are properly structured.",
       expectedImpact: "Ensures search engines can access all important pages without restriction.",
       difficulty: "N/A" },
@@ -166,23 +166,23 @@ const mockKeywords = [
  */
 const contentMetrics = [
   { label: "Blog Page Exists", value: "Yes", status: "good", detail: "A dedicated blog/news page was detected", weighted: true, impact: "foundational",
-    why: "A blog page is the foundation for content marketing â€” it's where fresh, indexable content lives.", fix: "No action needed.", expectedImpact: "Provides the infrastructure for ongoing content strategy.", difficulty: "N/A" },
+    why: "A blog page is the foundation for content marketing — it's where fresh, indexable content lives.", fix: "No action needed.", expectedImpact: "Provides the infrastructure for ongoing content strategy.", difficulty: "N/A" },
   { label: "Content Freshness", value: "38 days avg", status: "warning", detail: "Last blog post: 52 days ago", weighted: true, impact: "high",
     why: "Search engines favor sites that publish fresh content regularly. Stale content signals an inactive or abandoned site.",
     fix: "Establish a minimum 2x/month publishing cadence with keyword-targeted blog posts.",
     expectedImpact: "Regular publishing can increase organic traffic by 20-40% within 6 months.", difficulty: "Medium" },
   { label: "Meta Descriptions", value: "68% optimized", status: "warning", detail: "32% of pages missing or have duplicate meta descriptions", impact: "high",
     why: "Meta descriptions control how your pages appear in search results. Missing or duplicate descriptions reduce click-through rates.",
-    fix: "Write unique, compelling meta descriptions for all pages â€” prioritize high-traffic pages first.",
+    fix: "Write unique, compelling meta descriptions for all pages — prioritize high-traffic pages first.",
     expectedImpact: "Optimized descriptions can improve CTR by 5-10%, driving more traffic from existing rankings.", difficulty: "Low" },
   { label: "H1 Tags", value: "All pages have H1", status: "good", detail: "Every page has a unique H1 heading tag", impact: "foundational",
     why: "H1 tags tell search engines the primary topic of each page.", fix: "No action needed.", expectedImpact: "Maintains clear page topic signals for search engines.", difficulty: "N/A" },
   { label: "Avg. Time on Page", value: "1m 42s", status: "warning", detail: "Industry avg is 2m 30s", impact: "medium",
-    why: "Low time on page suggests content isn't engaging visitors â€” a signal to search engines that your content may not satisfy search intent.",
+    why: "Low time on page suggests content isn't engaging visitors — a signal to search engines that your content may not satisfy search intent.",
     fix: "Improve content depth, add visuals, and use better formatting to increase engagement.",
     expectedImpact: "Reaching 2m+ avg can improve engagement signals and support better rankings.", difficulty: "Medium" },
   { label: "Bounce Rate", value: "64%", status: "poor", detail: "Above the 50% threshold", impact: "high",
-    why: "A high bounce rate means visitors leave without interacting â€” indicating content or UX issues.",
+    why: "A high bounce rate means visitors leave without interacting — indicating content or UX issues.",
     fix: "Improve page load speed, strengthen above-the-fold content, and add clear calls to action.",
     expectedImpact: "Reducing bounce rate below 50% can significantly improve conversion rates.", difficulty: "Medium" },
   { label: "Readability Score", value: "Grade 11", status: "warning", detail: "Aim for Grade 8 for broader reach", impact: "medium",
@@ -198,7 +198,7 @@ const contentMetrics = [
     fix: "Add 3-5 contextual internal links per page, prioritizing links to high-value pages.",
     expectedImpact: "Better internal linking can improve crawl depth and boost rankings for linked pages.", difficulty: "Low" },
   { label: "Content-to-Code Ratio", value: "18%", status: "warning", detail: "Aim for 25%+", impact: "medium",
-    why: "A low content-to-code ratio means your pages have more HTML/scripts than actual content â€” search engines prefer content-rich pages.",
+    why: "A low content-to-code ratio means your pages have more HTML/scripts than actual content — search engines prefer content-rich pages.",
     fix: "Reduce unnecessary scripts, clean up HTML bloat, and add more substantive content.",
     expectedImpact: "Improving ratio to 25%+ signals content-rich pages to search engines.", difficulty: "Medium" },
   { label: "Duplicate Content", value: "3 pages flagged", status: "poor", detail: "Near-duplicate meta descriptions", impact: "high",
@@ -217,24 +217,24 @@ const mockSocialLocal = {
   combinedScore: 55,
   platforms: [
     { name: "LinkedIn", status: "Active", followers: "890", activity: "4 posts / month", health: "good" },
-    { name: "Google Business", status: "Claimed", followers: "â€”", activity: "Last post 12 days ago", health: "warning" },
+    { name: "Google Business", status: "Claimed", followers: "—", activity: "Last post 12 days ago", health: "warning" },
     { name: "Facebook", status: "Active", followers: "2,340", activity: "3 posts / month", health: "warning" },
     { name: "Instagram", status: "Active", followers: "1,120", activity: "2 posts / month", health: "poor" },
     { name: "X (Twitter)", status: "Inactive", followers: "312", activity: "No posts in 60+ days", health: "poor" },
-    { name: "YouTube", status: "Not Found", followers: "â€”", activity: "â€”", health: "poor" },
-    { name: "TikTok", status: "Not Found", followers: "â€”", activity: "â€”", health: "poor" },
+    { name: "YouTube", status: "Not Found", followers: "—", activity: "—", health: "poor" },
+    { name: "TikTok", status: "Not Found", followers: "—", activity: "—", health: "poor" },
   ],
   signals: [
     { label: "Open Graph Tags", value: "Partial", status: "warning", detail: "Missing og:image on 8 pages", impact: "medium",
       why: "Open Graph tags control how your pages appear when shared on social media. Missing tags = generic, unappealing previews.",
-      fix: "Add og:title, og:description, and og:image tags to all pages â€” prioritize high-traffic pages.",
+      fix: "Add og:title, og:description, and og:image tags to all pages — prioritize high-traffic pages.",
       expectedImpact: "Rich social previews can increase click-through rates from social shares by 2-3x.", difficulty: "Low" },
     { label: "Twitter Cards", value: "Incomplete", status: "poor", detail: "No twitter:card meta tags found", impact: "medium",
-      why: "Twitter Cards create rich media previews when links are shared on X â€” without them, shared links appear as plain text.",
+      why: "Twitter Cards create rich media previews when links are shared on X — without them, shared links appear as plain text.",
       fix: "Add twitter:card, twitter:title, twitter:description, and twitter:image meta tags to all pages.",
       expectedImpact: "Enables rich previews on X, improving engagement with shared content.", difficulty: "Low" },
     { label: "Social Share Buttons", value: "None", status: "poor", detail: "No sharing widgets detected", impact: "medium",
-      why: "Without share buttons, visitors have no easy way to spread your content â€” reducing organic amplification.",
+      why: "Without share buttons, visitors have no easy way to spread your content — reducing organic amplification.",
       fix: "Add floating or inline social share buttons to blog posts and key landing pages.",
       expectedImpact: "Pages with share buttons receive 7x more social engagement on average.", difficulty: "Low" },
     { label: "Brand Consistency", value: "Mixed", status: "warning", detail: "Profile images differ across platforms", impact: "high",
@@ -244,7 +244,7 @@ const mockSocialLocal = {
   ],
   localMetrics: [
     { label: "GBP Listing", value: "Claimed & Verified", status: "good", cta: "Passing" },
-    { label: "Reviews", value: "4.2â˜… (89 reviews)", status: "good", cta: "Passing" },
+    { label: "Reviews", value: "4.2★ (89 reviews)", status: "good", cta: "Passing" },
     { label: "Local Citations", value: "34 found", status: "warning", cta: "Build Citations" },
     { label: "Local Keywords", value: "Moderate Usage", status: "warning", cta: "Expand Keywords" },
     { label: "Service Area", value: "Defined", status: "good", cta: "Passing" },
@@ -283,7 +283,7 @@ const mockAISEO = {
       fix: "Add FAQ schema to service pages, product pages, and any page addressing common customer questions.",
       expectedImpact: "FAQ rich results can increase page real estate in SERPs by up to 50%.", difficulty: "Low" },
     { label: "Topical Authority", value: "Moderate", status: "warning", impact: "high",
-      why: "Topical authority signals to search engines that you're an expert in your field â€” critical for ranking and AI citations.",
+      why: "Topical authority signals to search engines that you're an expert in your field — critical for ranking and AI citations.",
       fix: "Build content clusters around core topics with pillar pages and supporting articles.",
       expectedImpact: "Strong topical authority can improve rankings across entire content clusters.", difficulty: "High" },
     { label: "Citation Likelihood", value: "18%", status: "poor", impact: "high",
@@ -303,9 +303,9 @@ const mockEntity = {
     { label: "NAP Consistency", value: "4 mismatches", status: "poor", detail: "4 inconsistencies found across directories. Inconsistent name, address, or phone data can reduce local ranking trust signals.", impact: "high",
       why: "Inconsistent business information across directories confuses search engines and erodes trust in your local listings.",
       fix: "Audit and correct all business listings to ensure identical Name, Address, and Phone across every directory.",
-      expectedImpact: "Consistent NAP data is a top-3 local ranking factor â€” fixing this can immediately boost local visibility.", difficulty: "Low" },
+      expectedImpact: "Consistent NAP data is a top-3 local ranking factor — fixing this can immediately boost local visibility.", difficulty: "Low" },
     { label: "Verified Google Business Profile", value: "Yes", status: "good", detail: "A verified profile is essential for local map pack visibility and customer trust.", impact: "foundational",
-      why: "A verified GBP is required to appear in Google's local map pack â€” the highest-converting local search placement.",
+      why: "A verified GBP is required to appear in Google's local map pack — the highest-converting local search placement.",
       fix: "No action needed. Keep profile updated with current hours, photos, and posts.", expectedImpact: "Maintains eligibility for local map pack and Google Maps visibility.", difficulty: "N/A" },
     { label: "Google Reviews", value: "89 reviews", status: "good", detail: "Strong review volume improves local rankings and conversion trust.", impact: "foundational",
       why: "Review quantity and quality are direct local ranking factors and strongly influence customer purchase decisions.",
@@ -341,21 +341,21 @@ const mockEntity = {
   ],
 };
 
-/* â”€â”€ Helpers â”€â”€ */
+/* ── Helpers ── */
 function statusColor(s) {
   if (s === "good") return brand.talentTeal;
   if (s === "warning") return brand.inboundOrange;
   return brand.pipelineRed;
 }
 function statusIcon(s) {
-  if (s === "good") return "âœ“";
+  if (s === "good") return "✓";
   if (s === "warning") return "!";
-  return "âœ—";
+  return "✗";
 }
 
 
 
-/* â”€â”€ Abstrakt Logo SVG Component â”€â”€ */
+/* ── Abstrakt Logo SVG Component ── */
 function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
   const aspect = 190.42 / 60.65;
   const w = height * aspect;
@@ -376,7 +376,7 @@ function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
   );
 }
 
-/* â”€â”€ Shared Components â”€â”€ */
+/* ── Shared Components ── */
 function ScoreRing({ score, size = 130, t }) {
   const r = (size - 14) / 2;
   const circ = 2 * Math.PI * r;
@@ -400,16 +400,16 @@ function ScoreRing({ score, size = 130, t }) {
 }
 
 function statusLabel(s) {
-  if (s === "good") return "âœ“ Pass";
-  return "âš ï¸ Needs Attention";
+  if (s === "good") return "✓ Pass";
+  return "⚠️ Needs Attention";
 }
 
 function impactBadge(impact) {
   if (!impact) return null;
   const cfg = {
-    high: { emoji: "ðŸ”¥", label: "High Impact", color: brand.pipelineRed, bg: "rgba(255,33,15,0.08)", border: "rgba(255,33,15,0.18)" },
-    medium: { emoji: "âš¡", label: "Medium Impact", color: brand.inboundOrange, bg: "rgba(244,111,10,0.08)", border: "rgba(244,111,10,0.18)" },
-    foundational: { emoji: "ðŸŸ¢", label: "Foundational", color: brand.talentTeal, bg: "rgba(66,191,186,0.08)", border: "rgba(66,191,186,0.18)" },
+    high: { emoji: "🔥", label: "High Impact", color: brand.pipelineRed, bg: "rgba(255,33,15,0.08)", border: "rgba(255,33,15,0.18)" },
+    medium: { emoji: "⚡", label: "Medium Impact", color: brand.inboundOrange, bg: "rgba(244,111,10,0.08)", border: "rgba(244,111,10,0.18)" },
+    foundational: { emoji: "🟢", label: "Foundational", color: brand.talentTeal, bg: "rgba(66,191,186,0.08)", border: "rgba(66,191,186,0.18)" },
   }[impact];
   if (!cfg) return null;
   return { ...cfg };
@@ -432,7 +432,7 @@ function generateTabSummary(metrics, tabType) {
   const poor = metrics.filter(m => m.status === "poor");
   const highImpactFailing = metrics.filter(m => m.impact === "high" && m.status !== "good");
 
-  /* â”€â”€ Risk label humanizer â”€â”€ */
+  /* ── Risk label humanizer ── */
   const riskPhrases = {
     "Site Health": "Site health inconsistencies",
     "Page Speed & Performance": "Page speed bottlenecks",
@@ -484,17 +484,17 @@ function generateTabSummary(metrics, tabType) {
   const summaries = {
     website: {
       summary: isHealthy
-        ? "Your site has a strong technical foundation. Performance, security, and mobile optimization are in good shape â€” continue monitoring to maintain this baseline."
+        ? "Your site has a strong technical foundation. Performance, security, and mobile optimization are in good shape — continue monitoring to maintain this baseline."
         : hasFoundation
         ? `Your site has a stable technical foundation. However, ${isCritical ? "several" : "a few"} high-impact issues are reducing crawl efficiency, slowing load times, and limiting search performance.`
-        : `Your site's technical health needs immediate attention. ${poor.length} critical issues are undermining crawlability, speed, and user experience â€” the building blocks of search visibility.`,
+        : `Your site's technical health needs immediate attention. ${poor.length} critical issues are undermining crawlability, speed, and user experience — the building blocks of search visibility.`,
       opportunity: isHealthy
         ? "Maintain current technical health and monitor Core Web Vitals for any regression."
         : `Addressing ${highImpactFailing.length > 0 ? "these" : "the"} high-impact issues could significantly improve load speed, crawlability, and conversion performance.`,
     },
     seo: {
       summary: isHealthy
-        ? "Your search visibility fundamentals are solid. Keyword coverage, indexation, and technical signals are performing well â€” focus on expanding into competitive keyword territory."
+        ? "Your search visibility fundamentals are solid. Keyword coverage, indexation, and technical signals are performing well — focus on expanding into competitive keyword territory."
         : hasFoundation
         ? `Your technical SEO base is in place, but limited keyword coverage and weak domain authority are constraining organic growth. There's significant room to expand visibility.`
         : `Multiple search visibility gaps are limiting organic reach. Keyword coverage, authority signals, and indexation issues are preventing your site from competing effectively.`,
@@ -502,7 +502,7 @@ function generateTabSummary(metrics, tabType) {
     },
     content: {
       summary: isHealthy
-        ? "Your content strategy is performing well. Publishing cadence, engagement metrics, and on-page optimization are healthy â€” continue refining for competitive advantage."
+        ? "Your content strategy is performing well. Publishing cadence, engagement metrics, and on-page optimization are healthy — continue refining for competitive advantage."
         : hasFoundation
         ? `Your content infrastructure is in place, but thin content, high bounce rates, and inconsistent publishing are weakening engagement and search performance.`
         : `Content performance is significantly underperforming. Shallow pages, stale publishing, and engagement issues are limiting your ability to rank and convert visitors.`,
@@ -518,7 +518,7 @@ function generateTabSummary(metrics, tabType) {
     },
     local: {
       summary: isHealthy
-        ? "Your local search presence is strong. Verified listings, reviews, and local signals are well-established â€” focus on deepening entity authority for competitive advantage."
+        ? "Your local search presence is strong. Verified listings, reviews, and local signals are well-established — focus on deepening entity authority for competitive advantage."
         : hasFoundation
         ? `You've built a solid local search foundation. However, entity signal gaps and limited structured data are holding back brand visibility and Knowledge Panel eligibility.`
         : `Multiple local search signals need attention. Weak entity recognition, citation inconsistencies, and missing structured data are reducing local visibility and brand authority.`,
@@ -543,7 +543,7 @@ function getLocalLiftScenario(metrics) {
 
   if (highRiskCount >= 3) {
     return {
-      badge: "ðŸ”´ High Risk",
+      badge: "🔴 High Risk",
       badgeColor: brand.pipelineRed,
       headline: "Your Local Authority Needs Immediate Attention",
       body: "Several high-impact entity signals are limiting how Google understands and ranks your business locally.",
@@ -554,9 +554,9 @@ function getLocalLiftScenario(metrics) {
   }
   if (gbpGood && reviewsGood && (schemaPoor || entityWeak)) {
     return {
-      badge: "ðŸŸ  Moderate Opportunity",
+      badge: "🟠 Moderate Opportunity",
       badgeColor: brand.inboundOrange,
-      headline: "Your Foundation Is Strong â€” Now Let's Optimize",
+      headline: "Your Foundation Is Strong — Now Let's Optimize",
       body: "You've built a solid local presence. Now it's time to strengthen entity signals and structured data to increase authority and branded search control.",
       subBody: null,
       listLabel: "Growth Opportunities",
@@ -565,7 +565,7 @@ function getLocalLiftScenario(metrics) {
   }
   if (knowledgeGraphMissing) {
     return {
-      badge: "ðŸŸ¡ Missing Signal",
+      badge: "🟡 Missing Signal",
       badgeColor: brand.inboundOrange,
       headline: "You're Missing a Major Authority Signal",
       body: "A Knowledge Panel increases trust, credibility, and brand control in search results.",
@@ -605,10 +605,10 @@ function getSEOScenario(seoMetrics, contentMetrics) {
 
   if (seoFailCount >= 3 && contentFailCount >= 3) {
     return {
-      badge: "ðŸ”´ High Risk",
+      badge: "🔴 High Risk",
       badgeColor: brand.pipelineRed,
       headline: "Your Search Visibility Needs a Strategic Overhaul",
-      body: "Multiple high-impact SEO and content signals are underperforming â€” limiting your ability to rank, attract traffic, and convert visitors.",
+      body: "Multiple high-impact SEO and content signals are underperforming — limiting your ability to rank, attract traffic, and convert visitors.",
       subBody: "Without keyword depth, domain authority, and quality content working together, organic growth stays flat.",
       listLabel: "Priority Fixes",
       items: ["Expand keyword coverage and targeting", "Strengthen domain authority through backlinks", "Deepen content quality and publishing cadence", "Resolve technical indexation gaps"],
@@ -616,7 +616,7 @@ function getSEOScenario(seoMetrics, contentMetrics) {
   }
   if (contentFailCount >= 3 && seoFailCount < 3) {
     return {
-      badge: "ðŸŸ  Content Gap",
+      badge: "🟠 Content Gap",
       badgeColor: brand.inboundOrange,
       headline: "Your Content Strategy Is Holding Back Your Rankings",
       body: "Your technical SEO foundation is workable, but thin content, high bounce rates, and inconsistent publishing are limiting ranking potential.",
@@ -627,7 +627,7 @@ function getSEOScenario(seoMetrics, contentMetrics) {
   }
   if (daLow && backlinkWeak) {
     return {
-      badge: "ðŸŸ¡ Authority Gap",
+      badge: "🟡 Authority Gap",
       badgeColor: brand.inboundOrange,
       headline: "Your Domain Authority Is Limiting Competitive Rankings",
       body: "Your content and technical signals show potential, but low domain authority and a weak backlink profile are keeping you out of competitive keyword positions.",
@@ -640,7 +640,7 @@ function getSEOScenario(seoMetrics, contentMetrics) {
     badge: null,
     badgeColor: null,
     headline: "Accelerate Your Organic Growth with Abstrakt",
-    body: "Ranking on page one isn't luck â€” it's a system. Abstrakt combines technical SEO, strategic content, and authority building into a unified growth engine.",
+    body: "Ranking on page one isn't luck — it's a system. Abstrakt combines technical SEO, strategic content, and authority building into a unified growth engine.",
     subBody: null,
     listLabel: null,
     items: ["Keyword strategy & gap analysis", "SEO-optimized content production", "Technical SEO & site performance", "Backlink acquisition & authority building"],
@@ -659,7 +659,7 @@ function getWebPerfScenario(metrics) {
 
   if (failCount >= 3 && highImpactFails >= 2) {
     return {
-      badge: "ðŸ”´ High Risk",
+      badge: "🔴 High Risk",
       badgeColor: brand.pipelineRed,
       headline: "Ready to Fix These High-Impact Issues?",
       body: "Your audit uncovered performance gaps that are limiting visibility and conversions.",
@@ -670,9 +670,9 @@ function getWebPerfScenario(metrics) {
   }
   if (speedPoor || imagePoor) {
     return {
-      badge: "ðŸŸ  Performance Gap",
+      badge: "🟠 Performance Gap",
       badgeColor: brand.inboundOrange,
-      headline: "Your Foundation Is Solid â€” Speed Is Holding You Back",
+      headline: "Your Foundation Is Solid — Speed Is Holding You Back",
       body: "Core technical elements are in place, but load time and image optimization issues are creating friction for users and search engines.",
       subBody: null,
       listLabel: "Quick wins to unlock",
@@ -681,11 +681,11 @@ function getWebPerfScenario(metrics) {
   }
   if (siteHealthPoor) {
     return {
-      badge: "ðŸŸ¡ Health Check",
+      badge: "🟡 Health Check",
       badgeColor: brand.inboundOrange,
       headline: "Your Site Health Score Needs Attention",
       body: "Crawlability and technical errors are reducing how effectively search engines can discover and index your pages.",
-      subBody: "Improving site health is foundational â€” it directly impacts how many of your pages can rank.",
+      subBody: "Improving site health is foundational — it directly impacts how many of your pages can rank.",
       listLabel: null,
       items: [],
     };
@@ -701,7 +701,7 @@ function getWebPerfScenario(metrics) {
   };
 }
 
-function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impact, weighted, why, fix, expectedImpact, difficulty }) {
+function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impact, weighted, estimated, why, fix, expectedImpact, difficulty }) {
   const [open, setOpen] = React.useState(false);
   const isEven = index % 2 === 0;
   const sColor = statusColor(status);
@@ -722,7 +722,7 @@ function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impac
       >
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {hasExpand && <span style={{ fontSize: 10, color: t.subtle, transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0deg)", flexShrink: 0 }}>â–¶</span>}
+            {hasExpand && <span style={{ fontSize: 10, color: t.subtle, transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0deg)", flexShrink: 0 }}>▶</span>}
             <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{label}</span>
             {weighted && (
               <span style={{
@@ -730,6 +730,13 @@ function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impac
                 background: "rgba(4,129,163,0.1)", border: "1px solid rgba(4,129,163,0.2)",
                 padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
               }}>+25% weight</span>
+            )}
+            {estimated && (
+              <span style={{
+                fontSize: 9, fontWeight: 600, color: brand.inboundOrange,
+                background: "rgba(244,111,10,0.08)", border: "1px solid rgba(244,111,10,0.18)",
+                padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
+              }}>Estimated</span>
             )}
             <ImpactTag impact={impact} />
           </div>
@@ -814,29 +821,30 @@ function Card({ title, subtitle, children, t, style: s }) {
   );
 }
 
-/* â”€â”€ Tab Renderers â”€â”€ */
-function WebPerformanceTab({ t }) {
+/* ── Tab Renderers ── */
+function WebPerformanceTab({ t, data }) {
+  const webPerfData = data?.webPerf || mockWebPerf;
   const allIssues = [
     { issue: "Broken Internal Links", count: 23, severity: "high", detail: "Pages returning 4xx errors hurt crawlability and user experience" },
-    { issue: "Slow Page Load (>3s)", count: 18, severity: "high", detail: "18 pages exceed the 3-second threshold â€” primarily image-heavy landing pages" },
+    { issue: "Slow Page Load (>3s)", count: 18, severity: "high", detail: "18 pages exceed the 3-second threshold — primarily image-heavy landing pages" },
     { issue: "Missing Meta Descriptions", count: 14, severity: "medium", detail: "Pages without meta descriptions lose click-through potential in SERPs" },
     { issue: "Redirect Chains", count: 11, severity: "medium", detail: "Multiple sequential redirects (3+ hops) slowing crawl efficiency" },
     { issue: "Duplicate Title Tags", count: 9, severity: "medium", detail: "Identical titles across service pages reduce search differentiation" },
     { issue: "Images Without Alt Text", count: 31, severity: "high", detail: "Missing alt attributes hurt accessibility and image search rankings" },
     { issue: "Mixed Content (HTTP/HTTPS)", count: 6, severity: "low", detail: "Some resources still loading over HTTP on secure pages" },
-    { issue: "Orphan Pages", count: 4, severity: "low", detail: "Pages with no internal links pointing to them â€” invisible to crawlers" },
+    { issue: "Orphan Pages", count: 4, severity: "low", detail: "Pages with no internal links pointing to them — invisible to crawlers" },
   ];
   const sevOrder = { high: 0, medium: 1, low: 2 };
   const sorted = [...allIssues].sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity] || b.count - a.count);
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(mockWebPerf.metrics, "website"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={mockWebPerf.score} scoreLabel="Website Performance Score" />; })()}
+      {(() => { const s = generateTabSummary(webPerfData.metrics, "website"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={webPerfData.score} scoreLabel="Website Performance Score" />; })()}
       <Card title="Audit Findings" t={t}>
-        {mockWebPerf.metrics.map((m, i) => (
+        {webPerfData.metrics.map((m, i) => (
           <ExpandableMetricRow key={i} {...m} t={t} index={i} />
         ))}
       </Card>
-      <Card title="Site Health â€” Highest Impact Issues" t={t}>
+      <Card title="Site Health — Highest Impact Issues" t={t}>
         <div style={{ padding: 0, display: "flex", flexDirection: "column" }}>
           {sorted.map((item, i) => (
             <div key={i} style={{
@@ -875,14 +883,17 @@ function WebPerformanceTab({ t }) {
   );
 }
 
-function SEOTab({ t }) {
-  const combinedScore = Math.round((mockSEO.score + mockAISEO.score) / 2);
+function SEOTab({ t, data }) {
+  const seoData = data?.seo || mockSEO;
+  const aiSeoData = data?.aiSeo || mockAISEO;
+  const keywordsData = data?.keywords || mockKeywords;
+  const combinedScore = Math.round((seoData.score + aiSeoData.score) / 2);
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary([...mockSEO.metrics, ...mockAISEO.metrics], "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" />; })()}
+      {(() => { const s = generateTabSummary([...seoData.metrics, ...aiSeoData.metrics], "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" />; })()}
 
       <Card title="Organic Search Health" t={t}>
-        {mockSEO.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
+        {seoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
       </Card>
       <Card title="Top Performing Search Terms" t={t}>
         <div>
@@ -895,7 +906,7 @@ function SEOTab({ t }) {
                 textAlign: h === "Keyword" ? "left" : "center" }}>{h}</span>
             ))}
           </div>
-          {mockKeywords.map((kw, i) => {
+          {keywordsData.map((kw, i) => {
             const posColor = kw.position <= 5 ? brand.talentTeal : kw.position <= 10 ? brand.inboundOrange : brand.pipelineRed;
             const diffColor = kw.difficulty <= 35 ? brand.talentTeal : kw.difficulty <= 60 ? brand.inboundOrange : brand.pipelineRed;
             return (
@@ -925,12 +936,13 @@ function SEOTab({ t }) {
   );
 }
 
-function ContentPerformanceTab({ t }) {
+function ContentPerformanceTab({ t, data }) {
+  const contentData = data?.content || mockContentPerf;
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(mockContentPerf.metrics, "content"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={mockContentPerf.score} scoreLabel="Content Performance Score" />; })()}
+      {(() => { const s = generateTabSummary(contentData.metrics, "content"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={contentData.score} scoreLabel="Content Performance Score" />; })()}
       <Card title="Content Metrics" t={t}>
-        {mockContentPerf.metrics.map((m, i) => (
+        {contentData.metrics.map((m, i) => (
           <ExpandableMetricRow key={i} {...m} t={t} index={i} />
         ))}
       </Card>
@@ -938,15 +950,18 @@ function ContentPerformanceTab({ t }) {
   );
 }
 
-function SocialLocalTab({ t }) {
-  const d = mockSocialLocal;
-  const combinedScore = Math.round((mockAISEO.score + d.socialScore) / 2);
+function SocialLocalTab({ t, data }) {
+  const d = data?.socialLocal || mockSocialLocal;
+  const aiSeoData = data?.aiSeo || mockAISEO;
+  const combinedScore = Math.round((aiSeoData.score + (d.socialScore || 45)) / 2);
+  // Use places reviews if available
+  const reviews = data?.places?.reviews?.length > 0 ? data.places.reviews : (d.reviews || []);
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary([...mockAISEO.metrics, ...mockSocialLocal.signals], "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" />; })()}
+      {(() => { const s = generateTabSummary([...aiSeoData.metrics, ...(d.signals || [])], "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" />; })()}
 
       <Card title="AI Visibility Metrics" t={t}>
-        {mockAISEO.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
+        {aiSeoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
       </Card>
 
       <Card title="Platform Presence" t={t}>
@@ -983,16 +998,18 @@ function SocialLocalTab({ t }) {
 
       <Card title="Recent Reviews" t={t}>
         <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
-          {d.reviews.map((review, i) => (
-            <div key={i} style={{ borderBottom: i < d.reviews.length - 1 ? `1px solid ${t.cardBorder}` : "none", paddingBottom: 12 }}>
+          {reviews.length > 0 ? reviews.map((review, i) => (
+            <div key={i} style={{ borderBottom: i < reviews.length - 1 ? `1px solid ${t.cardBorder}` : "none", paddingBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{review.author}</span>
-                <span style={{ color: brand.inboundOrange, fontSize: 13 }}>{"â˜…".repeat(review.rating)}{"â˜†".repeat(5 - review.rating)}</span>
+                <span style={{ color: brand.inboundOrange, fontSize: 13 }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span>
                 <span style={{ fontSize: 11, color: t.subtle }}>{review.timeAgo}</span>
               </div>
               <p style={{ fontSize: 13, color: t.body, margin: 0, lineHeight: 1.5 }}>{review.text}</p>
             </div>
-          ))}
+          )) : (
+            <p style={{ fontSize: 13, color: t.subtle, textAlign: "center", padding: 20 }}>No reviews available.</p>
+          )}
         </div>
       </Card>
     </div>
@@ -1043,18 +1060,19 @@ function SummaryCard({ summary, risks, opportunity, t, score, scoreLabel }) {
   );
 }
 
-function EntitySEOTab({ t }) {
+function EntitySEOTab({ t, data }) {
+  const entityData = data?.entity || mockEntity;
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(mockEntity.metrics, "local"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={mockEntity.score} scoreLabel="Local Search Performance Score" />; })()}
+      {(() => { const s = generateTabSummary(entityData.metrics, "local"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={entityData.score} scoreLabel="Local Search Performance Score" />; })()}
       <Card title="How Your Brand Appears in Local Search" subtitle="Signals that influence how Google understands and ranks your business locally." t={t}>
-        {mockEntity.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
+        {entityData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
       </Card>
     </div>
   );
 }
 
-/* â”€â”€ Light/Dark Toggle â”€â”€ */
+/* ── Light/Dark Toggle ── */
 function ModeToggle({ mode, setMode, t }) {
   return (
     <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{
@@ -1063,33 +1081,47 @@ function ModeToggle({ mode, setMode, t }) {
       color: t.subtle, fontSize: 12, fontWeight: 500, cursor: "pointer",
       transition: "all 0.25s", letterSpacing: 0.3,
     }}>
-      <span style={{ fontSize: 15 }}>{mode === "dark" ? "â˜€" : "â˜¾"}</span>
+      <span style={{ fontSize: 15 }}>{mode === "dark" ? "\u2600" : "\u263E"}</span>
       {mode === "dark" ? "Light" : "Dark"}
     </button>
   );
 }
 
-/* â”€â”€ Main Component â”€â”€ */
-export default function DigitalHealthAssessment() {
+/* ── Main Component ── */
+export default function DigitalHealthAssessment({ auditData, auditId, onReset }) {
   const [view, setView] = useState("results");
   const [activeTab, setActiveTab] = useState(0);
   const [mode, setMode] = useState("light");
+  const [copied, setCopied] = useState(false);
   const t = getTheme(mode);
 
+  // Resolve data: use auditData from API if available, fallback to mock
+  const data = {
+    meta: auditData?.meta || {},
+    webPerf: auditData?.webPerf || mockWebPerf,
+    seo: auditData?.seo || mockSEO,
+    keywords: auditData?.keywords?.length > 0 ? auditData.keywords : mockKeywords,
+    content: auditData?.content || mockContentPerf,
+    socialLocal: auditData?.socialLocal || mockSocialLocal,
+    aiSeo: auditData?.aiSeo || mockAISEO,
+    entity: auditData?.entity || mockEntity,
+    places: auditData?.places || null,
+  };
+
   const tabContent = [
-    <WebPerformanceTab t={t} />,
-    <SEOTab t={t} />,
-    <EntitySEOTab t={t} />,
-    <ContentPerformanceTab t={t} />,
-    <SocialLocalTab t={t} />,
+    <WebPerformanceTab t={t} data={data} />,
+    <SEOTab t={t} data={data} />,
+    <EntitySEOTab t={t} data={data} />,
+    <ContentPerformanceTab t={t} data={data} />,
+    <SocialLocalTab t={t} data={data} />,
   ];
 
   const tabScores = [
-    mockWebPerf.score,
-    Math.round((mockSEO.score + mockAISEO.score) / 2),
-    mockEntity.score,
-    mockContentPerf.score,
-    Math.round((mockAISEO.score + mockSocialLocal.socialScore) / 2),
+    data.webPerf.score,
+    Math.round((data.seo.score + data.aiSeo.score) / 2),
+    data.entity.score,
+    data.content.score,
+    Math.round((data.aiSeo.score + (data.socialLocal.socialScore || 45)) / 2),
   ];
 
   return (
@@ -1109,13 +1141,32 @@ export default function DigitalHealthAssessment() {
 
       <div style={{ maxWidth: 920, margin: "0 auto", padding: "40px 20px" }}>
 
-        {/* â”€â”€ Top Bar: Logo left, Mode toggle right â”€â”€ */}
+        {/* ── Top Bar: Logo left, Mode toggle + Reset right ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
           <AbstraktLogo fill={t.logoFill} height={26} />
-          <ModeToggle mode={mode} setMode={setMode} t={t} />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {auditId && (
+              <button onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/results/${auditId}`);
+                setCopied(true); setTimeout(() => setCopied(false), 2000);
+              }} style={{
+                padding: "6px 14px", borderRadius: 20, border: `1px solid ${accent}30`,
+                background: `${accent}10`, color: accent, fontSize: 12, fontWeight: 500,
+                cursor: "pointer", transition: "all 0.25s", letterSpacing: 0.3,
+              }}>{copied ? "\u2713 Copied!" : "Share Link"}</button>
+            )}
+            {onReset && (
+              <button onClick={onReset} style={{
+                padding: "6px 14px", borderRadius: 20, border: `1px solid ${t.toggleBorder}`,
+                background: t.toggleBg, color: t.subtle, fontSize: 12, fontWeight: 500,
+                cursor: "pointer", transition: "all 0.25s", letterSpacing: 0.3,
+              }}>← New Audit</button>
+            )}
+            <ModeToggle mode={mode} setMode={setMode} t={t} />
+          </div>
         </div>
 
-        {/* â”€â”€ Header â”€â”€ */}
+        {/* ── Header ── */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -1133,7 +1184,17 @@ export default function DigitalHealthAssessment() {
           }}>
             Digital Visibility &<br />Performance Audit
           </h1>
-          <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>Understand exactly where your online presence is driving growth â€” and where it's holding you back.</p>
+          {data.meta?.companyName && (
+            <p style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>
+              {data.meta.companyName}
+            </p>
+          )}
+          {data.meta?.url && (
+            <p style={{ fontSize: 12, color: accent, fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>
+              {data.meta.url}
+            </p>
+          )}
+          <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>{"Understand exactly where your online presence is driving growth \u2014 and where it\u2019s holding you back."}</p>
         </div>
 
         {/* View Toggle */}
@@ -1172,7 +1233,7 @@ export default function DigitalHealthAssessment() {
                 boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
                 transition: "all 0.25s ease",
               }}>
-                View Audit Results â†’
+                View Audit Results →
               </button>
             </>
           )}
@@ -1208,7 +1269,7 @@ export default function DigitalHealthAssessment() {
                 textTransform: "uppercase", letterSpacing: 1.5,
                 boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
               }}>
-                Run Assessment â†’
+                Run Assessment →
               </button>
             </div>
           </Card>
@@ -1263,7 +1324,7 @@ export default function DigitalHealthAssessment() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
               >
-                <span style={{ fontSize: 16 }}>â†“</span>
+                <span style={{ fontSize: 16 }}>↓</span>
                 Download PDF
               </button>
               <button onClick={() => alert("Email delivery will be available when connected to live data.")} style={{
@@ -1276,14 +1337,14 @@ export default function DigitalHealthAssessment() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
               >
-                <span style={{ fontSize: 16 }}>âœ‰</span>
+                <span style={{ fontSize: 16 }}>✉</span>
                 Email Report
               </button>
             </div>
 
             {/* CTA */}
             {activeTab === 2 ? (() => {
-              const scenario = getLocalLiftScenario(mockEntity.metrics);
+              const scenario = getLocalLiftScenario(data.entity.metrics);
               return (
               <div style={{
                 marginTop: 40, padding: "0", borderRadius: 14,
@@ -1385,14 +1446,14 @@ export default function DigitalHealthAssessment() {
                       color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
                       letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
                     }}>
-                      Build My Local Strategy â†’
+                      Build My Local Strategy →
                     </button>
                   </div>
                 </div>
               </div>
               );
             })() : activeTab === 1 ? (() => {
-              const scenario = getSEOScenario(mockSEO.metrics, mockContentPerf.metrics);
+              const scenario = getSEOScenario(data.seo.metrics, data.content.metrics);
               return (
               <div style={{
                 marginTop: 40, padding: "0", borderRadius: 14,
@@ -1457,9 +1518,9 @@ export default function DigitalHealthAssessment() {
                   {/* Pricing */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
                     {[
-                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content â€” 12 month engagement", featured: true },
+                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement", featured: true },
                       { name: "SEO Content Only", price: "From $1,500", period: "/mo", desc: "Based on content volume" },
-                      { name: "Backlinks Add-On", price: "$500â€“$1K+", period: "/mo", desc: "2â€“4 backlinks/month at $500, $750, or $1,000+" },
+                      { name: "Backlinks Add-On", price: "$500–$1K+", period: "/mo", desc: "2–4 backlinks/month at $500, $750, or $1,000+" },
                     ].map((tier, i) => (
                       <div key={i} style={{
                         padding: "20px 16px", borderRadius: 10, textAlign: "center",
@@ -1491,14 +1552,14 @@ export default function DigitalHealthAssessment() {
                       color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
                       letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
                     }}>
-                      Build My SEO Growth Plan â†’
+                      Build My SEO Growth Plan →
                     </button>
                   </div>
                 </div>
               </div>
               );
             })() : activeTab === 0 ? (() => {
-              const scenario = getWebPerfScenario(webPerfMetrics);
+              const scenario = getWebPerfScenario(data.webPerf.metrics);
               return (
               <div style={{
                 marginTop: 40, padding: "0", borderRadius: 14,
@@ -1563,8 +1624,8 @@ export default function DigitalHealthAssessment() {
                   {/* Pricing */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
                     {[
-                      { name: "Project Website", price: "$6Kâ€“$20K+", period: "", desc: "Based on pages needed and functionality requirements", featured: true },
-                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content â€” 12 month engagement" },
+                      { name: "Project Website", price: "$6K–$20K+", period: "", desc: "Based on pages needed and functionality requirements", featured: true },
+                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement" },
                     ].map((tier, i) => (
                       <div key={i} style={{
                         padding: "20px 16px", borderRadius: 10, textAlign: "center",
@@ -1596,7 +1657,7 @@ export default function DigitalHealthAssessment() {
                       color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
                       letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
                     }}>
-                      Fix My Website Performance â†’
+                      Fix My Website Performance →
                     </button>
                   </div>
                 </div>
@@ -1632,7 +1693,7 @@ export default function DigitalHealthAssessment() {
                 letterSpacing: 0.5, position: "relative",
                 boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
               }}>
-                Get Your Personalized Strategy â†’
+                Get Your Personalized Strategy →
               </button>
             </div>
             )}
@@ -1649,4 +1710,3 @@ export default function DigitalHealthAssessment() {
     </div>
   );
 }
-
