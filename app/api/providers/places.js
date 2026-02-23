@@ -10,17 +10,20 @@ export async function fetchPlacesData(companyName, url) {
 
   // Search for business using Text Search (New)
   const searchQuery = `${companyName} ${domain}`;
+  console.log(`[Places] Searching: "${searchQuery}"`);
   const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${apiKey}`;
 
   const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(10000) });
   const searchData = await searchRes.json();
 
   if (!searchData.results || searchData.results.length === 0) {
+    console.log(`[Places] No results found for "${searchQuery}". Status: ${searchData.status}`);
     return { found: false, data: null };
   }
 
   const place = searchData.results[0];
   const placeId = place.place_id;
+  console.log(`[Places] Found: "${place.name}" (placeId: ${placeId})`);
 
   // Get full details
   const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,business_status,rating,user_ratings_total,reviews,types,opening_hours,website,photos,url&key=${apiKey}`;
@@ -29,6 +32,8 @@ export async function fetchPlacesData(companyName, url) {
   const detailsData = await detailsRes.json();
   const result = detailsData.result || {};
 
+  console.log(`[Places] Details: rating=${result.rating}, reviews=${result.user_ratings_total}, status=${result.business_status}`);
+
   return {
     found: true,
     data: {
@@ -36,8 +41,8 @@ export async function fetchPlacesData(companyName, url) {
       address: result.formatted_address || null,
       phone: result.formatted_phone_number || null,
       businessStatus: result.business_status || "UNKNOWN",
-      rating: result.rating || 0,
-      reviewCount: result.user_ratings_total || 0,
+      rating: result.rating ?? 0,
+      reviewCount: result.user_ratings_total ?? 0,
       reviews: (result.reviews || []).slice(0, 5).map(r => ({
         author: r.author_name,
         rating: r.rating,

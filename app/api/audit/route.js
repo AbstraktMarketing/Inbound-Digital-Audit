@@ -69,7 +69,9 @@ export async function POST(request) {
     // SEMrush can return an object with all null properties — treat as missing
     const srHasData = sr && (sr.domainAuthority || sr.organic || sr.backlinks || sr.topKeywords?.length > 0);
     if (!srHasData) pending.push("semrush");
-    if (!pl) pending.push("places");
+    // Places can return { found: false, data: null } — treat as missing
+    const plHasData = pl && pl.found === true && pl.data;
+    if (!plHasData) pending.push("places");
     if (pending.length > 0) audit.pendingProviders = pending;
 
     // Store in KV with unique ID
@@ -652,8 +654,8 @@ function buildEntityMetrics(pl, cr) {
   const placeData = pl?.data || {};
   const schema = cr?.schema || {};
   const hasGBP = pl?.found === true;
-  const reviewCount = placeData.reviewCount || 0;
-  const rating = placeData.rating || 0;
+  const reviewCount = placeData.reviewCount ?? 0;
+  const rating = placeData.rating ?? 0;
   const categories = placeData.types || placeData.categories || [];
   const businessName = placeData.name || null;
 

@@ -41,8 +41,12 @@ export async function GET(request, { params }) {
 
     const ps = results[0].status === "fulfilled" && results[0].value ? results[0].value : null;
     const cr = results[1].status === "fulfilled" && results[1].value ? results[1].value : null;
-    const sr = results[2].status === "fulfilled" && results[2].value ? results[2].value : null;
-    const pl = results[3].status === "fulfilled" && results[3].value ? results[3].value : null;
+    // SEMrush can return an object with all nulls — check for real content
+    const srRaw = results[2].status === "fulfilled" ? results[2].value : null;
+    const sr = srRaw && (srRaw.domainAuthority || srRaw.organic || srRaw.backlinks || srRaw.topKeywords?.length > 0) ? srRaw : null;
+    // Places can return { found: false } — check for actual data
+    const plRaw = results[3].status === "fulfilled" ? results[3].value : null;
+    const pl = plRaw && plRaw.found === true && plRaw.data ? plRaw : null;
 
     let updated = false;
 
@@ -85,17 +89,29 @@ export async function GET(request, { params }) {
       updated = true;
     }
 
-    // Update pending list
+    // Update pending list with retry tracking
+    const retryCounts = audit.retryCounts || {};
     const remaining = [...pending];
-    if (remaining.length > 0) {
-      audit.pendingProviders = remaining;
-    } else {
-      delete audit.pendingProviders;
+    const stillPending = [];
+    for (const provider of remaining) {
+      retryCounts[provider] = (retryCounts[provider] || 0) + 1;
+      if (retryCounts[provider] < 3) {
+        stillPending.push(provider);
+      } else {
+        console.log(`[Refresh] Giving up on ${provider} after 3 retries for audit ${id}`);
+      }
     }
 
-    if (updated) {
-      await kv.set(`audit:${id}`, JSON.stringify(audit));
+    if (stillPending.length > 0) {
+      audit.pendingProviders = stillPending;
+      audit.retryCounts = retryCounts;
+    } else {
+      delete audit.pendingProviders;
+      delete audit.retryCounts;
     }
+
+    // Always save — either we got new data or we updated retry counts
+    await kv.set(`audit:${id}`, JSON.stringify(audit));
   }
 
   return Response.json(audit);
