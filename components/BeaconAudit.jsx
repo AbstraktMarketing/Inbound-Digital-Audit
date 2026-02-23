@@ -1498,18 +1498,6 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
               {data.meta.url}
             </p>
           )}
-          {data.meta?.competitors && data.meta.competitors.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, lineHeight: "22px" }}>vs</span>
-              {data.meta.competitors.map((c, i) => (
-                <span key={i} style={{
-                  fontSize: 11, fontWeight: 600, color: brand.inboundOrange,
-                  background: "rgba(244,111,10,0.08)", border: "1px solid rgba(244,111,10,0.18)",
-                  padding: "3px 10px", borderRadius: 6, fontFamily: "'JetBrains Mono', monospace",
-                }}>{c}</span>
-              ))}
-            </div>
-          )}
           <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>{"Understand exactly where your online presence is driving growth \u2014 and where it\u2019s holding you back."}</p>
 
           {/* Audit status banner */}

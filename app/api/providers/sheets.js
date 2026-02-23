@@ -78,7 +78,6 @@ function getHeaders() {
     "Contact Name",
     "Email",
     "Phone",
-    "Competitors",
     "Website Performance Score",
     "Search Visibility Score",
     "Local Search Score",
@@ -131,7 +130,6 @@ function buildRow(audit) {
     meta.contactName || "",
     meta.email || "",
     meta.phone || "",
-    (meta.competitors || []).join(", "),
     webPerfScore,
     seoScore,
     entityScore,
@@ -155,7 +153,7 @@ async function appendRow(token, row) {
 }
 
 async function rawAppend(token, row) {
-  const range = encodeURIComponent(`${SHEET_NAME}!A:V`);
+  const range = encodeURIComponent(`${SHEET_NAME}!A:U`);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
 
   const res = await fetch(url, {

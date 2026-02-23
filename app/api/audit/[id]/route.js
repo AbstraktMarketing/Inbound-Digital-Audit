@@ -29,7 +29,6 @@ export async function GET(request, { params }) {
 
     const pending = new Set(audit.pendingProviders);
     const companyName = audit.meta?.companyName || "";
-    const userCompetitors = audit.meta?.competitors || [];
 
     // Re-run only failed providers
     const results = await Promise.allSettled([
@@ -58,7 +57,7 @@ export async function GET(request, { params }) {
       audit.webPerf = buildWebPerfMetrics(ps, cr || null);
       audit.content = buildContentMetrics(cr || null, ps);
       if (sr || audit.seo) {
-        audit.seo = buildSEOMetrics(sr || null, hasSitemap, hasRobots, userCompetitors);
+        audit.seo = buildSEOMetrics(sr || null, hasSitemap, hasRobots);
       }
       pending.delete("pageSpeed");
       updated = true;
@@ -77,7 +76,7 @@ export async function GET(request, { params }) {
       const [sitemapCheck, robotsCheck] = await Promise.allSettled([checkUrl(`${fullUrl}/sitemap.xml`), checkUrl(`${fullUrl}/robots.txt`)]);
       const hasSitemap = sitemapCheck.status === "fulfilled" && sitemapCheck.value;
       const hasRobots = robotsCheck.status === "fulfilled" && robotsCheck.value;
-      audit.seo = buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors);
+      audit.seo = buildSEOMetrics(sr, hasSitemap, hasRobots);
       audit.keywords = buildKeywords(sr);
       pending.delete("semrush");
       updated = true;

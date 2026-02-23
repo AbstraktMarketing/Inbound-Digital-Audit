@@ -12,14 +12,13 @@ import { kv } from "@vercel/kv";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { url, companyName, contactName, email, phone, competitors } = body;
+    const { url, companyName, contactName, email, phone } = body;
 
     if (!url) {
       return Response.json({ error: "URL is required" }, { status: 400 });
     }
 
     const fullUrl = url.startsWith("http") ? url : `https://${url}`;
-    const userCompetitors = (competitors || []).filter(c => typeof c === "string" && c.trim()).slice(0, 3).map(c => c.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, ""));
 
     // Run all providers in parallel — don't let one failure kill the whole audit
     const [pageSpeed, crawl, semrush, places] = await Promise.allSettled([
@@ -45,9 +44,9 @@ export async function POST(request) {
 
     // --- Map to metric format ---
     const audit = {
-      meta: { url: fullUrl, companyName, contactName, email, phone, competitors: userCompetitors, timestamp: new Date().toISOString() },
+      meta: { url: fullUrl, companyName, contactName, email, phone, timestamp: new Date().toISOString() },
       webPerf: buildWebPerfMetrics(ps, cr, hasSitemap),
-      seo: buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors),
+      seo: buildSEOMetrics(sr, hasSitemap, hasRobots),
       keywords: buildKeywords(sr),
       content: buildContentMetrics(cr, ps),
       socialLocal: buildSocialMetrics(cr),
@@ -235,7 +234,7 @@ function buildWebPerfMetrics(ps, cr) {
   return { score: calcScore(metrics), metrics };
 }
 
-function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
+function buildSEOMetrics(sr, hasSitemap, hasRobots) {
   const da = sr?.domainAuthority;
   const organic = sr?.organic ?? sr?.domainAuthority;
   const bl = sr?.backlinks;
@@ -243,19 +242,9 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
   const traffic = organic?.organicTraffic ?? da?.organicTraffic ?? null;
   const totalBacklinks = bl?.totalBacklinks ?? null;
   const refDomains = bl?.referringDomains ?? null;
-  const apiCompetitors = sr?.competitors || [];
+  const competitors = sr?.competitors || [];
   const topKw = sr?.topKeywords || [];
   const trafficCost = organic?.organicCost ?? da?.organicCost ?? null;
-
-  // Merge user-specified competitors with API-discovered ones (user-specified first)
-  const userCompSet = new Set(userCompetitors.map(c => c.toLowerCase()));
-  const competitors = [
-    ...userCompetitors.map(domain => {
-      const match = apiCompetitors.find(c => c.domain.toLowerCase() === domain.toLowerCase());
-      return match || { domain, commonKeywords: null, organicTraffic: null, userSpecified: true };
-    }),
-    ...apiCompetitors.filter(c => !userCompSet.has(c.domain.toLowerCase())),
-  ];
 
   const rank = da?.rank ?? 0;
   const estimatedDA = rank > 0 ? Math.min(100, Math.max(1, Math.round(100 - Math.log10(rank) * 15))) : null;
@@ -270,15 +259,12 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
     if (trafficCost) kwFindings.push(`Organic traffic value: $${Math.round(trafficCost).toLocaleString()}/mo`);
   }
 
-  // Competitor findings
+  // Competitor findings (auto-discovered by SEMrush)
   const compFindings = [];
   if (competitors.length > 0) {
     competitors.slice(0, 3).forEach(c => {
-      const tag = c.userSpecified ? " [your competitor]" : "";
       if (c.commonKeywords && c.organicTraffic) {
-        compFindings.push(`${c.domain}${tag} \u2014 ${c.commonKeywords.toLocaleString()} shared keywords, ${c.organicTraffic.toLocaleString()} monthly traffic`);
-      } else {
-        compFindings.push(`${c.domain}${tag} \u2014 data pending (specified competitor)`);
+        compFindings.push(`${c.domain} \u2014 ${c.commonKeywords.toLocaleString()} shared keywords, ${c.organicTraffic.toLocaleString()} monthly traffic`);
       }
     });
   }
