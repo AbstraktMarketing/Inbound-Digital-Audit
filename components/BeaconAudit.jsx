@@ -861,7 +861,7 @@ function Card({ title, subtitle, children, t, style: s }) {
 }
 
 /* ── Tab Renderers ── */
-function WebPerformanceTab({ t, data }) {
+function WebPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
   const webPerfData = data?.webPerf || mockWebPerf;
   const allIssues = [
     { issue: "Broken Internal Links", count: 23, severity: "high", detail: "Pages returning 4xx errors hurt crawlability and user experience" },
@@ -877,7 +877,7 @@ function WebPerformanceTab({ t, data }) {
   const sorted = [...allIssues].sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity] || b.count - a.count);
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(webPerfData.metrics, "website"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={webPerfData.score} scoreLabel="Website Performance Score" />; })()}
+      {(() => { const s = generateTabSummary(webPerfData.metrics, "website"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={webPerfData.score} scoreLabel="Website Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
       <Card title="Audit Findings" t={t}>
         {webPerfData.metrics.map((m, i) => (
           <ExpandableMetricRow key={i} {...m} t={t} index={i} />
@@ -922,14 +922,14 @@ function WebPerformanceTab({ t, data }) {
   );
 }
 
-function SEOTab({ t, data }) {
+function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
   const seoData = data?.seo || mockSEO;
   const aiSeoData = data?.aiSeo || mockAISEO;
   const keywordsData = data?.keywords || mockKeywords;
   const combinedScore = Math.round((seoData.score + aiSeoData.score) / 2);
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary([...seoData.metrics, ...aiSeoData.metrics], "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" />; })()}
+      {(() => { const s = generateTabSummary([...seoData.metrics, ...aiSeoData.metrics], "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
 
       <Card title="Organic Search Health" t={t}>
         {seoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
@@ -975,11 +975,11 @@ function SEOTab({ t, data }) {
   );
 }
 
-function ContentPerformanceTab({ t, data }) {
+function ContentPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
   const contentData = data?.content || mockContentPerf;
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(contentData.metrics, "content"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={contentData.score} scoreLabel="Content Performance Score" />; })()}
+      {(() => { const s = generateTabSummary(contentData.metrics, "content"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={contentData.score} scoreLabel="Content Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
       <Card title="Content Metrics" t={t}>
         {contentData.metrics.map((m, i) => (
           <ExpandableMetricRow key={i} {...m} t={t} index={i} />
@@ -989,7 +989,7 @@ function ContentPerformanceTab({ t, data }) {
   );
 }
 
-function SocialLocalTab({ t, data }) {
+function SocialLocalTab({ t, data, recap, onSaveRecap, canEdit }) {
   const d = data?.socialLocal || mockSocialLocal;
   const aiSeoData = data?.aiSeo || mockAISEO;
   const combinedScore = Math.round((aiSeoData.score + (d.socialScore || 45)) / 2);
@@ -997,7 +997,7 @@ function SocialLocalTab({ t, data }) {
   const reviews = data?.places?.reviews?.length > 0 ? data.places.reviews : (d.reviews || []);
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary([...aiSeoData.metrics, ...(d.signals || [])], "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" />; })()}
+      {(() => { const s = generateTabSummary([...aiSeoData.metrics, ...(d.signals || [])], "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
 
       <Card title="AI Visibility Metrics" t={t}>
         {aiSeoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
@@ -1055,55 +1055,149 @@ function SocialLocalTab({ t, data }) {
   );
 }
 
-function SummaryCard({ summary, risks, opportunity, t, score, scoreLabel }) {
+function SummaryCard({ summary, risks, opportunity, t, score, scoreLabel, recap, onSaveRecap, canEdit }) {
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState({ summary: "", risks: "", opportunity: "" });
+
+  const hasRecap = recap && (recap.summary || recap.opportunity || (recap.risks && recap.risks.length > 0));
+  const displaySummary = hasRecap && recap.summary ? recap.summary : summary;
+  const displayRisks = hasRecap && recap.risks && recap.risks.length > 0 ? recap.risks : risks;
+  const displayOpportunity = hasRecap && recap.opportunity ? recap.opportunity : opportunity;
+
+  const startEdit = () => {
+    setDraft({
+      summary: (hasRecap && recap.summary) || summary || "",
+      risks: ((hasRecap && recap.risks && recap.risks.length > 0) ? recap.risks : risks || []).join("\n"),
+      opportunity: (hasRecap && recap.opportunity) || opportunity || "",
+    });
+    setEditing(true);
+  };
+
+  const saveEdit = () => {
+    const parsed = {
+      summary: draft.summary.trim() || undefined,
+      risks: draft.risks.trim() ? draft.risks.split("\n").map(r => r.trim()).filter(Boolean) : undefined,
+      opportunity: draft.opportunity.trim() || undefined,
+    };
+    onSaveRecap(parsed);
+    setEditing(false);
+  };
+
+  const textareaStyle = {
+    width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 12,
+    border: `1px solid ${t.cardBorder}`, background: t.bg, color: t.text,
+    fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, resize: "vertical", outline: "none",
+  };
+
   return (
-    <Card title="Recommendations" t={t}>
-      <div style={{ padding: "16px 18px", display: "flex", gap: 20 }}>
-        {score !== undefined && (
-          <div style={{
-            textAlign: "center", flexShrink: 0, display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", padding: "8px 12px",
-            borderRight: `1px solid ${t.cardBorder}`, paddingRight: 20,
-          }}>
-            <ScoreRing score={score} size={120} t={t} />
-            <div style={{ fontSize: 9, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 500, marginTop: 6, maxWidth: 120, lineHeight: 1.3 }}>{scoreLabel}</div>
-          </div>
-        )}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>{summary}</div>
-          {risks && risks.length > 0 && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: brand.pipelineRed, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Primary Risks</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {risks.map((r, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: t.body }}>
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: brand.pipelineRed, flexShrink: 0 }} />
-                    {r}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {opportunity && (
-            <div style={{
-              padding: "12px 16px", borderRadius: 8,
-              background: `${accent}08`, border: `1px solid ${accent}20`,
-            }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Biggest Opportunity</div>
-              <div style={{ fontSize: 12, color: t.body, lineHeight: 1.5 }}>{opportunity}</div>
-            </div>
+    <Card title={null} t={t}>
+      <div style={{ padding: "14px 18px 6px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${t.cardBorder}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: 0.3 }}>Recommendations</div>
+          {hasRecap && !editing && (
+            <span style={{
+              fontSize: 9, fontWeight: 700, color: brand.cloudBlue,
+              background: "rgba(4,129,163,0.1)", border: "1px solid rgba(4,129,163,0.2)",
+              padding: "2px 8px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
+            }}>Post-Call Recap</span>
           )}
         </div>
+        {canEdit && !editing && (
+          <button onClick={startEdit} style={{
+            padding: "4px 12px", borderRadius: 6, border: `1px solid ${t.cardBorder}`,
+            background: "transparent", color: t.subtle, fontSize: 11, fontWeight: 500,
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+            transition: "all 0.2s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.color = t.subtle; }}
+          >
+            ✎ {hasRecap ? "Edit Recap" : "Customize"}
+          </button>
+        )}
       </div>
+
+      {editing ? (
+        <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.5, padding: "8px 12px", borderRadius: 8, background: `${brand.cloudBlue}08`, border: `1px solid ${brand.cloudBlue}15` }}>
+            Tie findings to what you discussed on the call. The prospect sees this version when they open the shareable link.
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Summary</div>
+            <textarea rows={3} style={textareaStyle} value={draft.summary} onChange={e => setDraft({ ...draft, summary: e.target.value })}
+              placeholder="As we discussed, your team is relying heavily on outbound..." />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Key Risks (one per line)</div>
+            <textarea rows={3} style={textareaStyle} value={draft.risks} onChange={e => setDraft({ ...draft, risks: e.target.value })}
+              placeholder="Organic demand capture is underdeveloped&#10;No content engine to support outbound&#10;Competitors own high-intent keywords" />
+          </div>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Biggest Opportunity</div>
+            <textarea rows={2} style={textareaStyle} value={draft.opportunity} onChange={e => setDraft({ ...draft, opportunity: e.target.value })}
+              placeholder="Build an inbound engine that delivers warm leads to your sales team..." />
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+            <button onClick={() => setEditing(false)} style={{
+              padding: "8px 18px", borderRadius: 8, border: `1px solid ${t.cardBorder}`,
+              background: "transparent", color: t.subtle, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            }}>Cancel</button>
+            <button onClick={saveEdit} style={{
+              padding: "8px 18px", borderRadius: 8, border: "none",
+              background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+              color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer",
+              boxShadow: "0 2px 10px rgba(66,191,186,0.2)",
+            }}>Save Recap</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding: "16px 18px", display: "flex", gap: 20 }}>
+          {score !== undefined && (
+            <div style={{
+              textAlign: "center", flexShrink: 0, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", padding: "8px 12px",
+              borderRight: `1px solid ${t.cardBorder}`, paddingRight: 20,
+            }}>
+              <ScoreRing score={score} size={120} t={t} />
+              <div style={{ fontSize: 9, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 500, marginTop: 6, maxWidth: 120, lineHeight: 1.3 }}>{scoreLabel}</div>
+            </div>
+          )}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>{displaySummary}</div>
+            {displayRisks && displayRisks.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: brand.pipelineRed, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Primary Risks</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {displayRisks.map((r, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: t.body }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: brand.pipelineRed, flexShrink: 0 }} />
+                      {r}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {displayOpportunity && (
+              <div style={{
+                padding: "12px 16px", borderRadius: 8,
+                background: `${accent}08`, border: `1px solid ${accent}20`,
+              }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Biggest Opportunity</div>
+                <div style={{ fontSize: 12, color: t.body, lineHeight: 1.5 }}>{displayOpportunity}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
 
-function EntitySEOTab({ t, data }) {
+function EntitySEOTab({ t, data, recap, onSaveRecap, canEdit }) {
   const entityData = data?.entity || mockEntity;
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(entityData.metrics, "local"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={entityData.score} scoreLabel="Local Search Performance Score" />; })()}
+      {(() => { const s = generateTabSummary(entityData.metrics, "local"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={entityData.score} scoreLabel="Local Search Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
       <Card title="How Your Brand Appears in Local Search" subtitle="Signals that influence how Google understands and ranks your business locally." t={t}>
         {entityData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
       </Card>
@@ -1132,7 +1226,24 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
   const [activeTab, setActiveTab] = useState(0);
   const [mode, setMode] = useState("light");
   const [copied, setCopied] = useState(false);
+  const [recap, setRecap] = useState(auditData?.recap || {});
+  const [recapSaving, setRecapSaving] = useState(false);
   const t = getTheme(mode);
+
+  const saveRecap = async (tabKey, tabRecap) => {
+    const next = { ...recap, [tabKey]: tabRecap };
+    setRecap(next);
+    if (!auditId) return;
+    setRecapSaving(true);
+    try {
+      await fetch(`/api/audit/${auditId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recap: { [tabKey]: tabRecap } }),
+      });
+    } catch (e) { console.error("Recap save failed:", e); }
+    setRecapSaving(false);
+  };
 
   // Resolve data: use auditData from API if available, fallback to mock
   const data = {
@@ -1148,11 +1259,11 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
   };
 
   const tabContent = [
-    <WebPerformanceTab t={t} data={data} />,
-    <SEOTab t={t} data={data} />,
-    <EntitySEOTab t={t} data={data} />,
-    <ContentPerformanceTab t={t} data={data} />,
-    <SocialLocalTab t={t} data={data} />,
+    <WebPerformanceTab t={t} data={data} recap={recap.website} onSaveRecap={(r) => saveRecap("website", r)} canEdit={!!auditId} />,
+    <SEOTab t={t} data={data} recap={recap.seo} onSaveRecap={(r) => saveRecap("seo", r)} canEdit={!!auditId} />,
+    <EntitySEOTab t={t} data={data} recap={recap.local} onSaveRecap={(r) => saveRecap("local", r)} canEdit={!!auditId} />,
+    <ContentPerformanceTab t={t} data={data} recap={recap.content} onSaveRecap={(r) => saveRecap("content", r)} canEdit={!!auditId} />,
+    <SocialLocalTab t={t} data={data} recap={recap.social} onSaveRecap={(r) => saveRecap("social", r)} canEdit={!!auditId} />,
   ];
 
   const tabScores = [
