@@ -61,6 +61,14 @@ export async function POST(request) {
       },
     };
 
+    // Track which providers need retry (returned null or rejected)
+    const pending = [];
+    if (!ps) pending.push("pageSpeed");
+    if (!cr) pending.push("crawl");
+    if (!sr) pending.push("semrush");
+    if (!pl) pending.push("places");
+    if (pending.length > 0) audit.pendingProviders = pending;
+
     // Store in KV with unique ID
     const id = generateId();
     audit.id = id;
@@ -745,3 +753,6 @@ function buildEntityMetrics(pl, cr) {
 
   return { score: calcScore(metrics), metrics };
 }
+
+// Shared exports for refresh endpoint
+export { buildWebPerfMetrics, buildSEOMetrics, buildKeywords, buildContentMetrics, buildSocialMetrics, buildAISEOMetrics, buildEntityMetrics, checkUrl };

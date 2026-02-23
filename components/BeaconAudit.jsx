@@ -1339,14 +1339,56 @@ function ModeToggle({ mode, setMode, t }) {
 }
 
 /* ── Main Component ── */
-export default function DigitalHealthAssessment({ auditData, auditId, onReset }) {
+export default function DigitalHealthAssessment({ auditData: initialAuditData, auditId, onReset }) {
+  const [liveAudit, setLiveAudit] = useState(initialAuditData);
+  const [refreshing, setRefreshing] = useState(false);
   const [view, setView] = useState("results");
   const [activeTab, setActiveTab] = useState(0);
   const [mode, setMode] = useState("light");
   const [copied, setCopied] = useState(false);
-  const [recap, setRecap] = useState(auditData?.recap || {});
+  const [recap, setRecap] = useState(initialAuditData?.recap || {});
   const [recapSaving, setRecapSaving] = useState(false);
   const t = getTheme(mode);
+
+  // Auto-refresh: poll every 30s if there are pending providers
+  React.useEffect(() => {
+    if (!auditId || !liveAudit?.pendingProviders?.length) return;
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 6; // 6 x 30s = 3 minutes max
+
+    const poll = async () => {
+      if (cancelled || attempts >= maxAttempts) return;
+      attempts++;
+      setRefreshing(true);
+      try {
+        const res = await fetch(`/api/audit/${auditId}?refresh=true`);
+        if (res.ok) {
+          const updated = await res.json();
+          if (!cancelled) {
+            setLiveAudit(updated);
+            if (updated.recap) setRecap(updated.recap);
+            // Stop polling if nothing pending
+            if (!updated.pendingProviders?.length) {
+              setRefreshing(false);
+              return;
+            }
+          }
+        }
+      } catch (e) { console.error("Refresh poll failed:", e); }
+      if (!cancelled) {
+        setRefreshing(false);
+        setTimeout(poll, 30000);
+      }
+    };
+
+    // First poll after 30 seconds
+    const timer = setTimeout(poll, 30000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [auditId, !liveAudit?.pendingProviders?.length]);
+
+  const auditData = liveAudit;
+  const hasPending = auditData?.pendingProviders?.length > 0;
 
   const saveRecap = async (tabKey, tabRecap) => {
     const next = { ...recap, [tabKey]: tabRecap };
@@ -1475,6 +1517,38 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
             </div>
           )}
           <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>{"Understand exactly where your online presence is driving growth \u2014 and where it\u2019s holding you back."}</p>
+
+          {/* Audit status banner */}
+          {hasPending && (
+            <div style={{
+              marginTop: 16, padding: "12px 20px", borderRadius: 10,
+              background: `${brand.inboundOrange}08`, border: `1px solid ${brand.inboundOrange}20`,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+            }}>
+              {refreshing ? (
+                <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${brand.inboundOrange}40`, borderTopColor: brand.inboundOrange, borderRadius: "50%", animation: "auditSpin 0.8s linear infinite" }} />
+              ) : (
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: brand.inboundOrange, animation: "auditPulse 2s ease-in-out infinite" }} />
+              )}
+              <span style={{ fontSize: 12, fontWeight: 600, color: brand.inboundOrange }}>
+                {refreshing ? "Updating metrics..." : `${auditData.pendingProviders.length} data source${auditData.pendingProviders.length > 1 ? "s" : ""} still processing \u2014 auto-refreshing`}
+              </span>
+            </div>
+          )}
+          {!hasPending && auditId && (
+            <div style={{
+              marginTop: 16, padding: "10px 20px", borderRadius: 10,
+              background: `${brand.talentTeal}08`, border: `1px solid ${brand.talentTeal}20`,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            }}>
+              <span style={{ fontSize: 12, color: brand.talentTeal }}>{String.fromCodePoint(0x2705)}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: brand.talentTeal }}>Audit complete \u2014 all data sources loaded</span>
+            </div>
+          )}
+          <style>{`
+            @keyframes auditSpin { to { transform: rotate(360deg); } }
+            @keyframes auditPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+          `}</style>
         </div>
 
         {/* View Toggle */}
