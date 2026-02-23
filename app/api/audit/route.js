@@ -6,6 +6,7 @@ import { fetchPageSpeed } from "../providers/pagespeed.js";
 import { fetchCrawlData } from "../providers/crawl.js";
 import { fetchSemrush } from "../providers/semrush.js";
 import { fetchPlacesData } from "../providers/places.js";
+import { appendAuditToSheet } from "../providers/sheets.js";
 import { kv } from "@vercel/kv";
 
 export async function POST(request) {
@@ -73,6 +74,9 @@ export async function POST(request) {
     const id = generateId();
     audit.id = id;
     await kv.set(`audit:${id}`, JSON.stringify(audit));
+
+    // Log to Google Sheets (fire-and-forget — don't block response)
+    appendAuditToSheet(audit).catch(err => console.error("Sheets log failed:", err.message));
 
     return Response.json(audit);
   } catch (err) {
