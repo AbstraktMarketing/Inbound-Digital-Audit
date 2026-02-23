@@ -7,6 +7,7 @@ export async function fetchSemrush(domain) {
   if (!apiKey) throw new Error("SEMRUSH_API_KEY not configured");
 
   const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+  console.log(`[SEMrush] Fetching data for domain: ${cleanDomain}`);
 
   const [domainRanks, organicKeywords, backlinks, topKeywords, competitors] = await Promise.allSettled([
     fetchDomainRanks(cleanDomain, apiKey),
@@ -15,6 +16,11 @@ export async function fetchSemrush(domain) {
     fetchTopKeywords(cleanDomain, apiKey),
     fetchCompetitors(cleanDomain, apiKey),
   ]);
+
+  console.log(`[SEMrush] Results for ${cleanDomain}: ranks=${domainRanks.status}, organic=${organicKeywords.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}`);
+  if (domainRanks.status === "rejected") console.error(`[SEMrush] domainRanks error: ${domainRanks.reason?.message}`);
+  if (organicKeywords.status === "rejected") console.error(`[SEMrush] organic error: ${organicKeywords.reason?.message}`);
+  if (backlinks.status === "rejected") console.error(`[SEMrush] backlinks error: ${backlinks.reason?.message}`);
 
   return {
     domainAuthority: domainRanks.status === "fulfilled" ? domainRanks.value : null,

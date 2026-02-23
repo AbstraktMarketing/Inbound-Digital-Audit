@@ -62,11 +62,13 @@ export async function POST(request) {
       },
     };
 
-    // Track which providers need retry (returned null or rejected)
+    // Track which providers need retry (returned null/empty or rejected)
     const pending = [];
     if (!ps) pending.push("pageSpeed");
     if (!cr) pending.push("crawl");
-    if (!sr) pending.push("semrush");
+    // SEMrush can return an object with all null properties — treat as missing
+    const srHasData = sr && (sr.domainAuthority || sr.organic || sr.backlinks || sr.topKeywords?.length > 0);
+    if (!srHasData) pending.push("semrush");
     if (!pl) pending.push("places");
     if (pending.length > 0) audit.pendingProviders = pending;
 
@@ -233,15 +235,15 @@ function buildWebPerfMetrics(ps, cr) {
 
 function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
   const da = sr?.domainAuthority;
-  const organic = sr?.organic || sr?.domainAuthority;
+  const organic = sr?.organic ?? sr?.domainAuthority;
   const bl = sr?.backlinks;
-  const kwCount = organic?.organicKeywords || da?.organicKeywords || null;
-  const traffic = organic?.organicTraffic || da?.organicTraffic || null;
-  const totalBacklinks = bl?.totalBacklinks || null;
-  const refDomains = bl?.referringDomains || null;
+  const kwCount = organic?.organicKeywords ?? da?.organicKeywords ?? null;
+  const traffic = organic?.organicTraffic ?? da?.organicTraffic ?? null;
+  const totalBacklinks = bl?.totalBacklinks ?? null;
+  const refDomains = bl?.referringDomains ?? null;
   const apiCompetitors = sr?.competitors || [];
   const topKw = sr?.topKeywords || [];
-  const trafficCost = organic?.organicCost || da?.organicCost || null;
+  const trafficCost = organic?.organicCost ?? da?.organicCost ?? null;
 
   // Merge user-specified competitors with API-discovered ones (user-specified first)
   const userCompSet = new Set(userCompetitors.map(c => c.toLowerCase()));
@@ -253,7 +255,7 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
     ...apiCompetitors.filter(c => !userCompSet.has(c.domain.toLowerCase())),
   ];
 
-  const rank = da?.rank || 0;
+  const rank = da?.rank ?? 0;
   const estimatedDA = rank > 0 ? Math.min(100, Math.max(1, Math.round(100 - Math.log10(rank) * 15))) : null;
   const brandedPct = null;
   const indexation = null;
@@ -289,9 +291,11 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
   const metrics = [
     {
       label: "Organic Keywords", value: kwCount !== null ? kwCount.toLocaleString() : "Estimated",
-      status: toStatus(kwCount, 500, 200),
-      detail: traffic ? `${kwCount?.toLocaleString() || "N/A"} keywords driving ~${traffic.toLocaleString()} monthly visits.` : `${kwCount || "N/A"} keywords ranking.`,
-      impact: "high", findings: kwFindings,
+      status: kwCount !== null ? toStatus(kwCount, 500, 200) : "warning",
+      detail: kwCount !== null
+        ? (traffic ? `${kwCount.toLocaleString()} keywords driving ~${traffic.toLocaleString()} monthly visits.` : `${kwCount.toLocaleString()} keywords ranking.`)
+        : "SEMrush data unavailable for this domain. This may indicate a newer or very small domain.",
+      impact: "high", estimated: kwCount === null, findings: kwFindings,
       why: "Every keyword you don't rank for is a buyer choosing a competitor. High-intent keywords convert at 3-5x the rate of outbound leads.",
       fix: competitors.length > 0 ? `Close the keyword gap against ${competitors[0].domain} and ${competitors.length > 1 ? competitors[1].domain : "other competitors"} to capture their traffic.` : "Identify high-value keywords your competitors rank for and build content to claim those positions.",
       expectedImpact: "Capturing high-intent keywords means more qualified prospects finding you instead of your competitors.", difficulty: "Medium",
@@ -316,18 +320,20 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots, userCompetitors = []) {
     },
     {
       label: "Domain Authority Score", value: estimatedDA !== null ? `${estimatedDA}/100` : "Estimated",
-      status: toStatus(estimatedDA, 50, 30),
-      detail: rank > 0 ? `SEMrush rank: #${rank.toLocaleString()} globally.` : "Competitive positioning.",
-      impact: "medium", findings: compFindings,
+      status: estimatedDA !== null ? toStatus(estimatedDA, 50, 30) : "warning",
+      detail: rank > 0 ? `SEMrush rank: #${rank.toLocaleString()} globally.` : "SEMrush data unavailable for this domain.",
+      impact: "medium", estimated: estimatedDA === null, findings: compFindings,
       why: "Higher authority means your pages outrank competitors for the same keywords \u2014 you get the click, they don't.",
       fix: "Build high-quality backlinks through guest posts, digital PR, and industry partnerships.",
       expectedImpact: "Reaching DA 45+ would significantly improve ranking potential.", difficulty: "High",
     },
     {
       label: "Backlink Profile", value: totalBacklinks !== null ? totalBacklinks.toLocaleString() : "Estimated",
-      status: toStatus(totalBacklinks, 1000, 200),
-      detail: refDomains ? `${totalBacklinks?.toLocaleString()} total links from ${refDomains.toLocaleString()} domains.` : "Backlink data.",
-      impact: "medium", findings: blFindings,
+      status: totalBacklinks !== null ? toStatus(totalBacklinks, 1000, 200) : "warning",
+      detail: totalBacklinks !== null
+        ? (refDomains ? `${totalBacklinks.toLocaleString()} total links from ${refDomains.toLocaleString()} domains.` : `${totalBacklinks.toLocaleString()} total backlinks.`)
+        : "Backlink data unavailable. SEMrush may not have data for this domain yet.",
+      impact: "medium", estimated: totalBacklinks === null, findings: blFindings,
       why: "Quality backlinks are endorsements that tell Google to rank you higher. More trusted links = more traffic your competitors lose.",
       fix: "Disavow toxic links and pursue link-building campaigns targeting high-authority domains.",
       expectedImpact: "Improving link quality can lift rankings for mid-to-high difficulty keywords.", difficulty: "High",
@@ -367,7 +373,7 @@ function buildKeywords(sr) {
 function buildContentMetrics(cr, ps) {
   const hasBlog = cr?.blog?.detected ?? null;
   const lastPostDate = cr?.blog?.lastPostDate || null;
-  const lastPostDays = cr?.blog?.lastPostDaysAgo || null;
+  const lastPostDays = cr?.blog?.lastPostDaysAgo ?? null;
   const blogTitles = cr?.blog?.recentTitles || [];
   const wordCount = cr?.content?.wordCount ?? null;
   const contentRatio = cr?.content?.ratio ?? null;
