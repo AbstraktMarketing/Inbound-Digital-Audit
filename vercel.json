@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/api/audit/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/audit/[id]/route.js": {
+      "maxDuration": 60
+    }
+  }
+}

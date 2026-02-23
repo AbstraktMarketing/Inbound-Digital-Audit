@@ -9,6 +9,8 @@ import { fetchPlacesData } from "../providers/places.js";
 import { appendAuditToSheet } from "../providers/sheets.js";
 import { kv } from "@vercel/kv";
 
+export const maxDuration = 60; // Allow up to 60s for all providers to complete
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -32,6 +34,15 @@ export async function POST(request) {
     const cr = crawl.status === "fulfilled" ? crawl.value : null;
     const sr = semrush.status === "fulfilled" ? semrush.value : null;
     const pl = places.status === "fulfilled" ? places.value : null;
+
+    console.log(`[Audit] Provider results: ps=${!!ps}, cr=${!!cr}, sr=${!!sr}, pl=${!!pl}`);
+    console.log(`[Audit] Provider statuses: ps=${pageSpeed.status}, cr=${crawl.status}, sr=${semrush.status}, pl=${places.status}`);
+    if (pageSpeed.status === "rejected") console.error(`[Audit] PageSpeed error: ${pageSpeed.reason?.message}`);
+    if (crawl.status === "rejected") console.error(`[Audit] Crawl error: ${crawl.reason?.message}`);
+    if (semrush.status === "rejected") console.error(`[Audit] SEMrush error: ${semrush.reason?.message}`);
+    if (places.status === "rejected") console.error(`[Audit] Places error: ${places.reason?.message}`);
+    if (sr) console.log(`[Audit] SEMrush data: da=${JSON.stringify(sr.domainAuthority)}, bl=${!!sr.backlinks}, kw=${sr.topKeywords?.length}, comp=${sr.competitors?.length}`);
+    if (pl) console.log(`[Audit] Places data: found=${pl.found}, hasData=${!!pl.data}, name=${pl.data?.name}`);
 
     // Also fetch sitemap and robots.txt
     const [sitemapCheck, robotsCheck] = await Promise.allSettled([

@@ -5,6 +5,8 @@ import { fetchSemrush } from "../../providers/semrush.js";
 import { fetchPlacesData } from "../../providers/places.js";
 import { buildWebPerfMetrics, buildSEOMetrics, buildKeywords, buildContentMetrics, buildSocialMetrics, buildAISEOMetrics, buildEntityMetrics, checkUrl } from "../route.js";
 
+export const maxDuration = 60;
+
 export async function GET(request, { params }) {
   const { id } = params;
 
