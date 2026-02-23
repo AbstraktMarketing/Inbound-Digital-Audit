@@ -377,31 +377,46 @@ function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
 }
 
 /* ── Shared Components ── */
+function scoreTier(score) {
+  if (score >= 90) return { label: "Industry Leader", color: brand.talentTeal };
+  if (score >= 70) return { label: "Competitive", color: brand.inboundOrange };
+  if (score >= 50) return { label: "Growth Opportunity", color: brand.inboundOrange };
+  return { label: "High Risk", color: brand.pipelineRed };
+}
+
 function ScoreRing({ score, size = 130, t }) {
   const r = (size - 14) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
   const color = score >= 90 ? brand.talentTeal : score >= 70 ? brand.inboundOrange : brand.pipelineRed;
   const glowColor = score >= 90 ? "rgba(66,191,186,0.25)" : score >= 70 ? "rgba(244,111,10,0.25)" : "rgba(255,33,15,0.25)";
+  const tier = scoreTier(score);
   return (
-    <div style={{ position: "relative", width: size, height: size, margin: "0 auto 14px" }}>
+    <div style={{ position: "relative", width: size, height: size + 22, margin: "0 auto 14px" }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)", filter: `drop-shadow(0 0 12px ${glowColor})` }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={t.cardBorder} strokeWidth="9" />
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="9"
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
       </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, width: size, height: size, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <span style={{ fontSize: size * 0.3, fontWeight: 700, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{score}</span>
         <span style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 500 }}>/ 100</span>
       </div>
+      <div style={{
+        position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+        padding: "3px 10px", borderRadius: 6, whiteSpace: "nowrap",
+        background: `${tier.color}12`, border: `1px solid ${tier.color}25`,
+        fontSize: 10, fontWeight: 700, color: tier.color, letterSpacing: 0.5,
+      }}>{tier.label}</div>
     </div>
   );
 }
 
 function statusLabel(s) {
-  if (s === "good") return "✓ Pass";
-  return "⚠️ Needs Attention";
+  if (s === "good") return "\u2705 Healthy";
+  if (s === "warning") return "\uD83D\uDC40 Opportunity";
+  return "\uD83D\uDC4B Needs Attention";
 }
 
 function impactBadge(impact) {
@@ -434,43 +449,43 @@ function generateTabSummary(metrics, tabType) {
 
   /* ── Risk label humanizer ── */
   const riskPhrases = {
-    "Site Health": "Site health inconsistencies",
-    "Page Speed & Performance": "Page speed bottlenecks",
-    "Image Optimization": "Image optimization gaps",
-    "Alt Tags": "Missing accessibility tags",
-    "Organic Keywords": "Limited keyword coverage",
-    "Branded Traffic Share": "Low brand search demand",
-    "Indexation Efficiency": "Indexation gaps",
-    "Domain Authority Score": "Weak domain authority",
-    "Backlink Profile": "Underdeveloped backlink profile",
-    "Content Freshness": "Stale publishing cadence",
-    "Meta Descriptions": "Incomplete meta descriptions",
-    "Bounce Rate": "High visitor drop-off",
-    "Word Count (top pages)": "Thin page content",
-    "Internal Links / Page": "Weak internal linking",
-    "Duplicate Content": "Duplicate content conflicts",
-    "Readability Score": "Complex readability",
-    "Content-to-Code Ratio": "Low content-to-code ratio",
-    "Open Graph Tags": "Incomplete social sharing tags",
-    "Twitter Cards": "Missing Twitter Card markup",
-    "Social Share Buttons": "No social sharing tools",
-    "Brand Consistency": "Inconsistent brand presence",
-    "AI Search Mentions": "Low AI search visibility",
-    "Structured Data": "Incomplete structured data",
-    "Entity Recognition": "Weak entity recognition",
-    "Content Depth": "Below-average content depth",
-    "FAQ Schema": "Missing FAQ schema",
-    "Topical Authority": "Limited topical authority",
-    "Citation Likelihood": "Low AI citation potential",
-    "Knowledge Panel": "Missing Knowledge Panel",
-    "NAP Consistency": "Citation inconsistencies",
-    "Schema Markup": "Limited schema coverage",
-    "Knowledge Graph": "No Knowledge Graph presence",
-    "Entity Associations": "Weak entity associations",
-    "Brand SERP Control": "Limited branded search control",
-    "Wikidata": "Missing Wikidata entry",
-    "Same-As Links": "Insufficient identity links",
-    "Entity Descriptions": "Inconsistent entity descriptions",
+    "Site Health": "Technical issues driving away visitors",
+    "Page Speed & Performance": "Slow pages costing you leads",
+    "Image Optimization": "Heavy images slowing conversions",
+    "Alt Tags": "Missing image tags hurting accessibility",
+    "Organic Keywords": "Competitors capturing your buyers' searches",
+    "Branded Traffic Share": "Weak brand recognition in search",
+    "Indexation Efficiency": "Pages invisible to search engines",
+    "Domain Authority Score": "Low competitive strength online",
+    "Backlink Profile": "Thin endorsement signals from other sites",
+    "Content Freshness": "Stale content making you look inactive",
+    "Meta Descriptions": "Weak search result copy losing clicks",
+    "Bounce Rate": "Visitors leaving without converting",
+    "Word Count (top pages)": "Thin pages that don't convince buyers",
+    "Internal Links / Page": "Poor navigation costing page views",
+    "Duplicate Content": "Duplicate pages confusing search engines",
+    "Readability Score": "Complex content limiting your audience",
+    "Content-to-Code Ratio": "Pages heavy on code, light on substance",
+    "Open Graph Tags": "Broken social sharing previews",
+    "Twitter Cards": "Missing X/Twitter card previews",
+    "Social Share Buttons": "No way for visitors to amplify your content",
+    "Brand Consistency": "Inconsistent brand eroding trust",
+    "AI Search Mentions": "Invisible in AI-powered search",
+    "Structured Data": "Search engines can't fully understand your business",
+    "Entity Recognition": "Google doesn't recognize your brand",
+    "Content Depth": "Content too shallow for AI citations",
+    "FAQ Schema": "Missing FAQ rich results opportunity",
+    "Topical Authority": "Not seen as an expert in your space",
+    "Citation Likelihood": "AI tools unlikely to reference you",
+    "Knowledge Panel": "No Knowledge Panel on branded searches",
+    "NAP Consistency": "Conflicting business info across directories",
+    "Schema Markup": "Incomplete business data for search engines",
+    "Knowledge Graph": "Missing from Google's Knowledge Graph",
+    "Entity Associations": "Weak connections between your brand properties",
+    "Brand SERP Control": "Competitors appearing on your branded searches",
+    "Wikidata": "No Wikidata entry for your business",
+    "Same-As Links": "Disconnected social profiles",
+    "Entity Descriptions": "Inconsistent business descriptions online",
   };
   const humanizeRisk = label => riskPhrases[label] || label;
   const risks = poor.filter(m => m.impact === "high" || m.impact === "medium").map(m => humanizeRisk(m.label));
@@ -484,45 +499,45 @@ function generateTabSummary(metrics, tabType) {
   const summaries = {
     website: {
       summary: isHealthy
-        ? "Your site has a strong technical foundation. Performance, security, and mobile optimization are in good shape — continue monitoring to maintain this baseline."
+        ? "Your site delivers a fast, secure experience that keeps visitors engaged and converts. This technical edge means more of your ad spend and content investment turns into pipeline."
         : hasFoundation
-        ? `Your site has a stable technical foundation. However, ${isCritical ? "several" : "a few"} high-impact issues are reducing crawl efficiency, slowing load times, and limiting search performance.`
-        : `Your site's technical health needs immediate attention. ${poor.length} critical issues are undermining crawlability, speed, and user experience — the building blocks of search visibility.`,
+        ? `Your site has a stable base, but ${isCritical ? "several" : "a few"} performance issues are costing you visitors. Slow pages and crawl problems mean prospects are bouncing before they ever see your offer.`
+        : `Your site's technical issues are actively losing you business. ${poor.length} critical problems are driving prospects to competitors with faster, cleaner experiences.`,
       opportunity: isHealthy
-        ? "Maintain current technical health and monitor Core Web Vitals for any regression."
-        : `Addressing ${highImpactFailing.length > 0 ? "these" : "the"} high-impact issues could significantly improve load speed, crawlability, and conversion performance.`,
+        ? "Protect this advantage \u2014 monitor Core Web Vitals to stay ahead of competitors who are catching up."
+        : "Fixing these issues can recover lost visitors, reduce cost-per-lead, and turn your website into the pipeline engine it should be.",
     },
     seo: {
       summary: isHealthy
-        ? "Your search visibility fundamentals are solid. Keyword coverage, indexation, and technical signals are performing well — focus on expanding into competitive keyword territory."
+        ? "You're capturing high-intent search traffic and converting searchers who are ready to buy. This organic pipeline reduces dependency on paid channels and lowers acquisition costs."
         : hasFoundation
-        ? `Your technical SEO base is in place, but limited keyword coverage and weak domain authority are constraining organic growth. There's significant room to expand visibility.`
-        : `Multiple search visibility gaps are limiting organic reach. Keyword coverage, authority signals, and indexation issues are preventing your site from competing effectively.`,
-      opportunity: "Expanding keyword targeting and strengthening backlink quality can unlock significant organic traffic growth.",
+        ? "Your SEO foundation is in place, but competitors are claiming the high-value keywords you're missing. Every keyword gap is a prospect choosing them over you."
+        : "Your search visibility gaps mean buyers can't find you when they're actively looking to purchase. Competitors are capturing this demand instead.",
+      opportunity: "Own page one for high-intent keywords \u2014 these searchers convert at 3-5x the rate of outbound leads.",
     },
     content: {
       summary: isHealthy
-        ? "Your content strategy is performing well. Publishing cadence, engagement metrics, and on-page optimization are healthy — continue refining for competitive advantage."
+        ? "Your content is working as a sales asset \u2014 attracting qualified visitors, keeping them engaged, and building the trust that shortens sales cycles."
         : hasFoundation
-        ? `Your content infrastructure is in place, but thin content, high bounce rates, and inconsistent publishing are weakening engagement and search performance.`
-        : `Content performance is significantly underperforming. Shallow pages, stale publishing, and engagement issues are limiting your ability to rank and convert visitors.`,
-      opportunity: "A consistent content strategy with deeper, more engaging pages can dramatically improve rankings and time on site.",
+        ? "Your content infrastructure exists, but thin pages and stale publishing mean you're leaving revenue on the table. Prospects aren't finding the answers they need to move forward."
+        : "Content gaps are a direct revenue leak. Without fresh, in-depth pages, prospects leave your site unconvinced \u2014 and find what they need on a competitor's blog.",
+      opportunity: "Consistent, expert-level content turns your website into a 24/7 sales rep that qualifies leads before your team ever picks up the phone.",
     },
     social: {
       summary: isHealthy
-        ? "Your social and AI visibility signals are in a strong position. Continue building structured data and platform presence to stay ahead of the curve."
+        ? "Your brand shows up consistently across social and AI search surfaces. This multi-channel presence builds the familiarity that makes outreach warmer and close rates higher."
         : hasFoundation
-        ? `You have some social foundation in place, but low AI visibility and inconsistent platform presence are limiting brand discovery across modern search surfaces.`
-        : `AI and social visibility are critically low. Your brand is largely invisible to AI-powered search engines and underperforming across social discovery channels.`,
-      opportunity: "Building structured data and active social signals will increase visibility in AI search results and social discovery.",
+        ? "You have some social presence, but gaps in AI visibility and inconsistent branding mean you're invisible in the channels where modern buyers do research."
+        : "Your brand is largely invisible across social and AI search. When prospects research your company before a call, they're finding very little \u2014 and that kills trust.",
+      opportunity: "Capture buyers before competitors do \u2014 show up in the AI answers and social feeds where your prospects spend their time.",
     },
     local: {
       summary: isHealthy
-        ? "Your local search presence is strong. Verified listings, reviews, and local signals are well-established — focus on deepening entity authority for competitive advantage."
+        ? "Your local search presence is a competitive moat. Verified listings, strong reviews, and entity signals mean you show up when nearby buyers are ready to act."
         : hasFoundation
-        ? `You've built a solid local search foundation. However, entity signal gaps and limited structured data are holding back brand visibility and Knowledge Panel eligibility.`
-        : `Multiple local search signals need attention. Weak entity recognition, citation inconsistencies, and missing structured data are reducing local visibility and brand authority.`,
-      opportunity: "Strengthening entity signals can improve branded search control and AI visibility.",
+        ? "Your local foundation is solid, but entity gaps mean Google doesn't fully understand your business. This limits map pack appearances and branded search control."
+        : "Weak local signals are handing nearby customers to competitors. Missing listings, thin reviews, and incomplete entity data mean you're invisible in local search.",
+      opportunity: "Turn branded searches into a controlled traffic funnel \u2014 own your local map pack and Knowledge Panel to capture high-intent local buyers.",
     },
   };
 
@@ -543,11 +558,11 @@ function getLocalLiftScenario(metrics) {
 
   if (highRiskCount >= 3) {
     return {
-      badge: "🔴 High Risk",
+      badge: "\uD83D\uDD34 High Risk",
       badgeColor: brand.pipelineRed,
-      headline: "Your Local Authority Needs Immediate Attention",
-      body: "Several high-impact entity signals are limiting how Google understands and ranks your business locally.",
-      subBody: "Without structured data depth and entity consistency, your brand visibility and map rankings may suffer.",
+      headline: "Local Buyers Can't Find You",
+      body: "Critical gaps in your local presence mean nearby customers are finding competitors instead of you.",
+      subBody: "Without proper entity data and structured markup, Google can't confidently show your business in local results.",
       listLabel: "Priority Fixes",
       items: ["Establish Knowledge Graph presence", "Expand schema markup coverage", "Correct citation inconsistencies", "Strengthen entity associations"],
     };
@@ -556,8 +571,8 @@ function getLocalLiftScenario(metrics) {
     return {
       badge: "🟠 Moderate Opportunity",
       badgeColor: brand.inboundOrange,
-      headline: "Your Foundation Is Strong — Now Let's Optimize",
-      body: "You've built a solid local presence. Now it's time to strengthen entity signals and structured data to increase authority and branded search control.",
+      headline: "Your Foundation Is Strong \u2014 Now Dominate Local Search",
+      body: "You've built a solid local presence. Now it's time to turn that into a competitive moat \u2014 own your map pack, control your branded searches, and capture high-intent local buyers.",
       subBody: null,
       listLabel: "Growth Opportunities",
       items: ["Expand structured schema types", "Improve brand SERP control", "Strengthen entity associations", "Increase authoritative citations"],
