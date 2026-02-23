@@ -98,9 +98,11 @@ function toStatus(val, goodThresh, warnThresh, invert = false) {
 
 function calcScore(metrics) {
   const sv = { good: 100, warning: 50, poor: 0 };
+  const impactWeight = { high: 3, medium: 1.5, foundational: 1 };
   let totalWeight = 0, totalScore = 0;
   metrics.forEach(m => {
-    const w = m.weighted ? 1.25 : 1;
+    const base = impactWeight[m.impact] || 1;
+    const w = m.weighted ? base * 1.25 : base;
     totalWeight += w;
     totalScore += w * (sv[m.status] ?? 0);
   });
