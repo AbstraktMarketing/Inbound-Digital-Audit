@@ -15,17 +15,54 @@ export async function fetchCrawlData(url) {
     } catch (e2) { throw new Error(`Could not reach ${url}: ${e2.message}`); }
   }
 
-  // Fetch /blog page for content freshness
+  // Fetch blog/content page for freshness — try multiple common paths
   let blogHtml = null;
-  try {
-    const blogRes = await fetch(new URL("/blog", fullUrl).href, { signal: AbortSignal.timeout(8000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
-    if (blogRes.ok) blogHtml = await blogRes.text();
-  } catch {}
+  let blogPath = null;
+  const blogPaths = ["/blog", "/resources", "/insights", "/news", "/articles", "/posts", "/content"];
 
-  return parseCrawlData(html, headers, sslValid, fullUrl, blogHtml);
+  // Also scan homepage links for blog-like paths
+  const homepageLinkRegex = /<a\s+[^>]*href\s*=\s*["']([^"']*(?:blog|news|insights|resources|articles|posts)[^"']*)["']/gi;
+  let hlMatch;
+  while ((hlMatch = homepageLinkRegex.exec(html)) !== null) {
+    try {
+      const href = hlMatch[1];
+      let pathname;
+      if (href.startsWith("/")) { pathname = href.split("?")[0].split("#")[0]; }
+      else if (href.startsWith("http")) { pathname = new URL(href).pathname; }
+      else continue;
+      // Only add root-level blog paths like /blog, /insights (not individual posts)
+      const segments = pathname.split("/").filter(Boolean);
+      if (segments.length === 1 && !blogPaths.includes("/" + segments[0])) {
+        blogPaths.push("/" + segments[0]);
+      }
+    } catch {}
+  }
+
+  // Try each path until we find one that returns content
+  for (const path of blogPaths) {
+    try {
+      const blogRes = await fetch(new URL(path, fullUrl).href, {
+        signal: AbortSignal.timeout(6000), redirect: "follow",
+        headers: { "User-Agent": "AbstraktAuditBot/1.0" },
+      });
+      if (blogRes.ok) {
+        const text = await blogRes.text();
+        // Quick check: does it look like a content listing page? (has multiple links/articles)
+        if (text.length > 2000) {
+          blogHtml = text;
+          blogPath = path;
+          console.log(`[Crawl] Blog found at ${path} (${text.length} chars)`);
+          break;
+        }
+      }
+    } catch {}
+  }
+  if (!blogHtml) console.log(`[Crawl] No blog page found. Tried: ${blogPaths.join(", ")}`);
+
+  return parseCrawlData(html, headers, sslValid, fullUrl, blogHtml, blogPath);
 }
 
-function parseCrawlData(html, headers, sslValid, url, blogHtml) {
+function parseCrawlData(html, headers, sslValid, url, blogHtml, blogPath) {
   const urlDomain = new URL(url).hostname;
 
   // ── Images & Alt Tags (with specific URLs) ──
@@ -114,20 +151,69 @@ function parseCrawlData(html, headers, sslValid, url, blogHtml) {
   });
 
   // ── Blog / Content Freshness ──
-  const hasBlog = html.toLowerCase().includes("/blog") || html.toLowerCase().includes("/news") || html.toLowerCase().includes("/articles");
+  const lcHtml = html.toLowerCase();
+  const hasBlog = !!blogHtml || lcHtml.includes("/blog") || lcHtml.includes("/news") || lcHtml.includes("/articles") || lcHtml.includes("/resources") || lcHtml.includes("/insights");
   let lastBlogPost = null, blogPostTitles = [];
-  if (blogHtml) {
-    const datePatterns = [
-      /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi,
-      /\d{4}-\d{2}-\d{2}/g,
-    ];
+
+  // Parse dates from blog page (or homepage as fallback)
+  const htmlToParse = blogHtml || html;
+  if (htmlToParse) {
     const dates = [];
-    for (const pattern of datePatterns) {
-      (blogHtml.match(pattern) || []).forEach(d => { try { const p = new Date(d); if (!isNaN(p) && p < new Date()) dates.push(p); } catch {} });
+
+    // 1. <time datetime="..."> attributes (most reliable — used by WordPress, HubSpot, etc.)
+    const timeRegex = /<time[^>]*datetime\s*=\s*["']([^"']+)["'][^>]*>/gi;
+    let timeMatch;
+    while ((timeMatch = timeRegex.exec(htmlToParse)) !== null) {
+      try { const p = new Date(timeMatch[1]); if (!isNaN(p) && p < new Date() && p.getFullYear() > 2000) dates.push(p); } catch {}
     }
-    if (dates.length > 0) { dates.sort((a, b) => b - a); lastBlogPost = dates[0].toISOString(); }
+
+    // 2. JSON-LD datePublished / dateModified (structured data)
+    const ldRegex = /"(?:datePublished|dateModified|dateCreated)"\s*:\s*"([^"]+)"/gi;
+    let ldMatch;
+    while ((ldMatch = ldRegex.exec(htmlToParse)) !== null) {
+      try { const p = new Date(ldMatch[1]); if (!isNaN(p) && p < new Date() && p.getFullYear() > 2000) dates.push(p); } catch {}
+    }
+
+    // 3. <meta> article dates (og:article:published_time, article:modified_time)
+    const metaDateRegex = /content\s*=\s*["'](\d{4}-\d{2}-\d{2}[T\s]?\d{0,2}:?\d{0,2}:?\d{0,2}[^"']*)["'][^>]*(?:property|name)\s*=\s*["'](?:article:published_time|article:modified_time|og:updated_time)["']/gi;
+    const metaDateRegex2 = /(?:property|name)\s*=\s*["'](?:article:published_time|article:modified_time|og:updated_time)["'][^>]*content\s*=\s*["']([^"']+)["']/gi;
+    for (const rx of [metaDateRegex, metaDateRegex2]) {
+      let mm;
+      while ((mm = rx.exec(htmlToParse)) !== null) {
+        try { const p = new Date(mm[1]); if (!isNaN(p) && p < new Date() && p.getFullYear() > 2000) dates.push(p); } catch {}
+      }
+    }
+
+    // 4. Visible text dates — multiple formats
+    const datePatterns = [
+      // "January 15, 2025" or "January 15 2025"
+      /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/gi,
+      // "Jan 15, 2025" or "Jan 15 2025"
+      /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/gi,
+      // "15 January 2025"
+      /\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}/gi,
+      // "2025-01-15" (ISO)
+      /\d{4}-\d{2}-\d{2}/g,
+      // "01/15/2025" or "1/15/2025"
+      /\d{1,2}\/\d{1,2}\/\d{4}/g,
+    ];
+    for (const pattern of datePatterns) {
+      (htmlToParse.match(pattern) || []).forEach(d => {
+        try { const p = new Date(d); if (!isNaN(p) && p < new Date() && p.getFullYear() > 2000) dates.push(p); } catch {}
+      });
+    }
+
+    if (dates.length > 0) {
+      dates.sort((a, b) => b - a);
+      lastBlogPost = dates[0].toISOString();
+      console.log(`[Crawl] Found ${dates.length} dates. Most recent: ${lastBlogPost} (from ${blogPath || "homepage"})`);
+    } else {
+      console.log(`[Crawl] No dates found on ${blogPath || "homepage"}`);
+    }
+
+    // Extract post titles from h2/h3 tags
     const ptRegex = /<(?:h2|h3)[^>]*>([\s\S]*?)<\/(?:h2|h3)>/gi; let pt;
-    while ((pt = ptRegex.exec(blogHtml)) !== null) {
+    while ((pt = ptRegex.exec(blogHtml || "")) !== null) {
       const text = pt[1].replace(/<[^>]+>/g, "").trim();
       if (text.length > 10 && text.length < 200) blogPostTitles.push(text);
     }
@@ -143,7 +229,7 @@ function parseCrawlData(html, headers, sslValid, url, blogHtml) {
     openGraph: { title: !!ogTitle, description: !!ogDesc, image: !!ogImage, complete: !!ogTitle && !!ogDesc && !!ogImage, missingTags: missingOg, actualTitle: ogTitle },
     twitterCards: { card: !!twitterCard, title: !!twitterTitle, image: !!twitterImage, complete: !!twitterCard && !!twitterTitle, missingTags: missingTwitter },
     content: { ratio: contentRatio, wordCount, internalLinks: internalLinks.length, totalLinks: allLinks.length, emptyLinks: emptyLinks.length, emptyLinkExamples: emptyLinks.slice(0, 3) },
-    blog: { detected: hasBlog, lastPostDate: lastBlogPost, lastPostDaysAgo: lastBlogPost ? Math.round((Date.now() - new Date(lastBlogPost).getTime()) / 86400000) : null, recentTitles: blogPostTitles },
+    blog: { detected: hasBlog, path: blogPath || null, lastPostDate: lastBlogPost, lastPostDaysAgo: lastBlogPost ? Math.round((Date.now() - new Date(lastBlogPost).getTime()) / 86400000) : null, recentTitles: blogPostTitles },
   };
 }
 

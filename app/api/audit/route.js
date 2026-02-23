@@ -388,13 +388,17 @@ function buildContentMetrics(cr, ps) {
   const hasH1 = cr?.meta?.hasH1 ?? null;
   const multiH1 = cr?.meta?.multipleH1 ?? false;
 
+  const blogPath = cr?.blog?.path || null;
+
   // Blog freshness findings
   const blogFindings = [];
+  if (blogPath) blogFindings.push(`Content page found at: ${blogPath}`);
   if (lastPostDate) {
     const date = new Date(lastPostDate);
     blogFindings.push(`Last detected post date: ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} (${lastPostDays} days ago)`);
   }
   if (blogTitles.length > 0) blogTitles.forEach(t => blogFindings.push(`Recent post: "${t}"`));
+  if (hasBlog && !lastPostDate) blogFindings.push("Blog page detected but no post dates could be extracted \u2014 may use JavaScript rendering");
 
   // Meta description findings
   const metaFindings = [];
@@ -416,19 +420,23 @@ function buildContentMetrics(cr, ps) {
   const freshStatus = lastPostDays !== null ? (lastPostDays <= 14 ? "good" : lastPostDays <= 45 ? "warning" : "poor") : "warning";
   const metaStatus = metaDesc ? (metaLen >= 120 && metaLen <= 160 ? "good" : "warning") : "poor";
 
+  const blogDetected = hasBlog === true;
   const metrics = [
     {
-      label: "Blog Page Exists", value: hasBlog === true ? "Yes" : hasBlog === false ? "Not Found" : "Checking...",
-      status: hasBlog ? "good" : "poor", detail: hasBlog ? "A dedicated blog/news page was detected." : "No blog section found on the site.",
+      label: "Blog Page Exists", value: blogDetected ? "Yes" : hasBlog === false ? "Not Found" : "Checking...",
+      status: blogDetected ? "good" : "poor",
+      detail: blogDetected ? `Content page detected at ${blogPath || "/blog"}.` : "No blog, news, or resource section found on this site.",
       weighted: true, impact: "foundational",
-      why: "A blog is the foundation for content marketing.", fix: hasBlog ? "No action needed." : "Create a blog section for ongoing content.",
-      expectedImpact: "Provides infrastructure for ongoing content strategy.", difficulty: hasBlog ? "N/A" : "Medium",
+      why: "A blog is the foundation for content marketing.", fix: blogDetected ? "No action needed." : "Create a blog section for ongoing content.",
+      expectedImpact: "Provides infrastructure for ongoing content strategy.", difficulty: blogDetected ? "N/A" : "Medium",
     },
     {
       label: "Content Freshness",
       value: lastPostDays !== null ? `${lastPostDays} days since last post` : "Estimated",
       status: freshStatus,
-      detail: lastPostDays !== null ? (lastPostDays <= 14 ? "Content is being published regularly." : lastPostDays <= 45 ? "Content is aging \u2014 search engines favor active publishers." : "Stale content signals an inactive site to search engines.") : "Full freshness analysis requires sitemap crawl.",
+      detail: lastPostDays !== null
+        ? (lastPostDays <= 14 ? "Content is being published regularly." : lastPostDays <= 45 ? "Content is aging \u2014 search engines favor active publishers." : "Stale content signals an inactive site to search engines.")
+        : (blogDetected ? "Blog detected but no post dates could be extracted. Site may use JavaScript rendering." : "No blog page found to analyze content freshness."),
       weighted: true, impact: "high", estimated: lastPostDays === null, findings: blogFindings,
       why: "Stale content signals an inactive business. Prospects researching you see outdated pages and move on to competitors who look alive.",
       fix: "Publish at least 2x/month with keyword-targeted content that answers your buyers' real questions.",
