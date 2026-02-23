@@ -47,7 +47,6 @@ export async function GET(request) {
       },
       provider: providerError ? { error: providerError } : {
         domainAuthority: providerResult?.domainAuthority,
-        organic: providerResult?.organic,
         backlinks: providerResult?.backlinks,
         topKeywordsCount: providerResult?.topKeywords?.length || 0,
         competitorsCount: providerResult?.competitors?.length || 0,

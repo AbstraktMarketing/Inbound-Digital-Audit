@@ -66,7 +66,7 @@ export async function POST(request) {
     if (!ps) pending.push("pageSpeed");
     if (!cr) pending.push("crawl");
     // SEMrush can return an object with all null properties — treat as missing
-    const srHasData = sr && (sr.domainAuthority || sr.organic || sr.backlinks || sr.topKeywords?.length > 0);
+    const srHasData = sr && (sr.domainAuthority || sr.backlinks || sr.topKeywords?.length > 0);
     if (!srHasData) pending.push("semrush");
     // Places can return { found: false, data: null } — treat as missing
     const plHasData = pl && pl.found === true && pl.data;
@@ -236,15 +236,14 @@ function buildWebPerfMetrics(ps, cr) {
 
 function buildSEOMetrics(sr, hasSitemap, hasRobots) {
   const da = sr?.domainAuthority;
-  const organic = sr?.organic ?? sr?.domainAuthority;
   const bl = sr?.backlinks;
-  const kwCount = organic?.organicKeywords ?? da?.organicKeywords ?? null;
-  const traffic = organic?.organicTraffic ?? da?.organicTraffic ?? null;
+  const kwCount = da?.organicKeywords ?? null;
+  const traffic = da?.organicTraffic ?? null;
   const totalBacklinks = bl?.totalBacklinks ?? null;
   const refDomains = bl?.referringDomains ?? null;
   const competitors = sr?.competitors || [];
   const topKw = sr?.topKeywords || [];
-  const trafficCost = organic?.organicCost ?? da?.organicCost ?? null;
+  const trafficCost = da?.organicCost ?? null;
 
   const rank = da?.rank ?? 0;
   const estimatedDA = rank > 0 ? Math.min(100, Math.max(1, Math.round(100 - Math.log10(rank) * 15))) : null;

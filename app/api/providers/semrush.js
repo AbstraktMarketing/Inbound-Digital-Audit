@@ -9,22 +9,19 @@ export async function fetchSemrush(domain) {
   const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
   console.log(`[SEMrush] Fetching data for domain: ${cleanDomain}`);
 
-  const [domainRanks, organicKeywords, backlinks, topKeywords, competitors] = await Promise.allSettled([
+  const [domainRanks, backlinks, topKeywords, competitors] = await Promise.allSettled([
     fetchDomainRanks(cleanDomain, apiKey),
-    fetchOrganicOverview(cleanDomain, apiKey),
     fetchBacklinksOverview(cleanDomain, apiKey),
     fetchTopKeywords(cleanDomain, apiKey),
     fetchCompetitors(cleanDomain, apiKey),
   ]);
 
-  console.log(`[SEMrush] Results for ${cleanDomain}: ranks=${domainRanks.status}, organic=${organicKeywords.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}`);
+  console.log(`[SEMrush] Results for ${cleanDomain}: ranks=${domainRanks.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}`);
   if (domainRanks.status === "rejected") console.error(`[SEMrush] domainRanks error: ${domainRanks.reason?.message}`);
-  if (organicKeywords.status === "rejected") console.error(`[SEMrush] organic error: ${organicKeywords.reason?.message}`);
   if (backlinks.status === "rejected") console.error(`[SEMrush] backlinks error: ${backlinks.reason?.message}`);
 
   return {
     domainAuthority: domainRanks.status === "fulfilled" ? domainRanks.value : null,
-    organic: organicKeywords.status === "fulfilled" ? organicKeywords.value : null,
     backlinks: backlinks.status === "fulfilled" ? backlinks.value : null,
     topKeywords: topKeywords.status === "fulfilled" ? topKeywords.value : [],
     competitors: competitors.status === "fulfilled" ? competitors.value : [],
@@ -47,22 +44,6 @@ async function fetchDomainRanks(domain, apiKey) {
     organicCost: parseFloat(data["Organic Cost"] || data["Oc"]) || 0,
     adwordsKeywords: parseInt(data["Adwords Keywords"] || data["Ad"]) || 0,
     adwordsTraffic: parseInt(data["Adwords Traffic"] || data["At"]) || 0,
-  };
-}
-
-async function fetchOrganicOverview(domain, apiKey) {
-  const url = `${SEMRUSH_BASE}/?type=domain_organic&key=${apiKey}&export_columns=Dn,Nq,Or,Ot,Oc,Om&domain=${domain}&database=us&display_limit=1`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  const text = await res.text();
-  if (text.includes("ERROR")) throw new Error(`SEMrush domain_organic: ${text}`);
-  const lines = text.trim().split("\n");
-  if (lines.length < 2) return null;
-  const data = parseCSV(lines);
-  console.log(`[SEMrush] organic headers: ${Object.keys(data).join(", ")}`);
-  return {
-    organicKeywords: parseInt(data["Organic Keywords"] || data["Or"] || data["Number of Results"]) || 0,
-    organicTraffic: parseInt(data["Organic Traffic"] || data["Ot"]) || 0,
-    organicCost: parseFloat(data["Organic Cost"] || data["Oc"]) || 0,
   };
 }
 

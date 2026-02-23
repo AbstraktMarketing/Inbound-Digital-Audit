@@ -42,7 +42,7 @@ export async function GET(request, { params }) {
     const cr = results[1].status === "fulfilled" && results[1].value ? results[1].value : null;
     // SEMrush can return an object with all nulls — check for real content
     const srRaw = results[2].status === "fulfilled" ? results[2].value : null;
-    const sr = srRaw && (srRaw.domainAuthority || srRaw.organic || srRaw.backlinks || srRaw.topKeywords?.length > 0) ? srRaw : null;
+    const sr = srRaw && (srRaw.domainAuthority || srRaw.backlinks || srRaw.topKeywords?.length > 0) ? srRaw : null;
     // Places can return { found: false } — check for actual data
     const plRaw = results[3].status === "fulfilled" ? results[3].value : null;
     const pl = plRaw && plRaw.found === true && plRaw.data ? plRaw : null;
