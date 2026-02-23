@@ -12,9 +12,11 @@ const accentAlt = brand.cloudBlue;
 export default function AuditForm({ onSubmit, theme: t }) {
   const [form, setForm] = React.useState({
     companyName: "", url: "", contactName: "", email: "", phone: "",
+    competitors: ["", "", ""],
   });
   const [errors, setErrors] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
+  const [showCompetitors, setShowCompetitors] = React.useState(false);
 
   function validate() {
     const e = {};
@@ -33,12 +35,21 @@ export default function AuditForm({ onSubmit, theme: t }) {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setSubmitting(true);
-    onSubmit(form);
+    const cleaned = { ...form, competitors: form.competitors.map(c => c.trim()).filter(Boolean) };
+    onSubmit(cleaned);
   }
 
   function update(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+  }
+
+  function updateCompetitor(index, value) {
+    setForm(prev => {
+      const c = [...prev.competitors];
+      c[index] = value;
+      return { ...prev, competitors: c };
+    });
   }
 
   const inputStyle = (field) => ({
@@ -135,6 +146,33 @@ export default function AuditForm({ onSubmit, theme: t }) {
               style={inputStyle("email")}
             />
             {errors.email && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.email}</div>}
+          </div>
+
+          {/* Competitor toggle */}
+          <div>
+            <button type="button" onClick={() => setShowCompetitors(!showCompetitors)} style={{
+              display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+              color: accent, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0,
+              letterSpacing: 0.3,
+            }}>
+              <span style={{ fontSize: 10, transition: "transform 0.2s", transform: showCompetitors ? "rotate(90deg)" : "rotate(0deg)" }}>&#9654;</span>
+              Add Competitors (optional)
+            </button>
+            {showCompetitors && (
+              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.5 }}>
+                  Add up to 3 competitor websites to compare against in your audit.
+                </div>
+                {[0, 1, 2].map(i => (
+                  <input
+                    key={i} type="text" value={form.competitors[i]}
+                    placeholder={`Competitor ${i + 1} URL (e.g. competitor.com)`}
+                    onChange={e => updateCompetitor(i, e.target.value)}
+                    style={{ ...inputStyle("competitors"), padding: "11px 14px", fontSize: 13 }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           <button

@@ -718,6 +718,124 @@ function getWebPerfScenario(metrics) {
   };
 }
 
+function GrowthRoadmap({ tabType, t }) {
+  const roadmaps = {
+    website: [
+      { month: "Month 1", title: "Technical Fixes & Speed", items: ["Resolve crawl errors and broken links", "Compress images and implement lazy loading", "Fix render-blocking resources", "Enable browser caching"] },
+      { month: "Month 2", title: "Core Web Vitals", items: ["Optimize Largest Contentful Paint", "Reduce Total Blocking Time", "Improve mobile performance scores", "Implement CDN and HTTP/2 optimizations"] },
+      { month: "Month 3", title: "Conversion Optimization", items: ["A/B test page layouts for conversions", "Optimize CTAs above the fold", "Reduce bounce rate on key pages", "Launch ongoing monitoring dashboard"] },
+    ],
+    seo: [
+      { month: "Month 1", title: "Technical Fixes + Speed", items: ["Fix indexation gaps and crawl issues", "Optimize site speed for Core Web Vitals", "Submit updated sitemaps", "Resolve duplicate content"] },
+      { month: "Month 2", title: "Keyword Expansion + Content", items: ["Target high-intent keyword gaps", "Publish 4-6 keyword-targeted pages", "Optimize existing page titles and metas", "Build internal linking structure"] },
+      { month: "Month 3", title: "Authority + Entity Reinforcement", items: ["Launch link-building campaigns", "Build topical authority clusters", "Strengthen entity signals and schema", "Expand to competitive keyword territory"] },
+    ],
+    content: [
+      { month: "Month 1", title: "Content Audit + Quick Wins", items: ["Audit and refresh top-traffic pages", "Fix all meta descriptions and H1 tags", "Expand thin pages to 1,200+ words", "Establish publishing calendar"] },
+      { month: "Month 2", title: "Content Engine", items: ["Publish 6-8 keyword-targeted articles", "Build pillar page + cluster strategy", "Optimize internal linking between posts", "Add FAQ schema to key pages"] },
+      { month: "Month 3", title: "Engagement + Conversion", items: ["Reduce bounce rate with better CTAs", "Add lead magnets to top content", "Implement content scoring", "Launch newsletter or content series"] },
+    ],
+    social: [
+      { month: "Month 1", title: "Foundation + Structured Data", items: ["Fix Open Graph and Twitter Card tags", "Implement full schema markup", "Establish consistent brand profiles", "Create shareable content templates"] },
+      { month: "Month 2", title: "AI Visibility", items: ["Build FAQ and How-To content for AI citation", "Optimize content structure for AI parsing", "Add BreadcrumbList and Service schema", "Create data-rich comparison pages"] },
+      { month: "Month 3", title: "Social Amplification", items: ["Launch social content calendar", "Build thought leadership presence", "Monitor AI search mentions", "Expand brand consistency across platforms"] },
+    ],
+    local: [
+      { month: "Month 1", title: "Listings + Citations", items: ["Verify and optimize Google Business Profile", "Fix NAP inconsistencies across directories", "Add LocalBusiness and FAQ schema", "Respond to all existing reviews"] },
+      { month: "Month 2", title: "Review Engine", items: ["Launch review generation strategy", "Target 5+ new reviews per month", "Implement review response workflow", "Build location-specific landing pages"] },
+      { month: "Month 3", title: "Entity Authority", items: ["Establish Knowledge Graph presence", "Create Wikidata entry", "Strengthen entity associations", "Build same-as links across properties"] },
+    ],
+  };
+  const plan = roadmaps[tabType] || roadmaps.seo;
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>
+        90-Day Growth Roadmap
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+        {plan.map((phase, i) => (
+          <div key={i} style={{
+            padding: "16px 14px", borderRadius: 10,
+            background: i === 0 ? `${accent}08` : t.hoverRow,
+            border: `1px solid ${i === 0 ? accent + "25" : t.cardBorder}`,
+          }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: i === 0 ? accent : t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>{phase.month}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>{phase.title}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {phase.items.map((item, j) => (
+                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: t.body, lineHeight: 1.4 }}>
+                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: i === 0 ? accent : t.subtle, flexShrink: 0, marginTop: 5 }} />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ROIScenario({ t, data }) {
+  // Use real organic traffic if available, otherwise estimate
+  const seoData = data?.seo || {};
+  const metrics = seoData.metrics || [];
+  const kwMetric = metrics.find(m => m.label === "Organic Keywords");
+  // Extract current traffic from detail string or estimate from keyword count
+  let currentTraffic = 0;
+  if (kwMetric?.detail) {
+    const trafficMatch = kwMetric.detail.match(/~?([\d,]+)\s*monthly/i);
+    if (trafficMatch) currentTraffic = parseInt(trafficMatch[1].replace(/,/g, ""), 10);
+  }
+  if (!currentTraffic) {
+    const kwVal = kwMetric?.value ? parseInt(String(kwMetric.value).replace(/,/g, ""), 10) : 0;
+    currentTraffic = kwVal > 0 ? Math.round(kwVal * 5) : 500;
+  }
+
+  const liftPct = 30;
+  const additionalTraffic = Math.round(currentTraffic * (liftPct / 100));
+  const conversionRate = 1.5; // 1.5% visitor-to-lead
+  const additionalLeads = Math.round(additionalTraffic * (conversionRate / 100));
+  const avgDealValue = 5000;
+  const closeRate = 15; // 15% close rate
+  const revenueImpact = Math.round(additionalLeads * avgDealValue * (closeRate / 100));
+
+  return (
+    <div style={{
+      marginBottom: 28, padding: "20px 24px", borderRadius: 10,
+      background: `linear-gradient(135deg, ${accent}06, ${brand.cloudBlue}04)`,
+      border: `1px solid ${accent}20`,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 14 }}>
+        ROI Scenario: If Organic Visibility Increased by {liftPct}%
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>
+            +{additionalTraffic.toLocaleString()}
+          </div>
+          <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Additional monthly visitors</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: accent, fontFamily: "'JetBrains Mono', monospace" }}>
+            +{additionalLeads}
+          </div>
+          <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Estimated new leads/mo</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: brand.talentTeal, fontFamily: "'JetBrains Mono', monospace" }}>
+            ${revenueImpact.toLocaleString()}
+          </div>
+          <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Estimated monthly revenue impact</div>
+        </div>
+      </div>
+      <div style={{ fontSize: 10, color: t.subtle, marginTop: 12, lineHeight: 1.5, borderTop: `1px solid ${t.cardBorder}`, paddingTop: 10 }}>
+        Based on {currentTraffic.toLocaleString()} current monthly organic visitors, {conversionRate}% visitor-to-lead rate, ${avgDealValue.toLocaleString()} avg deal value, and {closeRate}% close rate.
+      </div>
+    </div>
+  );
+}
+
 function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impact, weighted, estimated, why, fix, expectedImpact, difficulty, findings }) {
   const [open, setOpen] = React.useState(false);
   const isEven = index % 2 === 0;
@@ -1344,6 +1462,18 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
               {data.meta.url}
             </p>
           )}
+          {data.meta?.competitors && data.meta.competitors.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, lineHeight: "22px" }}>vs</span>
+              {data.meta.competitors.map((c, i) => (
+                <span key={i} style={{
+                  fontSize: 11, fontWeight: 600, color: brand.inboundOrange,
+                  background: "rgba(244,111,10,0.08)", border: "1px solid rgba(244,111,10,0.18)",
+                  padding: "3px 10px", borderRadius: 6, fontFamily: "'JetBrains Mono', monospace",
+                }}>{c}</span>
+              ))}
+            </div>
+          )}
           <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>{"Understand exactly where your online presence is driving growth \u2014 and where it\u2019s holding you back."}</p>
         </div>
 
@@ -1559,6 +1689,9 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
                     Let's build a structured plan to improve your Knowledge Graph presence and Entity authority signals.
                   </p>
 
+                  <GrowthRoadmap tabType="local" t={t} />
+                  <ROIScenario t={t} data={data} />
+
                   {/* Pricing Tiers */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
                     {[
@@ -1664,6 +1797,9 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
                       </div>
                     </>
                   )}
+
+                  <GrowthRoadmap tabType="seo" t={t} />
+                  <ROIScenario t={t} data={data} />
 
                   {/* Pricing */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
@@ -1771,11 +1907,14 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
                     </>
                   )}
 
+                  <GrowthRoadmap tabType="website" t={t} />
+                  <ROIScenario t={t} data={data} />
+
                   {/* Pricing */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
                     {[
-                      { name: "Project Website", price: "$6K–$20K+", period: "", desc: "Based on pages needed and functionality requirements", featured: true },
-                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement" },
+                      { name: "Project Website", price: "$6K\u201320K+", period: "", desc: "Based on pages needed and functionality requirements", featured: true },
+                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content \u2014 12 month engagement" },
                     ].map((tier, i) => (
                       <div key={i} style={{
                         padding: "20px 16px", borderRadius: 10, textAlign: "center",
@@ -1815,36 +1954,81 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
               );
             })() : (
             <div style={{
-              textAlign: "center", marginTop: 40, padding: "44px 24px",
-              background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14,
-              position: "relative", overflow: "hidden",
+              marginTop: 40, padding: "0", borderRadius: 14,
+              background: t.cardBg, border: `1px solid ${t.cardBorder}`,
+              overflow: "hidden",
             }}>
               <div style={{
-                position: "absolute", top: -60, right: -60, width: 200, height: 200,
-                background: "radial-gradient(circle, rgba(255,33,15,0.08) 0%, transparent 70%)", borderRadius: "50%",
-              }} />
-              <div style={{
-                position: "absolute", bottom: -40, left: -40, width: 160, height: 160,
-                background: "radial-gradient(circle, rgba(66,191,186,0.06) 0%, transparent 70%)", borderRadius: "50%",
-              }} />
-              <h3 style={{
-                fontSize: 22, fontWeight: 700, marginBottom: 14, position: "relative",
-                color: brand.pipelineRed,
+                padding: "28px 32px 20px", position: "relative", overflow: "hidden",
+                background: `linear-gradient(135deg, ${accent}12, ${accentAlt}08)`,
+                borderBottom: `1px solid ${t.cardBorder}`,
               }}>
-                GET A PERSONALIZED DIGITAL STRATEGY FROM ABSTRAKT
-              </h3>
-              <p style={{ fontSize: 15, color: t.body, marginBottom: 28, maxWidth: 520, margin: "0 auto 28px", position: "relative" }}>
-                Ready to improve your digital visibility and outperform your competition?
-              </p>
-              <button style={{
-                padding: "15px 40px", borderRadius: 10, border: "none",
-                background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
-                letterSpacing: 0.5, position: "relative",
-                boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-              }}>
-                Get Your Personalized Strategy →
-              </button>
+                <div style={{
+                  position: "absolute", top: -40, right: -40, width: 160, height: 160,
+                  background: "radial-gradient(circle, rgba(66,191,186,0.1) 0%, transparent 70%)", borderRadius: "50%",
+                }} />
+                <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8, position: "relative" }}>
+                  {activeTab === 3 ? "Content Strategy" : "Social & AI Visibility"}
+                </div>
+                <h3 style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0, position: "relative", lineHeight: 1.3 }}>
+                  {activeTab === 3 ? "Turn Your Content Into a Pipeline Engine" : "Get Found Where Buyers Are Looking"}
+                </h3>
+              </div>
+              <div style={{ padding: "24px 32px" }}>
+                <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 24px" }}>
+                  {activeTab === 3
+                    ? "Your content should work as hard as your sales team. A structured content engine brings qualified prospects to your door before your team picks up the phone."
+                    : "AI search and social discovery are where your next wave of buyers will find you. Getting ahead now means capturing demand your competitors haven't woken up to yet."
+                  }
+                </p>
+
+                <GrowthRoadmap tabType={activeTab === 3 ? "content" : "social"} t={t} />
+                <ROIScenario t={t} data={data} />
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
+                  {(activeTab === 3 ? [
+                    { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement", featured: true },
+                    { name: "SEO Content Only", price: "From $1,500", period: "/mo", desc: "Based on content volume" },
+                    { name: "Backlinks Add-On", price: "$500-$1K+", period: "/mo", desc: "2-4 backlinks/month" },
+                  ] : [
+                    { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement", featured: true },
+                    { name: "Local Lift", price: "$500", period: "/mo", desc: "Full local visibility management" },
+                    { name: "Listing Management", price: "$300", period: "/mo", desc: "Up to 2 business listings" },
+                  ]).map((tier, i) => (
+                    <div key={i} style={{
+                      padding: "20px 16px", borderRadius: 10, textAlign: "center",
+                      background: tier.featured ? `linear-gradient(135deg, ${accent}15, ${accentAlt}10)` : t.hoverRow,
+                      border: `1px solid ${tier.featured ? accent + "40" : t.cardBorder}`,
+                      position: "relative",
+                    }}>
+                      {tier.featured && (
+                        <div style={{
+                          position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)",
+                          fontSize: 8, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: 1.5,
+                          background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+                          padding: "3px 10px", borderRadius: 10,
+                        }}>Recommended</div>
+                      )}
+                      <div style={{ fontSize: 11, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{tier.name}</div>
+                      <div style={{ fontSize: tier.price.length > 8 ? 22 : 28, fontWeight: 800, color: t.text, lineHeight: 1, marginBottom: 4 }}>
+                        {tier.price}{tier.period && <span style={{ fontSize: 13, fontWeight: 500, color: t.subtle }}>{tier.period}</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{tier.desc}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ textAlign: "center" }}>
+                  <button style={{
+                    padding: "15px 40px", borderRadius: 10, border: "none",
+                    background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+                    color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
+                    letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
+                  }}>
+                    {activeTab === 3 ? "Build My Content Engine \u2192" : "Boost My Visibility \u2192"}
+                  </button>
+                </div>
+              </div>
             </div>
             )}
           </>
