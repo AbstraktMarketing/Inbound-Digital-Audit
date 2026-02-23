@@ -14,26 +14,37 @@ export async function GET(request) {
   }
 
   try {
-    console.log(`[Places Debug] Testing: company="${company}", url="${url}"`);
-    
-    // Direct raw test first
-    const rawQuery = encodeURIComponent(company);
-    const rawUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${rawQuery}&key=${apiKey}`;
+    // Raw API test — show exactly what Google returns
+    const rawUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(company)}&key=${apiKey}`;
     const rawRes = await fetch(rawUrl, { signal: AbortSignal.timeout(10000) });
     const rawData = await rawRes.json();
 
-    // Then run through provider
-    const result = await fetchPlacesData(company, url);
+    // Then run through the full provider
+    let providerResult = null;
+    let providerError = null;
+    try {
+      providerResult = await fetchPlacesData(company, url);
+    } catch (e) {
+      providerError = e.message;
+    }
+
     return Response.json({
-      company, url, apiKeySet: true,
+      company,
+      url,
+      apiKeySet: true,
       apiKeyPrefix: apiKey.substring(0, 12) + "...",
-      directAPI: {
+      rawAPI: {
         status: rawData.status,
-        resultCount: rawData.results?.length || 0,
-        firstResult: rawData.results?.[0] ? { name: rawData.results[0].name, placeId: rawData.results[0].place_id, address: rawData.results[0].formatted_address } : null,
         errorMessage: rawData.error_message || null,
+        resultCount: rawData.results?.length || 0,
+        firstResult: rawData.results?.[0] ? {
+          name: rawData.results[0].name,
+          address: rawData.results[0].formatted_address,
+          rating: rawData.results[0].rating,
+          placeId: rawData.results[0].place_id,
+        } : null,
       },
-      result,
+      provider: providerError ? { error: providerError } : providerResult,
     });
   } catch (e) {
     return Response.json({ error: e.message, company, url, apiKeySet: true }, { status: 500 });
