@@ -15,10 +15,24 @@ export async function GET(request) {
 
   try {
     console.log(`[Places Debug] Testing: company="${company}", url="${url}"`);
+    
+    // Direct raw test first
+    const rawQuery = encodeURIComponent(company);
+    const rawUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${rawQuery}&key=${apiKey}`;
+    const rawRes = await fetch(rawUrl, { signal: AbortSignal.timeout(10000) });
+    const rawData = await rawRes.json();
+
+    // Then run through provider
     const result = await fetchPlacesData(company, url);
     return Response.json({
       company, url, apiKeySet: true,
       apiKeyPrefix: apiKey.substring(0, 12) + "...",
+      directAPI: {
+        status: rawData.status,
+        resultCount: rawData.results?.length || 0,
+        firstResult: rawData.results?.[0] ? { name: rawData.results[0].name, placeId: rawData.results[0].place_id, address: rawData.results[0].formatted_address } : null,
+        errorMessage: rawData.error_message || null,
+      },
       result,
     });
   } catch (e) {
