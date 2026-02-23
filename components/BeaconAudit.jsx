@@ -701,12 +701,12 @@ function getWebPerfScenario(metrics) {
   };
 }
 
-function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impact, weighted, estimated, why, fix, expectedImpact, difficulty }) {
+function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impact, weighted, estimated, why, fix, expectedImpact, difficulty, findings }) {
   const [open, setOpen] = React.useState(false);
   const isEven = index % 2 === 0;
   const sColor = statusColor(status);
   const ctaText = statusLabel(status);
-  const hasExpand = why || fix;
+  const hasExpand = why || fix || (findings && findings.length > 0);
   const diffColor = { Low: brand.talentTeal, Medium: brand.inboundOrange, High: brand.pipelineRed }[difficulty] || t.subtle;
   return (
     <div style={{ borderBottom: `1px solid ${t.cardBorder}`, borderLeft: `3px solid ${sColor}` }}>
@@ -756,8 +756,29 @@ function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impac
         <div style={{
           padding: "0 18px 16px 37px",
           background: isEven ? `${t.hoverRow}` : t.hoverRow,
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px",
         }}>
+          {findings && findings.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: sColor, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Specific Findings</div>
+              <div style={{
+                background: t.bg, borderRadius: 8, border: `1px solid ${t.cardBorder}`,
+                padding: "10px 14px",
+              }}>
+                {findings.map((f, i) => (
+                  <div key={i} style={{
+                    fontSize: 12, color: t.body, lineHeight: 1.6,
+                    padding: "4px 0",
+                    borderBottom: i < findings.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+                    fontFamily: f.startsWith("/") || f.includes("(") ? "'JetBrains Mono', monospace" : "inherit",
+                  }}>
+                    <span style={{ color: sColor, marginRight: 6, fontSize: 8 }}>{"\u25CF"}</span>
+                    {f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
           {why && (
             <div>
               <div style={{ fontSize: 9, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Why It Matters</div>
@@ -786,6 +807,7 @@ function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impac
               }}>{difficulty}</span>
             </div>
           )}
+          </div>
         </div>
       )}
     </div>

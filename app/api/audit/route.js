@@ -111,71 +111,105 @@ function buildWebPerfMetrics(ps, cr) {
   const perfScore = ps?.performanceScore ?? null;
   const sslValid = cr?.ssl?.valid ?? ps?.isHttps ?? null;
   const http2 = cr?.http2 ?? null;
-  const imgData = cr?.images || ps?.imageOptimization || {};
-  const altPct = cr?.images?.altPct ?? null;
   const mobileFriendly = ps?.mobileFriendly ?? null;
-  const totalImages = imgData.totalImages || imgData.total || 0;
-  const unoptCount = imgData.unoptimizedCount || imgData.missingAlt || 0;
-  const imgImprovePct = ps?.imageOptimization?.improvementPct ?? (totalImages > 0 ? Math.round((unoptCount / totalImages) * 100) : null);
-
-  // Approximate site health from performance + accessibility + SEO scores
+  const altPct = cr?.images?.altPct ?? null;
+  const totalImages = cr?.images?.total || ps?.imageOptimization?.totalImages || 0;
+  const missingAlt = cr?.images?.missingAlt || 0;
+  const imgExamples = cr?.images?.missingAltExamples || [];
+  const psImgExamples = ps?.imageOptimization?.examples || [];
+  const largestRes = ps?.largestResources || [];
+  const cwv = ps?.coreWebVitals || {};
+  const blockingRes = ps?.blockingResources || [];
   const siteHealth = ps ? Math.round((ps.performanceScore + (ps.seoScore || 70) + (ps.accessibilityScore || 70)) / 3) : null;
+  const emptyLinks = cr?.content?.emptyLinks || 0;
+
+  // Build specific findings for site health
+  const healthFindings = [];
+  if (emptyLinks > 0) healthFindings.push(`${emptyLinks} empty or broken link${emptyLinks > 1 ? "s" : ""} found (href="#" or javascript:void)`);
+  if (ps?.a11yIssues?.length > 0) ps.a11yIssues.forEach(i => healthFindings.push(`${i.issue}: ${i.count} instance${i.count > 1 ? "s" : ""}`));
+  if (cr?.meta?.noindex) healthFindings.push("Homepage has a noindex tag \u2014 search engines are blocked from indexing it");
+
+  // Speed findings
+  const speedFindings = [];
+  if (cwv.lcpFormatted) speedFindings.push(`Largest Contentful Paint: ${cwv.lcpFormatted} (target: under 2.5s)`);
+  if (cwv.fcpFormatted) speedFindings.push(`First Contentful Paint: ${cwv.fcpFormatted}`);
+  if (cwv.tbtFormatted) speedFindings.push(`Total Blocking Time: ${cwv.tbtFormatted}`);
+  if (ps?.lcpElement) speedFindings.push(`LCP element: ${ps.lcpElement}`);
+  if (blockingRes.length > 0) speedFindings.push(`${blockingRes.length} render-blocking resource${blockingRes.length > 1 ? "s" : ""}: ${blockingRes.map(r => r.url).join(", ")}`);
+
+  // Image findings
+  const imgFindings = [];
+  if (largestRes.length > 0) {
+    const bigImages = largestRes.filter(r => r.type === "Image" || r.type === "image");
+    if (bigImages.length > 0) imgFindings.push(...bigImages.map(r => `${r.url} (${r.sizeKB}KB)`));
+  }
+  if (psImgExamples.length > 0) imgFindings.push(...psImgExamples.map(e => `${e.url}${e.wastedBytes ? ` \u2014 save ~${e.wastedBytes}KB` : ""}`));
+
+  // Alt tag findings
+  const altFindings = imgExamples.length > 0 ? imgExamples.map(u => u) : [];
+
+  const imgImprovePct = ps?.imageOptimization?.improvementPct ?? (totalImages > 0 ? Math.round((missingAlt / totalImages) * 100) : null);
 
   const metrics = [
     {
       label: "Site Health", value: siteHealth !== null ? `${siteHealth}%` : "Analyzing...", status: toStatus(siteHealth, 90, 70),
-      detail: "Measures crawlability, technical errors, and optimization issues. Best-in-class sites score 90%+.", weighted: true, impact: "high",
-      why: "Site health directly influences how effectively search engines crawl and index your pages. A low score means critical pages may never appear in search results.",
-      fix: "Run a full technical audit to identify and resolve broken links, redirect chains, and crawl errors systematically.",
-      expectedImpact: "Improving site health to 90%+ can increase indexed pages by 15-25% and improve crawl efficiency.", difficulty: "Medium",
+      detail: siteHealth !== null ? `Combined performance (${ps?.performanceScore || "?"}%), SEO (${ps?.seoScore || "?"}%), and accessibility (${ps?.accessibilityScore || "?"}%) score.` : "Analyzing...",
+      weighted: true, impact: "high", findings: healthFindings,
+      why: "Site health directly influences how effectively search engines crawl and index your pages.",
+      fix: "Run a full technical audit to identify and resolve broken links, redirect chains, and crawl errors.",
+      expectedImpact: "Improving site health to 90%+ can increase indexed pages by 15-25%.", difficulty: "Medium",
     },
     {
       label: "Page Speed & Performance", value: perfScore !== null ? `${perfScore}%` : "Analyzing...", status: toStatus(perfScore, 90, 50),
-      detail: "Evaluates load speed, performance efficiency, and user experience impact. Target: 90%+.", impact: "high",
-      why: "Page speed is a confirmed Google ranking factor. Slow sites lose visitors — 53% of mobile users abandon pages that take over 3 seconds to load.",
+      detail: ps ? `Desktop: ${ps.desktopScore}% | Mobile: ${ps.mobileScore}%` : "Analyzing...",
+      impact: "high", findings: speedFindings,
+      why: "Page speed is a confirmed Google ranking factor. 53% of mobile users abandon pages over 3 seconds.",
       fix: "Compress images, implement lazy loading, enable browser caching, and defer non-critical JavaScript.",
-      expectedImpact: "Reaching 90%+ performance can reduce bounce rates by 20-30% and improve conversion rates.", difficulty: "Medium",
+      expectedImpact: "Reaching 90%+ can reduce bounce rates by 20-30%.", difficulty: "Medium",
     },
     {
       label: "Mobile Optimization", value: mobileFriendly === true ? "Yes" : mobileFriendly === false ? "No" : "Checking...",
       status: mobileFriendly === true ? "good" : mobileFriendly === false ? "poor" : "warning",
-      detail: "Confirms your site is optimized for mobile users and Google's mobile-first indexing.", impact: "foundational",
-      why: "Google uses mobile-first indexing — your mobile site IS your site for ranking purposes.",
-      fix: mobileFriendly ? "No action needed. Continue testing across devices when making site changes." : "Implement responsive design and fix mobile usability issues.",
-      expectedImpact: "Maintains eligibility for mobile search rankings, which represent 60%+ of all searches.", difficulty: mobileFriendly ? "N/A" : "Medium",
+      detail: ps ? `Mobile score: ${ps.mobileScore}% | Desktop score: ${ps.desktopScore}%` : "Checking...",
+      impact: "foundational",
+      why: "Google uses mobile-first indexing \u2014 your mobile site IS your site for ranking purposes.",
+      fix: mobileFriendly ? "No action needed." : "Implement responsive design and fix mobile usability issues.",
+      expectedImpact: "Maintains eligibility for mobile search rankings (60%+ of all searches).", difficulty: mobileFriendly ? "N/A" : "Medium",
     },
     {
       label: "Security & SSL", value: sslValid ? "Valid" : "Invalid", status: sslValid ? "good" : "poor",
-      detail: "Status ensures encrypted data protection and trust signals for users and search engines.", impact: "foundational",
-      why: "SSL is a ranking signal and browsers flag non-secure sites with warnings, reducing visitor trust.",
-      fix: sslValid ? "No action needed. Ensure certificate auto-renews before expiration." : "Install an SSL certificate immediately — your site is flagged as insecure.",
+      detail: sslValid ? "HTTPS is active and certificate is valid." : "Site is not served over HTTPS \u2014 browsers will flag it as insecure.",
+      impact: "foundational",
+      why: "SSL is a ranking signal and browsers flag non-secure sites with warnings.",
+      fix: sslValid ? "No action needed. Ensure certificate auto-renews." : "Install an SSL certificate immediately.",
       expectedImpact: "Maintains trust signals and prevents browser security warnings.", difficulty: sslValid ? "N/A" : "Low",
     },
     {
       label: "HTTP/2 Support", value: http2 ? "Enabled" : "Not Detected", status: http2 ? "good" : "warning",
-      detail: "Improves load performance through faster resource delivery.", impact: "foundational",
-      why: "HTTP/2 enables multiplexed connections, reducing page load times significantly over HTTP/1.1.",
-      fix: http2 ? "No action needed. HTTP/2 is properly configured." : "Enable HTTP/2 on your web server for faster resource delivery.",
-      expectedImpact: "Supports faster page delivery — particularly beneficial for resource-heavy pages.", difficulty: http2 ? "N/A" : "Low",
+      detail: "HTTP/2 enables multiplexed connections for faster page delivery.", impact: "foundational",
+      why: "HTTP/2 reduces page load times significantly over HTTP/1.1.",
+      fix: http2 ? "No action needed." : "Enable HTTP/2 on your web server.",
+      expectedImpact: "Faster page delivery, especially for resource-heavy pages.", difficulty: http2 ? "N/A" : "Low",
     },
     {
       label: "Image Optimization",
       value: imgImprovePct !== null ? `${imgImprovePct}% Improvement Needed` : "Estimated",
       status: toStatus(imgImprovePct, 10, 30, true),
-      detail: totalImages > 0 ? `${unoptCount} of ${totalImages} images may need optimization.` : "Image audit data.",
-      impact: "high",
-      why: "Unoptimized images are the #1 cause of slow page loads. They increase bandwidth costs and hurt Core Web Vitals scores.",
-      fix: "Convert images to WebP format, implement responsive srcset attributes, and compress all images above 100KB.",
+      detail: totalImages > 0 ? `${totalImages} images detected on homepage.` : "Image audit data.",
+      impact: "high", findings: imgFindings.slice(0, 5),
+      why: "Unoptimized images are the #1 cause of slow page loads.",
+      fix: "Convert images to WebP, implement responsive srcset, and compress all images above 100KB.",
       expectedImpact: "Can reduce page load time by 40-60% on image-heavy pages.", difficulty: "Low",
     },
     {
       label: "Alt Tags",
-      value: altPct !== null ? `${altPct}% Incomplete` : "Estimated",
+      value: altPct !== null ? `${missingAlt} of ${totalImages} missing` : "Estimated",
       status: toStatus(altPct, 10, 30, true),
-      detail: "Missing alt text limits accessibility and weakens image search visibility.", impact: "medium",
-      why: "Alt tags enable image search rankings and are required for accessibility compliance (ADA/WCAG).",
-      fix: "Audit all images and add descriptive, keyword-relevant alt text to each one.",
-      expectedImpact: "Can open new traffic channels through Google Image Search and improve accessibility compliance.", difficulty: "Low",
+      detail: altPct !== null ? `${altPct}% of images are missing alt text.` : "Checking...",
+      impact: "medium", findings: altFindings.slice(0, 5),
+      why: "Alt tags enable image search rankings and are required for ADA/WCAG compliance.",
+      fix: "Add descriptive, keyword-relevant alt text to each image.",
+      expectedImpact: "Opens traffic channels through Google Image Search.", difficulty: "Low",
     },
   ];
 
@@ -190,29 +224,52 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots) {
   const traffic = organic?.organicTraffic || da?.organicTraffic || null;
   const totalBacklinks = bl?.totalBacklinks || null;
   const refDomains = bl?.referringDomains || null;
+  const competitors = sr?.competitors || [];
+  const topKw = sr?.topKeywords || [];
+  const trafficCost = organic?.organicCost || da?.organicCost || null;
 
-  // Estimate DA from rank (SEMrush doesn't directly give DA, but we can estimate)
   const rank = da?.rank || 0;
   const estimatedDA = rank > 0 ? Math.min(100, Math.max(1, Math.round(100 - Math.log10(rank) * 15))) : null;
-
-  // Estimate branded traffic (not directly available — placeholder)
-  const brandedPct = null; // Would need Search Console for this
-
-  // Estimate indexation (not directly available)
+  const brandedPct = null;
   const indexation = null;
+
+  // Keyword findings — show actual top keywords with positions
+  const kwFindings = [];
+  if (topKw.length > 0) {
+    const top3 = topKw.slice(0, 3);
+    top3.forEach(kw => kwFindings.push(`"${kw.keyword}" \u2014 position #${kw.position} (${kw.volume.toLocaleString()} monthly searches)`));
+    if (trafficCost) kwFindings.push(`Organic traffic value: $${Math.round(trafficCost).toLocaleString()}/mo`);
+  }
+
+  // Competitor findings
+  const compFindings = [];
+  if (competitors.length > 0) {
+    competitors.slice(0, 3).forEach(c => {
+      compFindings.push(`${c.domain} \u2014 ${c.commonKeywords.toLocaleString()} shared keywords, ${c.organicTraffic.toLocaleString()} monthly traffic`);
+    });
+  }
+
+  // Backlink findings
+  const blFindings = [];
+  if (bl) {
+    if (bl.followLinks && bl.nofollowLinks) blFindings.push(`${bl.followLinks.toLocaleString()} dofollow / ${bl.nofollowLinks.toLocaleString()} nofollow links`);
+    if (refDomains) blFindings.push(`${refDomains.toLocaleString()} unique referring domains`);
+  }
 
   const metrics = [
     {
       label: "Organic Keywords", value: kwCount !== null ? kwCount.toLocaleString() : "Estimated",
-      status: toStatus(kwCount, 500, 200), detail: `${kwCount || "N/A"} keywords currently ranking in search results.`,
-      impact: "high", why: "Keyword rankings determine how often your site appears in search results. More rankings = more potential traffic.",
-      fix: "Conduct keyword gap analysis to identify high-value terms competitors rank for that you don't.",
+      status: toStatus(kwCount, 500, 200),
+      detail: traffic ? `${kwCount?.toLocaleString() || "N/A"} keywords driving ~${traffic.toLocaleString()} monthly visits.` : `${kwCount || "N/A"} keywords ranking.`,
+      impact: "high", findings: kwFindings,
+      why: "Keyword rankings determine how often your site appears in search results.",
+      fix: competitors.length > 0 ? `Conduct keyword gap analysis against ${competitors[0].domain} and ${competitors.length > 1 ? competitors[1].domain : "other competitors"}.` : "Conduct keyword gap analysis to identify high-value terms competitors rank for.",
       expectedImpact: "Expanding keyword coverage could increase organic traffic by 30-50%.", difficulty: "Medium",
     },
     {
       label: "Branded Traffic Share", value: brandedPct !== null ? `${brandedPct}%` : "Estimated",
       status: brandedPct !== null ? toStatus(brandedPct, 35, 20) : "warning",
-      detail: "Estimated branded search traffic share. Connect Search Console for exact data.", impact: "high",
+      detail: "Connect Search Console for exact branded traffic data.", impact: "high",
       estimated: brandedPct === null,
       why: "Low branded search volume means fewer people are actively looking for your company.",
       fix: "Invest in brand visibility campaigns, PR mentions, and thought leadership content.",
@@ -229,34 +286,36 @@ function buildSEOMetrics(sr, hasSitemap, hasRobots) {
     },
     {
       label: "Domain Authority Score", value: estimatedDA !== null ? `${estimatedDA}/100` : "Estimated",
-      status: toStatus(estimatedDA, 50, 30), detail: "Indicates backlink strength and competitive positioning.",
-      impact: "medium",
-      why: "Domain authority reflects your site's competitive strength. Higher authority means easier rankings.",
+      status: toStatus(estimatedDA, 50, 30),
+      detail: rank > 0 ? `SEMrush rank: #${rank.toLocaleString()} globally.` : "Competitive positioning.",
+      impact: "medium", findings: compFindings,
+      why: "Domain authority reflects your site's competitive strength.",
       fix: "Build high-quality backlinks through guest posts, digital PR, and industry partnerships.",
       expectedImpact: "Reaching DA 45+ would significantly improve ranking potential.", difficulty: "High",
     },
     {
       label: "Backlink Profile", value: totalBacklinks !== null ? totalBacklinks.toLocaleString() : "Estimated",
-      status: toStatus(totalBacklinks, 1000, 200), detail: refDomains ? `${refDomains} referring domains` : "Backlink data.",
-      impact: "medium",
+      status: toStatus(totalBacklinks, 1000, 200),
+      detail: refDomains ? `${totalBacklinks?.toLocaleString()} total links from ${refDomains.toLocaleString()} domains.` : "Backlink data.",
+      impact: "medium", findings: blFindings,
       why: "Backlinks remain one of the strongest ranking signals.",
       fix: "Disavow toxic links and pursue link-building campaigns targeting high-authority domains.",
       expectedImpact: "Improving link quality can lift rankings for mid-to-high difficulty keywords.", difficulty: "High",
     },
     {
       label: "XML Sitemap Status", value: hasSitemap ? "Found" : "Not Found", status: hasSitemap ? "good" : "poor",
-      detail: hasSitemap ? "Sitemap detected and accessible." : "No sitemap found at /sitemap.xml.",
+      detail: hasSitemap ? "Sitemap detected at /sitemap.xml." : "No sitemap found at /sitemap.xml.",
       impact: "foundational",
       why: "A sitemap helps search engines discover and understand the structure of your site.",
-      fix: hasSitemap ? "No action needed." : "Create and submit an XML sitemap to search engines.",
-      expectedImpact: "Maintains efficient crawl discovery for new and updated content.", difficulty: hasSitemap ? "N/A" : "Low",
+      fix: hasSitemap ? "No action needed." : "Create and submit an XML sitemap.",
+      expectedImpact: "Maintains efficient crawl discovery.", difficulty: hasSitemap ? "N/A" : "Low",
     },
     {
       label: "Robots.txt Configuration", value: hasRobots ? "Yes" : "Not Found", status: hasRobots ? "good" : "warning",
-      detail: hasRobots ? "Crawl directives are properly structured." : "No robots.txt found.",
+      detail: hasRobots ? "Crawl directives found." : "No robots.txt found.",
       impact: "foundational",
       why: "Robots.txt controls which pages search engines can access.",
-      fix: hasRobots ? "No action needed." : "Create a robots.txt file with proper crawl directives.",
+      fix: hasRobots ? "No action needed." : "Create a robots.txt file.",
       expectedImpact: "Ensures search engines can access all important pages.", difficulty: hasRobots ? "N/A" : "Low",
     },
   ];
@@ -277,41 +336,85 @@ function buildKeywords(sr) {
 
 function buildContentMetrics(cr, ps) {
   const hasBlog = cr?.blog?.detected ?? null;
+  const lastPostDate = cr?.blog?.lastPostDate || null;
+  const lastPostDays = cr?.blog?.lastPostDaysAgo || null;
+  const blogTitles = cr?.blog?.recentTitles || [];
   const wordCount = cr?.content?.wordCount ?? null;
   const contentRatio = cr?.content?.ratio ?? null;
   const internalLinks = cr?.content?.internalLinks ?? null;
-  const hasMeta = cr?.meta?.description ? true : false;
+  const metaDesc = cr?.meta?.description || null;
+  const metaLen = cr?.meta?.descriptionLength || 0;
+  const titleText = cr?.meta?.title || null;
+  const titleLen = cr?.meta?.titleLength || 0;
+  const h1Text = cr?.meta?.h1Text || null;
   const hasH1 = cr?.meta?.hasH1 ?? null;
+  const multiH1 = cr?.meta?.multipleH1 ?? false;
+
+  // Blog freshness findings
+  const blogFindings = [];
+  if (lastPostDate) {
+    const date = new Date(lastPostDate);
+    blogFindings.push(`Last detected post date: ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} (${lastPostDays} days ago)`);
+  }
+  if (blogTitles.length > 0) blogTitles.forEach(t => blogFindings.push(`Recent post: "${t}"`));
+
+  // Meta description findings
+  const metaFindings = [];
+  if (metaDesc) {
+    metaFindings.push(`Your meta description: "${metaDesc.length > 120 ? metaDesc.substring(0, 117) + "..." : metaDesc}"`);
+    if (metaLen < 120) metaFindings.push(`Length: ${metaLen} chars \u2014 consider expanding to 150-160 chars for full SERP display`);
+    else if (metaLen > 160) metaFindings.push(`Length: ${metaLen} chars \u2014 may be truncated in search results (target: 150-160)`);
+    else metaFindings.push(`Length: ${metaLen} chars \u2014 good length for search results`);
+  } else {
+    metaFindings.push("No meta description found on homepage \u2014 Google will auto-generate one from page content");
+  }
+
+  // H1 findings
+  const h1Findings = [];
+  if (h1Text) h1Findings.push(`Your H1: "${h1Text}"`);
+  if (multiH1) h1Findings.push("Multiple H1 tags detected \u2014 best practice is one H1 per page");
+  if (titleText) h1Findings.push(`Page title: "${titleText.length > 80 ? titleText.substring(0, 77) + "..." : titleText}" (${titleLen} chars)`);
+
+  const freshStatus = lastPostDays !== null ? (lastPostDays <= 14 ? "good" : lastPostDays <= 45 ? "warning" : "poor") : "warning";
+  const metaStatus = metaDesc ? (metaLen >= 120 && metaLen <= 160 ? "good" : "warning") : "poor";
 
   const metrics = [
     {
       label: "Blog Page Exists", value: hasBlog === true ? "Yes" : hasBlog === false ? "Not Found" : "Checking...",
-      status: hasBlog ? "good" : "poor", detail: hasBlog ? "A dedicated blog/news page was detected." : "No blog section detected.",
+      status: hasBlog ? "good" : "poor", detail: hasBlog ? "A dedicated blog/news page was detected." : "No blog section found on the site.",
       weighted: true, impact: "foundational",
-      why: "A blog page is the foundation for content marketing.", fix: hasBlog ? "No action needed." : "Create a blog section for ongoing content.",
-      expectedImpact: "Provides the infrastructure for ongoing content strategy.", difficulty: hasBlog ? "N/A" : "Medium",
+      why: "A blog is the foundation for content marketing.", fix: hasBlog ? "No action needed." : "Create a blog section for ongoing content.",
+      expectedImpact: "Provides infrastructure for ongoing content strategy.", difficulty: hasBlog ? "N/A" : "Medium",
     },
     {
-      label: "Content Freshness", value: "Estimated", status: "warning",
-      detail: "Full freshness analysis requires sitemap crawl.", weighted: true, impact: "high", estimated: true,
+      label: "Content Freshness",
+      value: lastPostDays !== null ? `${lastPostDays} days since last post` : "Estimated",
+      status: freshStatus,
+      detail: lastPostDays !== null ? (lastPostDays <= 14 ? "Content is being published regularly." : lastPostDays <= 45 ? "Content is aging \u2014 search engines favor active publishers." : "Stale content signals an inactive site to search engines.") : "Full freshness analysis requires sitemap crawl.",
+      weighted: true, impact: "high", estimated: lastPostDays === null, findings: blogFindings,
       why: "Search engines favor sites that publish fresh content regularly.",
-      fix: "Establish a minimum 2x/month publishing cadence.",
+      fix: "Establish a minimum 2x/month publishing cadence with keyword-targeted posts.",
       expectedImpact: "Regular publishing can increase organic traffic by 20-40% within 6 months.", difficulty: "Medium",
     },
     {
-      label: "Meta Descriptions", value: hasMeta ? "Present" : "Missing",
-      status: hasMeta ? "warning" : "poor", detail: "Checked homepage meta description. Full audit requires multi-page crawl.",
-      impact: "high",
+      label: "Meta Descriptions",
+      value: metaDesc ? `${metaLen} chars` : "Missing",
+      status: metaStatus,
+      detail: metaDesc ? "Homepage meta description found." : "No meta description on homepage \u2014 Google will auto-generate one.",
+      impact: "high", findings: metaFindings,
       why: "Meta descriptions control how your pages appear in search results.",
-      fix: "Write unique, compelling meta descriptions for all pages.",
+      fix: "Write unique, compelling meta descriptions for all pages \u2014 prioritize high-traffic pages first.",
       expectedImpact: "Optimized descriptions can improve CTR by 5-10%.", difficulty: "Low",
     },
     {
-      label: "H1 Tags", value: hasH1 === true ? "Present" : hasH1 === false ? "Missing" : "Checking...",
-      status: hasH1 ? "good" : "poor", detail: "Checked homepage H1 tag.", impact: "foundational",
+      label: "H1 Tags",
+      value: hasH1 === true ? (multiH1 ? "Multiple Found" : "Present") : hasH1 === false ? "Missing" : "Checking...",
+      status: hasH1 ? (multiH1 ? "warning" : "good") : "poor",
+      detail: hasH1 ? (multiH1 ? "Multiple H1 tags detected \u2014 use only one per page." : "Homepage has a single, proper H1 tag.") : "No H1 heading found on homepage.",
+      impact: "foundational", findings: h1Findings,
       why: "H1 tags tell search engines the primary topic of each page.",
-      fix: hasH1 ? "No action needed." : "Add a unique H1 heading to every page.",
-      expectedImpact: "Maintains clear page topic signals.", difficulty: hasH1 ? "N/A" : "Low",
+      fix: hasH1 ? (multiH1 ? "Consolidate to a single H1 per page." : "No action needed.") : "Add a unique H1 heading to every page.",
+      expectedImpact: "Clear page topic signals for search engines.", difficulty: hasH1 && !multiH1 ? "N/A" : "Low",
     },
     {
       label: "Avg. Time on Page", value: "Estimated", status: "warning",
@@ -324,8 +427,8 @@ function buildContentMetrics(cr, ps) {
       label: "Bounce Rate", value: "Estimated", status: "warning",
       detail: "Requires Google Analytics integration.", impact: "high", estimated: true,
       why: "A high bounce rate means visitors leave without interacting.",
-      fix: "Improve page load speed, strengthen above-the-fold content, and add clear calls to action.",
-      expectedImpact: "Reducing bounce rate below 50% can significantly improve conversion rates.", difficulty: "Medium",
+      fix: "Improve page load speed, strengthen above-the-fold content, and add clear CTAs.",
+      expectedImpact: "Reducing bounce rate below 50% can improve conversion rates.", difficulty: "Medium",
     },
     {
       label: "Readability Score", value: "Estimated", status: "warning",
@@ -335,25 +438,29 @@ function buildContentMetrics(cr, ps) {
       expectedImpact: "Broader accessibility can increase engagement.", difficulty: "Low",
     },
     {
-      label: "Word Count (top pages)", value: wordCount !== null ? `~${wordCount} words` : "Estimated",
-      status: toStatus(wordCount, 1200, 600), detail: "Word count of the homepage.",
+      label: "Word Count (top pages)", value: wordCount !== null ? `~${wordCount.toLocaleString()} words` : "Estimated",
+      status: toStatus(wordCount, 1200, 600),
+      detail: wordCount ? `Homepage contains approximately ${wordCount.toLocaleString()} words.` : "Word count unavailable.",
       impact: "high",
       why: "Thin content struggles to rank for competitive keywords.",
-      fix: "Expand top landing pages to 1,200+ words.",
+      fix: "Expand top landing pages to 1,200+ words with in-depth, valuable information.",
       expectedImpact: "Pages with 1,200+ words rank significantly higher.", difficulty: "Medium",
     },
     {
       label: "Internal Links / Page", value: internalLinks !== null ? `${internalLinks} found` : "Estimated",
-      status: toStatus(internalLinks, 10, 3), detail: "Internal links on homepage.",
+      status: toStatus(internalLinks, 10, 3),
+      detail: internalLinks !== null ? `${internalLinks} internal links detected on homepage.` : "Internal link count unavailable.",
       impact: "medium",
       why: "Internal links distribute page authority and help search engines discover content.",
-      fix: "Add 3-5 contextual internal links per page.",
+      fix: "Add 3-5 contextual internal links per page, prioritizing high-value pages.",
       expectedImpact: "Better internal linking can improve crawl depth.", difficulty: "Low",
     },
     {
       label: "Content-to-Code Ratio", value: contentRatio !== null ? `${contentRatio}%` : "Estimated",
-      status: toStatus(contentRatio, 25, 15), detail: "Aim for 25%+.", impact: "medium",
-      why: "A low content-to-code ratio means more HTML/scripts than actual content.",
+      status: toStatus(contentRatio, 25, 15),
+      detail: contentRatio !== null ? `${contentRatio}% of your page is readable content (target: 25%+).` : "Ratio unavailable.",
+      impact: "medium",
+      why: "A low ratio means more HTML/scripts than actual content.",
       fix: "Reduce unnecessary scripts and add more substantive content.",
       expectedImpact: "Improving ratio to 25%+ signals content-rich pages.", difficulty: "Medium",
     },
@@ -372,24 +479,36 @@ function buildContentMetrics(cr, ps) {
 function buildSocialMetrics(cr) {
   const og = cr?.openGraph || {};
   const tw = cr?.twitterCards || {};
+  const missingOg = og.missingTags || [];
+  const missingTw = tw.missingTags || [];
+
+  // OG findings
+  const ogFindings = [];
+  if (missingOg.length > 0) ogFindings.push(`Missing tags: ${missingOg.join(", ")}`);
+  if (og.actualTitle) ogFindings.push(`og:title is set to: "${og.actualTitle.length > 80 ? og.actualTitle.substring(0, 77) + "..." : og.actualTitle}"`);
+  if (og.complete) ogFindings.push("All Open Graph tags are properly configured");
+
+  // Twitter findings
+  const twFindings = [];
+  if (missingTw.length > 0) twFindings.push(`Missing tags: ${missingTw.join(", ")}`);
 
   const signals = [
     {
       label: "Open Graph Tags", value: og.complete ? "Complete" : og.title || og.description ? "Partial" : "Missing",
       status: og.complete ? "good" : og.title || og.description ? "warning" : "poor",
-      detail: og.complete ? "All OG tags present." : "Some OG tags missing.",
-      impact: "medium",
+      detail: og.complete ? "All OG tags present \u2014 links will display rich previews when shared." : missingOg.length > 0 ? `Missing: ${missingOg.join(", ")}` : "OG tags not detected.",
+      impact: "medium", findings: ogFindings,
       why: "Open Graph tags control how your pages appear when shared on social media.",
-      fix: "Add og:title, og:description, and og:image tags to all pages.",
+      fix: missingOg.length > 0 ? `Add ${missingOg.join(", ")} to your homepage and key pages.` : "Add og:title, og:description, and og:image tags to all pages.",
       expectedImpact: "Rich social previews can increase CTR from social shares by 2-3x.", difficulty: "Low",
     },
     {
       label: "Twitter Cards", value: tw.complete ? "Complete" : tw.card ? "Partial" : "Missing",
       status: tw.complete ? "good" : tw.card ? "warning" : "poor",
-      detail: tw.complete ? "Twitter Card meta tags present." : "Missing twitter:card meta tags.",
-      impact: "medium",
-      why: "Twitter Cards create rich media previews when links are shared.",
-      fix: "Add twitter:card, twitter:title, twitter:description, and twitter:image meta tags.",
+      detail: tw.complete ? "Twitter Card meta tags properly configured." : missingTw.length > 0 ? `Missing: ${missingTw.join(", ")}` : "No twitter:card meta tags found.",
+      impact: "medium", findings: twFindings,
+      why: "Twitter Cards create rich media previews when links are shared on X.",
+      fix: missingTw.length > 0 ? `Add ${missingTw.join(", ")} meta tags.` : "Add twitter:card, twitter:title, and twitter:image meta tags.",
       expectedImpact: "Enables rich previews on X.", difficulty: "Low",
     },
     {
@@ -422,6 +541,12 @@ function buildSocialMetrics(cr) {
 
 function buildAISEOMetrics(cr) {
   const schema = cr?.schema || {};
+  const missingSchema = schema.missingTypes || [];
+
+  // Schema findings
+  const schemaFindings = [];
+  if (schema.types?.length > 0) schemaFindings.push(`Found: ${schema.types.join(", ")}`);
+  if (missingSchema.length > 0) schemaFindings.push(`Missing: ${missingSchema.join(", ")}`);
 
   const metrics = [
     {
@@ -432,12 +557,13 @@ function buildAISEOMetrics(cr) {
     },
     {
       label: "Structured Data",
-      value: schema.types?.length > 0 ? `${schema.types.length} types found` : "None detected",
+      value: schema.types?.length > 0 ? `${schema.types.length} type${schema.types.length > 1 ? "s" : ""} found` : "None detected",
       status: schema.types?.length >= 3 ? "good" : schema.types?.length > 0 ? "warning" : "poor",
-      impact: "high",
+      detail: schema.types?.length > 0 ? `Detected: ${schema.types.join(", ")}` : "No structured data found on homepage.",
+      impact: "high", findings: schemaFindings,
       why: "Structured data helps search engines and AI systems understand your content.",
-      fix: "Implement Organization, FAQ, Service, and LocalBusiness schema.",
-      expectedImpact: "Full structured data can enable rich results.", difficulty: "Medium",
+      fix: missingSchema.length > 0 ? `Add ${missingSchema.join(", ")} schema to relevant pages.` : "Implement Organization, FAQ, Service, and LocalBusiness schema.",
+      expectedImpact: "Full structured data can enable rich results and improve AI content understanding.", difficulty: "Medium",
     },
     {
       label: "Entity Recognition", value: "Estimated", status: "warning", impact: "high", estimated: true,
@@ -492,6 +618,28 @@ function buildEntityMetrics(pl, cr) {
   const hasGBP = pl?.found === true;
   const reviewCount = placeData.reviewCount || 0;
   const rating = placeData.rating || 0;
+  const categories = placeData.types || placeData.categories || [];
+  const businessName = placeData.name || null;
+
+  // GBP findings
+  const gbpFindings = [];
+  if (hasGBP && businessName) gbpFindings.push(`Business listed as: "${businessName}"`);
+  if (categories.length > 0) gbpFindings.push(`Categories: ${categories.slice(0, 3).join(", ")}`);
+  if (hasGBP && placeData.businessStatus) gbpFindings.push(`Status: ${placeData.businessStatus}`);
+
+  // Review findings
+  const reviewFindings = [];
+  if (reviewCount > 0 && rating > 0) {
+    reviewFindings.push(`${rating} star average across ${reviewCount} reviews`);
+    if (rating < 4.0) reviewFindings.push("Below 4.0 average \u2014 may negatively impact click-through from local results");
+    if (reviewCount < 20) reviewFindings.push("Under 20 reviews \u2014 competitors with more reviews will outrank in local pack");
+  }
+
+  // Schema findings for local
+  const localSchemaFindings = [];
+  if (schema.types?.length > 0) localSchemaFindings.push(`Found: ${schema.types.join(", ")}`);
+  if (!schema.hasLocalBusiness) localSchemaFindings.push("Missing LocalBusiness schema \u2014 critical for local search visibility");
+  if (!schema.hasFAQ) localSchemaFindings.push("Missing FAQ schema \u2014 opportunity for rich results");
 
   const metrics = [
     {
@@ -505,29 +653,30 @@ function buildEntityMetrics(pl, cr) {
       label: "Verified Google Business Profile",
       value: hasGBP ? "Yes" : "Not Found",
       status: hasGBP ? "good" : "poor",
-      detail: hasGBP ? "GBP listing found and operational." : "No Google Business Profile found for this business.",
-      impact: "foundational",
+      detail: hasGBP ? "GBP listing found and operational." : "No Google Business Profile found.",
+      impact: "foundational", findings: gbpFindings,
       why: "A verified GBP is required to appear in Google's local map pack.",
       fix: hasGBP ? "No action needed." : "Claim and verify your Google Business Profile.",
       expectedImpact: "Maintains eligibility for local map pack.", difficulty: hasGBP ? "N/A" : "Low",
     },
     {
       label: "Google Reviews",
-      value: reviewCount > 0 ? `${rating}★ (${reviewCount} reviews)` : "No reviews found",
+      value: reviewCount > 0 ? `${rating}\u2605 (${reviewCount} reviews)` : "No reviews found",
       status: reviewCount >= 50 ? "good" : reviewCount >= 10 ? "warning" : "poor",
-      detail: reviewCount > 0 ? "Review volume and rating." : "No Google reviews detected.",
-      impact: "foundational",
+      detail: reviewCount > 0 ? `${rating}-star average with ${reviewCount} total reviews.` : "No Google reviews detected.",
+      impact: "foundational", findings: reviewFindings,
       why: "Review quantity and quality are direct local ranking factors.",
-      fix: reviewCount >= 50 ? "Continue encouraging reviews." : "Implement a review generation strategy.",
+      fix: reviewCount >= 50 ? "Continue encouraging reviews." : "Implement a review generation strategy \u2014 target 5+ new reviews per month.",
       expectedImpact: "Ongoing review growth sustains local ranking strength.", difficulty: reviewCount >= 50 ? "N/A" : "Medium",
     },
     {
       label: "Schema Markup",
-      value: schema.types?.length > 0 ? schema.types.join(", ") : "None detected",
+      value: schema.types?.length > 0 ? `${schema.types.length} type${schema.types.length > 1 ? "s" : ""}` : "None detected",
       status: schema.hasLocalBusiness ? "good" : schema.hasOrganization ? "warning" : "poor",
-      detail: "Structured data types found on the site.", impact: "high",
+      detail: schema.types?.length > 0 ? `Types: ${schema.types.join(", ")}` : "No structured data detected.",
+      impact: "high", findings: localSchemaFindings,
       why: "Limited schema means search engines have an incomplete understanding of your business.",
-      fix: "Add LocalBusiness, Service, FAQ, and Review schema.",
+      fix: schema.hasLocalBusiness ? "Consider adding Service and FAQ schema." : "Add LocalBusiness, Service, FAQ, and Review schema.",
       expectedImpact: "Comprehensive schema enables rich results.", difficulty: "Medium",
     },
     {
@@ -542,7 +691,7 @@ function buildEntityMetrics(pl, cr) {
       detail: "Entity association analysis requires NLP pipeline.", impact: "high", estimated: true,
       why: "Weak entity associations mean search engines don't understand your brand's relationships.",
       fix: "Build same-as links, earn mentions on authoritative sites.",
-      expectedImpact: "Stronger entity signals improve visibility in both traditional and AI search.", difficulty: "High",
+      expectedImpact: "Stronger entity signals improve visibility.", difficulty: "High",
     },
     {
       label: "Brand SERP Control", value: "Estimated", status: "warning",
