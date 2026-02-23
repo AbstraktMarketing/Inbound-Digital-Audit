@@ -146,19 +146,6 @@ const mockSEO = {
   ],
 };
 
-const mockKeywords = [
-  { keyword: "appointment setting services", position: 3, volume: 1300, traffic: 312, difficulty: 41 },
-  { keyword: "outbound marketing agency", position: 5, volume: 480, traffic: 134, difficulty: 34 },
-  { keyword: "b2b lead generation", position: 15, volume: 2900, traffic: 116, difficulty: 65 },
-  { keyword: "marketing agency st louis", position: 8, volume: 720, traffic: 101, difficulty: 45 },
-  { keyword: "seo company near me", position: 12, volume: 1600, traffic: 96, difficulty: 52 },
-  { keyword: "digital marketing services", position: 24, volume: 4400, traffic: 88, difficulty: 78 },
-  { keyword: "fractional marketing team", position: 6, volume: 390, traffic: 82, difficulty: 29 },
-  { keyword: "b2b sales outsourcing", position: 11, volume: 880, traffic: 66, difficulty: 48 },
-  { keyword: "lead generation companies", position: 27, volume: 3200, traffic: 51, difficulty: 72 },
-  { keyword: "demand generation agency", position: 19, volume: 1100, traffic: 44, difficulty: 58 },
-];
-
 /*
  * Content Performance scoring:
  *   - First 2 metrics (Blog Exists, Content Freshness) are weighted 1.25x
@@ -1043,7 +1030,7 @@ function WebPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
 function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
   const seoData = data?.seo || mockSEO;
   const aiSeoData = data?.aiSeo || mockAISEO;
-  const keywordsData = data?.keywords || mockKeywords;
+  const keywordsData = data?.keywords || [];
   const combinedScore = Math.round((seoData.score + aiSeoData.score) / 2);
   return (
     <div style={{ display: "grid", gap: 24 }}>
@@ -1053,6 +1040,7 @@ function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
         {seoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
       </Card>
       <Card title="Top Performing Search Terms" t={t}>
+        {keywordsData.length > 0 ? (
         <div>
           <div style={{
             display: "grid", gridTemplateColumns: "1fr 80px 80px 80px 80px", padding: "10px 18px",
@@ -1088,6 +1076,12 @@ function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
             );
           })}
         </div>
+        ) : (
+          <div style={{ padding: "32px 18px", textAlign: "center" }}>
+            <div style={{ fontSize: 13, color: t.subtle, marginBottom: 8 }}>No keyword ranking data available for this domain yet.</div>
+            <div style={{ fontSize: 11, color: t.subtle }}>This data comes from SEMrush and may take time to populate for newer or smaller domains.</div>
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -1410,7 +1404,7 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
     meta: auditData?.meta || {},
     webPerf: auditData?.webPerf || mockWebPerf,
     seo: auditData?.seo || mockSEO,
-    keywords: auditData?.keywords?.length > 0 ? auditData.keywords : mockKeywords,
+    keywords: auditData?.keywords?.length > 0 ? auditData.keywords : [],
     content: auditData?.content || mockContentPerf,
     socialLocal: auditData?.socialLocal || mockSocialLocal,
     aiSeo: auditData?.aiSeo || mockAISEO,
