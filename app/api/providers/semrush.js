@@ -39,13 +39,14 @@ async function fetchDomainRanks(domain, apiKey) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return null;
   const data = parseCSV(lines);
+  console.log(`[SEMrush] domain_ranks headers: ${Object.keys(data).join(", ")}`);
   return {
-    rank: parseInt(data["Rk"]) || 0,
-    organicKeywords: parseInt(data["Or"]) || 0,
-    organicTraffic: parseInt(data["Ot"]) || 0,
-    organicCost: parseFloat(data["Oc"]) || 0,
-    adwordsKeywords: parseInt(data["Ad"]) || 0,
-    adwordsTraffic: parseInt(data["At"]) || 0,
+    rank: parseInt(data["Rank"] || data["Rk"]) || 0,
+    organicKeywords: parseInt(data["Organic Keywords"] || data["Or"]) || 0,
+    organicTraffic: parseInt(data["Organic Traffic"] || data["Ot"]) || 0,
+    organicCost: parseFloat(data["Organic Cost"] || data["Oc"]) || 0,
+    adwordsKeywords: parseInt(data["Adwords Keywords"] || data["Ad"]) || 0,
+    adwordsTraffic: parseInt(data["Adwords Traffic"] || data["At"]) || 0,
   };
 }
 
@@ -57,10 +58,11 @@ async function fetchOrganicOverview(domain, apiKey) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return null;
   const data = parseCSV(lines);
+  console.log(`[SEMrush] organic headers: ${Object.keys(data).join(", ")}`);
   return {
-    organicKeywords: parseInt(data["Or"]) || 0,
-    organicTraffic: parseInt(data["Ot"]) || 0,
-    organicCost: parseFloat(data["Oc"]) || 0,
+    organicKeywords: parseInt(data["Organic Keywords"] || data["Or"] || data["Number of Results"]) || 0,
+    organicTraffic: parseInt(data["Organic Traffic"] || data["Ot"]) || 0,
+    organicCost: parseFloat(data["Organic Cost"] || data["Oc"]) || 0,
   };
 }
 
@@ -72,11 +74,12 @@ async function fetchBacklinksOverview(domain, apiKey) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return null;
   const data = parseCSV(lines);
+  console.log(`[SEMrush] backlinks headers: ${Object.keys(data).join(", ")}`);
   return {
-    totalBacklinks: parseInt(data["total"]) || 0,
-    referringDomains: parseInt(data["domains_num"]) || 0,
-    followLinks: parseInt(data["follows_num"]) || 0,
-    nofollowLinks: parseInt(data["nofollows_num"]) || 0,
+    totalBacklinks: parseInt(data["total"] || data["Total"]) || 0,
+    referringDomains: parseInt(data["domains_num"] || data["Domains"] || data["Referring Domains"]) || 0,
+    followLinks: parseInt(data["follows_num"] || data["Follow"] || data["Follows"]) || 0,
+    nofollowLinks: parseInt(data["nofollows_num"] || data["Nofollow"] || data["Nofollows"]) || 0,
   };
 }
 
@@ -88,16 +91,17 @@ async function fetchTopKeywords(domain, apiKey) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
   const headers = lines[0].split(";").map(h => h.trim());
+  console.log(`[SEMrush] topKeywords headers: ${headers.join(", ")}`);
   return lines.slice(1).map(line => {
     const values = line.split(";");
     const row = {};
     headers.forEach((h, i) => { row[h] = values[i]?.trim(); });
     return {
-      keyword: row["Ph"] || "",
-      position: parseInt(row["Po"]) || 0,
-      volume: parseInt(row["Nq"]) || 0,
-      traffic: parseInt(row["Tr"]) || 0,
-      difficulty: parseInt(row["Kd"]) || 0,
+      keyword: row["Keyword"] || row["Ph"] || "",
+      position: parseInt(row["Position"] || row["Po"]) || 0,
+      volume: parseInt(row["Search Volume"] || row["Nq"]) || 0,
+      traffic: parseInt(row["Traffic"] || row["Tr"]) || 0,
+      difficulty: parseInt(row["Keyword Difficulty"] || row["Kd"]) || 0,
     };
   }).filter(kw => kw.keyword);
 }
@@ -111,16 +115,17 @@ async function fetchCompetitors(domain, apiKey) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
   const headers = lines[0].split(";").map(h => h.trim());
+  console.log(`[SEMrush] competitors headers: ${headers.join(", ")}`);
   return lines.slice(1).map(line => {
     const values = line.split(";");
     const row = {};
     headers.forEach((h, i) => { row[h] = values[i]?.trim(); });
     return {
-      domain: row["Dn"] || "",
-      commonKeywords: parseInt(row["Np"]) || 0,
-      organicKeywords: parseInt(row["Or"]) || 0,
-      organicTraffic: parseInt(row["Ot"]) || 0,
-      organicCost: parseFloat(row["Oc"]) || 0,
+      domain: row["Domain"] || row["Dn"] || "",
+      commonKeywords: parseInt(row["Common Keywords"] || row["Np"]) || 0,
+      organicKeywords: parseInt(row["Organic Keywords"] || row["Or"]) || 0,
+      organicTraffic: parseInt(row["Organic Traffic"] || row["Ot"]) || 0,
+      organicCost: parseFloat(row["Organic Cost"] || row["Oc"]) || 0,
     };
   }).filter(c => c.domain);
 }
