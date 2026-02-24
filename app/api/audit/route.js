@@ -22,12 +22,14 @@ export async function POST(request) {
 
     const fullUrl = url.startsWith("http") ? url : `https://${url}`;
 
-    // Run all providers in parallel — don't let one failure kill the whole audit
-    const [pageSpeed, crawl, semrush, places] = await Promise.allSettled([
+    // Run ALL providers + checks in parallel — don't let one failure kill the whole audit
+    const [pageSpeed, crawl, semrush, places, sitemapCheck, robotsCheck] = await Promise.allSettled([
       fetchPageSpeed(fullUrl),
       fetchCrawlData(fullUrl),
       fetchSemrush(fullUrl),
       fetchPlacesData(companyName || "", fullUrl),
+      checkUrl(`${fullUrl}/sitemap.xml`),
+      checkUrl(`${fullUrl}/robots.txt`),
     ]);
 
     const ps = pageSpeed.status === "fulfilled" ? pageSpeed.value : null;
@@ -43,12 +45,6 @@ export async function POST(request) {
     if (places.status === "rejected") console.error(`[Audit] Places error: ${places.reason?.message}`);
     if (sr) console.log(`[Audit] SEMrush data: da=${JSON.stringify(sr.domainAuthority)}, bl=${!!sr.backlinks}, kw=${sr.topKeywords?.length}, comp=${sr.competitors?.length}`);
     if (pl) console.log(`[Audit] Places data: found=${pl.found}, hasData=${!!pl.data}, name=${pl.data?.name}`);
-
-    // Also fetch sitemap and robots.txt
-    const [sitemapCheck, robotsCheck] = await Promise.allSettled([
-      checkUrl(`${fullUrl}/sitemap.xml`),
-      checkUrl(`${fullUrl}/robots.txt`),
-    ]);
 
     const hasSitemap = sitemapCheck.status === "fulfilled" && sitemapCheck.value;
     const hasRobots = robotsCheck.status === "fulfilled" && robotsCheck.value;
@@ -108,7 +104,7 @@ function generateId() {
 
 async function checkUrl(url) {
   try {
-    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(5000), redirect: "follow" });
+    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(3000), redirect: "follow" });
     return res.ok;
   } catch { return false; }
 }
