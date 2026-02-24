@@ -30,7 +30,7 @@ export async function fetchSemrush(domain) {
 
 async function fetchDomainRanks(domain, apiKey) {
   const url = `${SEMRUSH_BASE}/?type=domain_ranks&key=${apiKey}&export_columns=Dn,Rk,Or,Ot,Oc,Ad,At,Ac&domain=${domain}&database=us`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   const text = await res.text();
   if (text.includes("ERROR")) throw new Error(`SEMrush domain_ranks: ${text}`);
   const lines = text.trim().split("\n");
@@ -49,7 +49,7 @@ async function fetchDomainRanks(domain, apiKey) {
 
 async function fetchBacklinksOverview(domain, apiKey) {
   const url = `${SEMRUSH_BASE}/analytics/v1/?key=${apiKey}&type=backlinks_overview&target=${domain}&target_type=root_domain&export_columns=total,domains_num,urls_num,ips_num,follows_num,nofollows_num,texts_num,images_num`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   const text = await res.text();
   if (text.includes("ERROR")) throw new Error(`SEMrush backlinks: ${text}`);
   const lines = text.trim().split("\n");
@@ -66,7 +66,7 @@ async function fetchBacklinksOverview(domain, apiKey) {
 
 async function fetchTopKeywords(domain, apiKey) {
   const url = `${SEMRUSH_BASE}/?type=domain_organic&key=${apiKey}&export_columns=Ph,Po,Nq,Tr,Kd&domain=${domain}&database=us&display_limit=10&display_sort=tr_desc`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   const text = await res.text();
   if (text.includes("ERROR")) return [];
   const lines = text.trim().split("\n");
@@ -90,7 +90,7 @@ async function fetchTopKeywords(domain, apiKey) {
 // NEW: Fetch top organic competitors
 async function fetchCompetitors(domain, apiKey) {
   const url = `${SEMRUSH_BASE}/?type=domain_organic_organic&key=${apiKey}&export_columns=Dn,Np,Or,Ot,Oc,Ad&domain=${domain}&database=us&display_limit=5&display_sort=np_desc`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   const text = await res.text();
   if (text.includes("ERROR")) return [];
   const lines = text.trim().split("\n");

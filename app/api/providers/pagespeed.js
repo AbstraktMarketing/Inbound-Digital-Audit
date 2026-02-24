@@ -7,7 +7,7 @@ export async function fetchPageSpeed(url) {
   const results = {};
   for (const strategy of ["mobile", "desktop"]) {
     const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=${strategy}&category=performance&category=accessibility&category=best-practices&category=seo`;
-    const res = await fetch(endpoint, { signal: AbortSignal.timeout(30000) });
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`PageSpeed API error (${strategy}): ${await res.text()}`);
     results[strategy] = await res.json();
   }

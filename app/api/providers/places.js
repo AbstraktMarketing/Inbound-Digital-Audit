@@ -19,7 +19,7 @@ export async function fetchPlacesData(companyName, url) {
     const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${apiKey}`;
 
     try {
-      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(10000) });
+      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(5000) });
       const searchData = await searchRes.json();
 
       console.log(`[Places] Query "${searchQuery}" → status: ${searchData.status}, results: ${searchData.results?.length || 0}`);
@@ -32,7 +32,7 @@ export async function fetchPlacesData(companyName, url) {
         // Get full details
         const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,business_status,rating,user_ratings_total,reviews,types,opening_hours,website,photos,url&key=${apiKey}`;
 
-        const detailsRes = await fetch(detailsUrl, { signal: AbortSignal.timeout(10000) });
+        const detailsRes = await fetch(detailsUrl, { signal: AbortSignal.timeout(5000) });
         const detailsData = await detailsRes.json();
         const result = detailsData.result || {};
 

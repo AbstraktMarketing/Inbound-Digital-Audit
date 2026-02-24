@@ -5,23 +5,23 @@ export async function fetchCrawlData(url) {
   let html = "", headers = {}, sslValid = false, statusCode = 0;
 
   try {
-    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(15000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
+    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(5000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
     statusCode = res.status; html = await res.text(); headers = Object.fromEntries(res.headers.entries());
     sslValid = fullUrl.startsWith("https://") && statusCode < 400;
   } catch (e) {
     try {
-      const res = await fetch(fullUrl.replace("https://", "http://"), { signal: AbortSignal.timeout(15000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
+      const res = await fetch(fullUrl.replace("https://", "http://"), { signal: AbortSignal.timeout(5000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
       statusCode = res.status; html = await res.text(); headers = Object.fromEntries(res.headers.entries());
     } catch (e2) { throw new Error(`Could not reach ${url}: ${e2.message}`); }
   }
 
-  // Fetch blog/content page for freshness — try multiple common paths
+  // Fetch blog/content page for freshness — try common paths IN PARALLEL
   let blogHtml = null;
   let blogPath = null;
-  const blogPaths = ["/blog", "/resources", "/insights", "/news", "/articles", "/posts", "/content"];
+  const blogPaths = ["/blog", "/resources", "/insights", "/news", "/articles"];
 
   // Also scan homepage links for blog-like paths
-  const homepageLinkRegex = /<a\s+[^>]*href\s*=\s*["']([^"']*(?:blog|news|insights|resources|articles|posts)[^"']*)["']/gi;
+  const homepageLinkRegex = /<a\s+[^>]*href\s*=\s*["']([^"']*(?:blog|news|insights|resources|articles)[^"']*)["']/gi;
   let hlMatch;
   while ((hlMatch = homepageLinkRegex.exec(html)) !== null) {
     try {
@@ -30,7 +30,6 @@ export async function fetchCrawlData(url) {
       if (href.startsWith("/")) { pathname = href.split("?")[0].split("#")[0]; }
       else if (href.startsWith("http")) { pathname = new URL(href).pathname; }
       else continue;
-      // Only add root-level blog paths like /blog, /insights (not individual posts)
       const segments = pathname.split("/").filter(Boolean);
       if (segments.length === 1 && !blogPaths.includes("/" + segments[0])) {
         blogPaths.push("/" + segments[0]);
@@ -38,25 +37,30 @@ export async function fetchCrawlData(url) {
     } catch {}
   }
 
-  // Try each path until we find one that returns content
-  for (const path of blogPaths) {
-    try {
-      const blogRes = await fetch(new URL(path, fullUrl).href, {
-        signal: AbortSignal.timeout(6000), redirect: "follow",
-        headers: { "User-Agent": "AbstraktAuditBot/1.0" },
-      });
-      if (blogRes.ok) {
+  // Race all blog paths in parallel — first valid response wins
+  try {
+    const blogResults = await Promise.allSettled(
+      blogPaths.map(async (path) => {
+        const blogRes = await fetch(new URL(path, fullUrl).href, {
+          signal: AbortSignal.timeout(3000), redirect: "follow",
+          headers: { "User-Agent": "AbstraktAuditBot/1.0" },
+        });
+        if (!blogRes.ok) throw new Error("not ok");
         const text = await blogRes.text();
-        // Quick check: does it look like a content listing page? (has multiple links/articles)
-        if (text.length > 2000) {
-          blogHtml = text;
-          blogPath = path;
-          console.log(`[Crawl] Blog found at ${path} (${text.length} chars)`);
-          break;
-        }
+        if (text.length < 2000) throw new Error("too short");
+        return { path, text };
+      })
+    );
+    // Pick the first successful result
+    for (const r of blogResults) {
+      if (r.status === "fulfilled") {
+        blogHtml = r.value.text;
+        blogPath = r.value.path;
+        console.log(`[Crawl] Blog found at ${blogPath} (${blogHtml.length} chars)`);
+        break;
       }
-    } catch {}
-  }
+    }
+  } catch {}
   if (!blogHtml) console.log(`[Crawl] No blog page found. Tried: ${blogPaths.join(", ")}`);
 
   return parseCrawlData(html, headers, sslValid, fullUrl, blogHtml, blogPath);
