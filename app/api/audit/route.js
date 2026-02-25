@@ -2,7 +2,7 @@
 // POST /api/audit — accepts { url, companyName, contactName, email, phone }
 // Returns unified audit data matching BeaconAudit.jsx metric format
 
-import { fetchPageSpeed } from "../providers/gtmetrix.js";
+import { fetchGtmetrix } from "../providers/gtmetrix.js";
 import { fetchCrawlData } from "../providers/crawl.js";
 import { fetchSemrush } from "../providers/semrush.js";
 import { fetchPlacesData } from "../providers/places.js";
