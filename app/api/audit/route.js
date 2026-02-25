@@ -2,7 +2,7 @@
 // POST /api/audit — accepts { url, companyName, contactName, email, phone }
 // Returns unified audit data matching BeaconAudit.jsx metric format
 
-import { fetchPageSpeed } from "../providers/pagespeed.js";
+import { fetchPageSpeed } from "../providers/gtmetrix.js";
 import { fetchCrawlData } from "../providers/crawl.js";
 import { fetchSemrush } from "../providers/semrush.js";
 import { fetchPlacesData } from "../providers/places.js";
@@ -24,7 +24,7 @@ export async function POST(request) {
 
     // Run ALL providers + checks in parallel — don't let one failure kill the whole audit
     const [pageSpeed, crawl, semrush, places, sitemapCheck, robotsCheck] = await Promise.allSettled([
-      fetchPageSpeed(fullUrl),
+      fetchGtmetrix(fullUrl),
       fetchCrawlData(fullUrl),
       fetchSemrush(fullUrl),
       fetchPlacesData(companyName || "", fullUrl),
