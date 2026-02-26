@@ -111,6 +111,56 @@ async function fetchCompetitors(domain, apiKey) {
   }).filter(c => c.domain);
 }
 
+// NEW: Fetch Site Audit health score from SEMrush project
+export async function fetchSiteAudit(projectId, apiKey) {
+  if (!projectId) return null;
+  if (!apiKey) apiKey = process.env.SEMRUSH_API_KEY;
+  if (!apiKey) throw new Error("SEMRUSH_API_KEY not configured");
+
+  const url = `https://api.semrush.com/reports/v1/projects/${projectId}/siteaudit/info?key=${apiKey}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[SEMrush] Site Audit failed (${res.status}): ${text}`);
+    return null;
+  }
+
+  const data = await res.json();
+  console.log(`[SEMrush] Site Audit data: status=${data.status}, errors=${data.errors}, warnings=${data.warnings}, pages=${data.pages_crawled}`);
+
+  if (data.status !== "FINISHED") {
+    console.warn(`[SEMrush] Site Audit not finished: ${data.status}`);
+    return { status: data.status, score: null };
+  }
+
+  // Calculate health score: SEMrush formula is based on errors/warnings vs total checks
+  // Higher errors = lower score. Errors weigh more than warnings.
+  const totalChecks = data.total_checks || 1;
+  const errors = data.errors || 0;
+  const warnings = data.warnings || 0;
+  // Approximate SEMrush's scoring: each error ~3x impact, each warning ~1x
+  const issueImpact = (errors * 3 + warnings) / totalChecks;
+  const healthScore = Math.max(0, Math.min(100, Math.round(100 - (issueImpact * 100))));
+
+  return {
+    status: data.status,
+    score: healthScore,
+    errors: errors,
+    warnings: warnings,
+    notices: data.notices || 0,
+    healthy: data.healthy || 0,
+    haveIssues: data.haveIssues || 0,
+    pagesCrawled: data.pages_crawled || 0,
+    totalChecks: totalChecks,
+    // Top issues for the "Site Health — Biggest Areas to Improve" card
+    topIssues: data.defects ? Object.entries(data.defects).map(([id, count]) => ({
+      issueId: id,
+      count: count,
+    })) : [],
+  };
+}
+
 function parseCSV(lines) {
   const headers = lines[0].split(";");
   const values = lines[1].split(";");
