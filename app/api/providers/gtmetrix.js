@@ -54,7 +54,7 @@ export async function fetchGtmetrix(url) {
     throw new Error(`GTmetrix: No test ID in response. Response keys: ${Object.keys(startData).join(", ")}`);
   }
 
-  // 2. Poll until complete (max ~45s)
+  // 2. Poll until complete (max ~55s)
   const maxWait = 55000;
   const pollInterval = 3000;
   const startTime = Date.now();
