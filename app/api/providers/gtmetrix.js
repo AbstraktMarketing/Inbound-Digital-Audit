@@ -54,7 +54,7 @@ export async function fetchGtmetrix(url) {
     throw new Error(`GTmetrix: No test ID in response. Response keys: ${Object.keys(startData).join(", ")}`);
   }
 
-  // 2. Poll until complete (max ~110s)
+  // 2. Poll until complete (max ~110s — Vercel maxDuration is 120s)
   const maxWait = 110000;
   const pollInterval = 3000;
   const startTime = Date.now();
@@ -73,6 +73,7 @@ export async function fetchGtmetrix(url) {
 
     const pollData = await pollRes.json();
     const state = pollData.data?.attributes?.state;
+    console.log(`[GTmetrix] Poll: state=${state}, elapsed=${Math.round((Date.now() - startTime) / 1000)}s`);
 
     if (state === "completed") {
       testData = pollData.data;
