@@ -203,7 +203,7 @@ function buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit) {
       expectedImpact: "A clean site means more prospects reach your conversion pages instead of bouncing.", difficulty: "Medium",
     },
     {
-      label: "Page Speed & Performance", value: perfScore !== null ? `${perfScore}%` : "Analyzing...", status: toStatus(perfScore, 90, 50),
+     label: "GTmetrix Performance", value: perfScore !== null ? `${perfScore}%` : "Analyzing...", status: toStatus(perfScore, 90, 50),
       detail: ps ? `Desktop: ${ps.desktopScore}% | Mobile: ${ps.mobileScore}%` : "Analyzing...",
       impact: "high", findings: speedFindings,
       why: "53% of mobile visitors abandon pages that take over 3 seconds. Every second of delay costs you leads.",
