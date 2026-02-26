@@ -54,8 +54,8 @@ export async function fetchGtmetrix(url) {
     throw new Error(`GTmetrix: No test ID in response. Response keys: ${Object.keys(startData).join(", ")}`);
   }
 
-  // 2. Poll until complete (max ~55s)
-  const maxWait = 55000;
+  // 2. Poll until complete (max ~110s)
+  const maxWait = 110000;
   const pollInterval = 3000;
   const startTime = Date.now();
   let testData = null;
@@ -88,7 +88,7 @@ export async function fetchGtmetrix(url) {
   }
 
   if (!testData) {
-    throw new Error("GTmetrix: Test timed out after 55s");
+    throw new Error("GTmetrix: Test timed out after 110s");
   }
 
   // 3. Get the report
