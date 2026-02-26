@@ -88,7 +88,7 @@ export async function fetchGtmetrix(url) {
   }
 
   if (!testData) {
-    throw new Error("GTmetrix: Test timed out after 45s");
+    throw new Error("GTmetrix: Test timed out after 55s");
   }
 
   // 3. Get the report
