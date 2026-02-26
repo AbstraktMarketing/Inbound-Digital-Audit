@@ -55,7 +55,7 @@ export async function fetchGtmetrix(url) {
   }
 
   // 2. Poll until complete (max ~45s)
-  const maxWait = 45000;
+  const maxWait = 55000;
   const pollInterval = 3000;
   const startTime = Date.now();
   let testData = null;
