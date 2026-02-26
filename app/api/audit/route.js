@@ -9,7 +9,7 @@ import { fetchPlacesData } from "../providers/places.js";
 import { appendAuditToSheet } from "../providers/sheets.js";
 import { kv } from "@vercel/kv";
 
-export const maxDuration = 60; // Allow up to 60s for all providers to complete
+export const maxDuration = 120; // Allow up to 60s for all providers to complete
 
 export async function POST(request) {
   try {
