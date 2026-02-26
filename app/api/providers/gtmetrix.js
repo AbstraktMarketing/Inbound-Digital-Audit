@@ -5,10 +5,11 @@
 const GTMETRIX_BASE = "https://gtmetrix.com/api/2.0";
 
 export async function fetchGtmetrix(url) {
-  const apiKey = process.env.GTMetrix_API_Key;
-  if (!apiKey) throw new Error("GTMetrix_API_Key not configured");
+  // Support multiple env var naming conventions
+  const apiKey = process.env.GTMetrix_API_Key || process.env.GTMETRIX_API_KEY || process.env.GTMETRIX_API_Key;
+  if (!apiKey) throw new Error("GTmetrix API key not configured. Set GTMetrix_API_Key or GTMETRIX_API_KEY in environment variables.");
 
-  // Auth header: Basic base64(apiKey + ":")
+  // Auth header: Basic base64(apiKey + ":") — v2.0 uses API key as username, empty password
   const authHeader = "Basic " + Buffer.from(apiKey + ":").toString("base64");
 
   // 1. Start the test
@@ -27,19 +28,30 @@ export async function fetchGtmetrix(url) {
         },
       },
     }),
+    signal: AbortSignal.timeout(15000),
   });
 
+  // Handle HTTP errors
   if (!startRes.ok) {
     const errBody = await startRes.text();
     throw new Error(`GTmetrix start test failed (${startRes.status}): ${errBody}`);
   }
 
   const startData = await startRes.json();
+
+  // Check for JSON:API error responses (GTmetrix may return 200 with errors array)
+  if (startData.errors) {
+    const errMsg = startData.errors.map(e => e.title || e.detail || e.code).join("; ");
+    throw new Error(`GTmetrix API error: ${errMsg}`);
+  }
+
   const testId = startData.data?.id;
   const pollUrl = startData.data?.links?.self;
 
-  if (!testId || !pollUrl) {
-    throw new Error("GTmetrix: No test ID or poll URL in response");
+  if (!testId) {
+    // Log the actual response for debugging
+    console.error("[GTmetrix] Unexpected start response:", JSON.stringify(startData).substring(0, 500));
+    throw new Error(`GTmetrix: No test ID in response. Response keys: ${Object.keys(startData).join(", ")}`);
   }
 
   // 2. Poll until complete (max ~45s)
