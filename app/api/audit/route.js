@@ -2,14 +2,14 @@
 // POST /api/audit — accepts { url, companyName, contactName, email, phone }
 // Returns unified audit data matching BeaconAudit.jsx metric format
 
-import { fetchGtmetrix } from "../providers/gtmetrix.js";
+import { fetchPageSpeed } from "../providers/pagespeed.js";
 import { fetchCrawlData } from "../providers/crawl.js";
 import { fetchSemrush, fetchSiteAudit } from "../providers/semrush.js";
 import { fetchPlacesData } from "../providers/places.js";
 import { appendAuditToSheet } from "../providers/sheets.js";
 import { kv } from "@vercel/kv";
 
-export const maxDuration = 120; // Allow up to 60s for all providers to complete
+export const maxDuration = 60; // Allow up to 60s for all providers to complete
 
 export async function POST(request) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request) {
 
     // Run ALL providers + checks in parallel — don't let one failure kill the whole audit
     const [pageSpeed, crawl, semrush, places, sitemapCheck, robotsCheck] = await Promise.allSettled([
-      fetchGtmetrix(fullUrl),
+      fetchPageSpeed(fullUrl),
       fetchCrawlData(fullUrl),
       fetchSemrush(fullUrl),
       fetchPlacesData(companyName || "", fullUrl),
@@ -203,7 +203,7 @@ function buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit) {
       expectedImpact: "A clean site means more prospects reach your conversion pages instead of bouncing.", difficulty: "Medium",
     },
     {
-     label: "GTmetrix Performance", value: perfScore !== null ? `${perfScore}%` : "Analyzing...", status: toStatus(perfScore, 90, 50),
+      label: "Page Speed & Performance", value: perfScore !== null ? `${perfScore}%` : "Analyzing...", status: toStatus(perfScore, 90, 50),
       detail: ps ? `Desktop: ${ps.desktopScore}% | Mobile: ${ps.mobileScore}%` : "Analyzing...",
       impact: "high", findings: speedFindings,
       why: "53% of mobile visitors abandon pages that take over 3 seconds. Every second of delay costs you leads.",
