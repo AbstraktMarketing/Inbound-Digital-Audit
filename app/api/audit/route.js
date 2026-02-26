@@ -4,7 +4,7 @@
 
 import { fetchGtmetrix } from "../providers/gtmetrix.js";
 import { fetchCrawlData } from "../providers/crawl.js";
-import { fetchSemrush } from "../providers/semrush.js";
+import { fetchSemrush, fetchSiteAudit } from "../providers/semrush.js";
 import { fetchPlacesData } from "../providers/places.js";
 import { appendAuditToSheet } from "../providers/sheets.js";
 import { kv } from "@vercel/kv";
@@ -14,7 +14,7 @@ export const maxDuration = 60; // Allow up to 60s for all providers to complete
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { url, companyName, contactName, email, phone } = body;
+    const { url, companyName, contactName, email, phone, semrushProjectId } = body;
 
     if (!url) {
       return Response.json({ error: "URL is required" }, { status: 400 });
@@ -49,10 +49,21 @@ export async function POST(request) {
     const hasSitemap = sitemapCheck.status === "fulfilled" && sitemapCheck.value;
     const hasRobots = robotsCheck.status === "fulfilled" && robotsCheck.value;
 
+    // Fetch SEMrush Site Audit if project ID provided (separate call, not parallel — needs API key)
+    let siteAudit = null;
+    if (semrushProjectId) {
+      try {
+        siteAudit = await fetchSiteAudit(semrushProjectId);
+        console.log(`[Audit] Site Audit: score=${siteAudit?.score}, errors=${siteAudit?.errors}, warnings=${siteAudit?.warnings}`);
+      } catch (err) {
+        console.error(`[Audit] Site Audit error: ${err.message}`);
+      }
+    }
+
     // --- Map to metric format ---
     const audit = {
-      meta: { url: fullUrl, companyName, contactName, email, phone, timestamp: new Date().toISOString() },
-      webPerf: buildWebPerfMetrics(ps, cr, hasSitemap),
+      meta: { url: fullUrl, companyName, contactName, email, phone, semrushProjectId: semrushProjectId || null, timestamp: new Date().toISOString() },
+      webPerf: buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit),
       seo: buildSEOMetrics(sr, hasSitemap, hasRobots),
       keywords: buildKeywords(sr),
       content: buildContentMetrics(cr, ps),
@@ -132,7 +143,7 @@ function calcScore(metrics) {
   return Math.round(totalScore / totalWeight);
 }
 
-function buildWebPerfMetrics(ps, cr) {
+function buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit) {
   const perfScore = ps?.performanceScore ?? null;
   const sslValid = cr?.ssl?.valid ?? ps?.isHttps ?? null;
   const http2 = cr?.http2 ?? null;
@@ -145,8 +156,11 @@ function buildWebPerfMetrics(ps, cr) {
   const largestRes = ps?.largestResources || [];
   const cwv = ps?.coreWebVitals || {};
   const blockingRes = ps?.blockingResources || [];
-  const siteHealth = ps ? Math.round((ps.performanceScore + (ps.seoScore || 70) + (ps.accessibilityScore || 70)) / 3) : null;
   const emptyLinks = cr?.content?.emptyLinks || 0;
+
+  // Site Health: Use SEMrush Site Audit score if available
+  const siteHealth = siteAudit?.score ?? null;
+  const siteHealthSource = siteAudit ? "semrush" : null;
 
   // Build specific findings for site health
   const healthFindings = [];
@@ -177,8 +191,12 @@ function buildWebPerfMetrics(ps, cr) {
 
   const metrics = [
     {
-      label: "Site Health", value: siteHealth !== null ? `${siteHealth}%` : "Analyzing...", status: toStatus(siteHealth, 90, 70),
-      detail: siteHealth !== null ? `Combined performance (${ps?.performanceScore || "?"}%), SEO (${ps?.seoScore || "?"}%), and accessibility (${ps?.accessibilityScore || "?"}%) score.` : "Analyzing...",
+      label: "Site Health", 
+      value: siteHealth !== null ? `${siteHealth}%` : "Requires SEMrush Project",
+      status: siteHealth !== null ? toStatus(siteHealth, 90, 70) : "warning",
+      detail: siteHealth !== null 
+        ? `SEMrush Site Audit: ${siteAudit.errors} errors, ${siteAudit.warnings} warnings across ${siteAudit.pagesCrawled} pages.`
+        : "Add your SEMrush Project ID to pull live site health data from SEMrush Site Audit.",
       weighted: true, impact: "high", findings: healthFindings,
       why: "Technical issues silently drive away prospects. Every crawl error or broken page is a potential customer who never sees your offer.",
       fix: "Run a full technical audit to identify and resolve broken links, redirect chains, and crawl errors.",
