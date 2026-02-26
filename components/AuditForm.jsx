@@ -11,7 +11,7 @@ const accentAlt = brand.cloudBlue;
 
 export default function AuditForm({ onSubmit, theme: t }) {
   const [form, setForm] = React.useState({
-    companyName: "", url: "", contactName: "", email: "", phone: "",
+    companyName: "", url: "", contactName: "", email: "", phone: "", semrushProjectId: "",
   });
   const [errors, setErrors] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -136,6 +136,15 @@ export default function AuditForm({ onSubmit, theme: t }) {
               style={inputStyle("email")}
             />
             {errors.email && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.email}</div>}
+          </div>
+
+          <div>
+            <label style={labelStyle}>SEMrush Project ID <span style={{ opacity: 0.5, textTransform: "none", fontWeight: 400 }}>(optional — for Site Health)</span></label>
+            <input
+              type="text" value={form.semrushProjectId} placeholder="e.g. 4594705336925861"
+              onChange={e => update("semrushProjectId", e.target.value)}
+              style={inputStyle("semrushProjectId")}
+            />
           </div>
 
           <button
