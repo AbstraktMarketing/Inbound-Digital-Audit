@@ -112,52 +112,72 @@ async function fetchCompetitors(domain, apiKey) {
 }
 
 // NEW: Fetch Site Audit health score from SEMrush project
+// Flow: 1) Get latest snapshot ID  2) Get snapshot details with actual quality score
 export async function fetchSiteAudit(projectId, apiKey) {
   if (!projectId) return null;
   if (!apiKey) apiKey = process.env.SEMRUSH_API_KEY;
   if (!apiKey) throw new Error("SEMRUSH_API_KEY not configured");
 
-  const url = `https://api.semrush.com/reports/v1/projects/${projectId}/siteaudit/info?key=${apiKey}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  // Step 1: Get list of snapshots to find the latest one
+  const snapshotsUrl = `https://api.semrush.com/reports/v1/projects/${projectId}/siteaudit/snapshots?key=${apiKey}`;
+  const snapRes = await fetch(snapshotsUrl, { signal: AbortSignal.timeout(10000) });
   
-  if (!res.ok) {
-    const text = await res.text();
-    console.error(`[SEMrush] Site Audit failed (${res.status}): ${text}`);
+  if (!snapRes.ok) {
+    const text = await snapRes.text();
+    console.error(`[SEMrush] Site Audit snapshots failed (${snapRes.status}): ${text}`);
     return null;
   }
 
-  const data = await res.json();
-  console.log(`[SEMrush] Site Audit data: status=${data.status}, errors=${data.errors}, warnings=${data.warnings}, pages=${data.pages_crawled}`);
-
-  if (data.status !== "FINISHED") {
-    console.warn(`[SEMrush] Site Audit not finished: ${data.status}`);
-    return { status: data.status, score: null };
+  const snapData = await snapRes.json();
+  const snapshots = snapData.snapshots || [];
+  
+  if (snapshots.length === 0) {
+    console.warn("[SEMrush] No site audit snapshots found — audit may not have run yet");
+    return null;
   }
 
-  // Calculate health score: SEMrush formula is based on errors/warnings vs total checks
-  // Higher errors = lower score. Errors weigh more than warnings.
-  const totalChecks = data.total_checks || 1;
-  const errors = data.errors || 0;
-  const warnings = data.warnings || 0;
-  // Approximate SEMrush's scoring: each error ~3x impact, each warning ~1x
-  const issueImpact = (errors * 3 + warnings) / totalChecks;
-  const healthScore = Math.max(0, Math.min(100, Math.round(100 - (issueImpact * 100))));
+  // Get the most recent snapshot (last in array, or sort by finish_date)
+  const latest = snapshots.sort((a, b) => (b.finish_date || 0) - (a.finish_date || 0))[0];
+  console.log(`[SEMrush] Latest snapshot: ${latest.snapshot_id}, finished: ${new Date(latest.finish_date).toISOString()}`);
+
+  // Step 2: Get snapshot details — this returns the actual quality.value score
+  const detailUrl = `https://api.semrush.com/reports/v1/projects/${projectId}/siteaudit/snapshot?key=${apiKey}&snapshot_id=${latest.snapshot_id}`;
+  const detailRes = await fetch(detailUrl, { signal: AbortSignal.timeout(10000) });
+
+  if (!detailRes.ok) {
+    const text = await detailRes.text();
+    console.error(`[SEMrush] Site Audit snapshot detail failed (${detailRes.status}): ${text}`);
+    return null;
+  }
+
+  const detail = await detailRes.json();
+  const score = detail.quality?.value ?? null;
+  const scoreDelta = detail.quality?.delta ?? 0;
+
+  // Count errors and warnings from the detailed breakdown
+  const errors = (detail.errors || []).reduce((sum, e) => sum + (e.count || 0), 0);
+  const warnings = (detail.warnings || []).reduce((sum, w) => sum + (w.count || 0), 0);
+  const notices = (detail.notices || []).reduce((sum, n) => sum + (n.count || 0), 0);
+  const totalChecks = (detail.errors || []).reduce((sum, e) => sum + (e.checks || 0), 0)
+    + (detail.warnings || []).reduce((sum, w) => sum + (w.checks || 0), 0);
+
+  console.log(`[SEMrush] Site Audit score: ${score}% (delta: ${scoreDelta}), errors: ${errors}, warnings: ${warnings}, notices: ${notices}`);
 
   return {
-    status: data.status,
-    score: healthScore,
+    status: "FINISHED",
+    score: score,
+    scoreDelta: scoreDelta,
     errors: errors,
     warnings: warnings,
-    notices: data.notices || 0,
-    healthy: data.healthy || 0,
-    haveIssues: data.haveIssues || 0,
-    pagesCrawled: data.pages_crawled || 0,
+    notices: notices,
+    pagesCrawled: detail.pages_crawled || snapshots.length > 0 ? detail.pages_crawled || 0 : 0,
     totalChecks: totalChecks,
-    // Top issues for the "Site Health — Biggest Areas to Improve" card
-    topIssues: data.defects ? Object.entries(data.defects).map(([id, count]) => ({
-      issueId: id,
-      count: count,
-    })) : [],
+    snapshotId: latest.snapshot_id,
+    // Top issues with counts for the breakdown card
+    topIssues: [
+      ...(detail.errors || []).map(e => ({ issueId: e.id, count: e.count, type: "error" })),
+      ...(detail.warnings || []).map(w => ({ issueId: w.id, count: w.count, type: "warning" })),
+    ].sort((a, b) => b.count - a.count).slice(0, 10),
   };
 }
 
