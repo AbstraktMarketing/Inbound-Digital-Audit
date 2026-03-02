@@ -1024,10 +1024,11 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
   const [recap, setRecap] = useState(initialAuditData?.recap || {});
   const [recapSaving, setRecapSaving] = useState(false);
   const t = getTheme(mode);
+  const hasPendingProviders = !!liveAudit?.pendingProviders?.length;
 
   // Auto-refresh: poll every 30s if there are pending providers
   React.useEffect(() => {
-    if (!auditId || !liveAudit?.pendingProviders?.length) return;
+    if (!auditId || !hasPendingProviders) return;
     let cancelled = false;
     let attempts = 0;
     const maxAttempts = 6; // 6 x 30s = 3 minutes max
@@ -1060,7 +1061,7 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
     // First poll after 30 seconds
     const timer = setTimeout(poll, 30000);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [auditId, !liveAudit?.pendingProviders?.length]);
+  }, [auditId, hasPendingProviders]);
 
   const auditData = liveAudit;
   const hasPending = auditData?.pendingProviders?.length > 0;

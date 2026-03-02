@@ -50,12 +50,14 @@ export async function GET(request, { params }) {
 
     let updated = false;
 
+    // Check sitemap/robots once for all builders that need it
+    const [sitemapCheck, robotsCheck] = await Promise.allSettled([checkUrl(`${fullUrl}/sitemap.xml`), checkUrl(`${fullUrl}/robots.txt`)]);
+    const hasSitemap = sitemapCheck.status === "fulfilled" && sitemapCheck.value;
+    const hasRobots = robotsCheck.status === "fulfilled" && robotsCheck.value;
+
     // Rebuild only sections where we got new data
     if (ps && pending.has("pageSpeed")) {
-      const [sitemapCheck, robotsCheck] = await Promise.allSettled([checkUrl(`${fullUrl}/sitemap.xml`), checkUrl(`${fullUrl}/robots.txt`)]);
-      const hasSitemap = sitemapCheck.status === "fulfilled" && sitemapCheck.value;
-      const hasRobots = robotsCheck.status === "fulfilled" && robotsCheck.value;
-      audit.webPerf = buildWebPerfMetrics(ps, cr || null);
+      audit.webPerf = buildWebPerfMetrics(ps, cr || null, hasSitemap, audit.siteAudit || null);
       audit.content = buildContentMetrics(cr || null, ps);
       if (sr || audit.seo) {
         audit.seo = buildSEOMetrics(sr || null, hasSitemap, hasRobots);
@@ -64,8 +66,7 @@ export async function GET(request, { params }) {
       updated = true;
     }
     if (cr && pending.has("crawl")) {
-      // Rebuild sections that depend on crawl
-      audit.webPerf = buildWebPerfMetrics(ps || null, cr);
+      audit.webPerf = buildWebPerfMetrics(ps || null, cr, hasSitemap, audit.siteAudit || null);
       audit.content = buildContentMetrics(cr, ps || null);
       audit.socialLocal = buildSocialMetrics(cr);
       audit.aiSeo = buildAISEOMetrics(cr);
@@ -74,9 +75,6 @@ export async function GET(request, { params }) {
       updated = true;
     }
     if (sr && pending.has("semrush")) {
-      const [sitemapCheck, robotsCheck] = await Promise.allSettled([checkUrl(`${fullUrl}/sitemap.xml`), checkUrl(`${fullUrl}/robots.txt`)]);
-      const hasSitemap = sitemapCheck.status === "fulfilled" && sitemapCheck.value;
-      const hasRobots = robotsCheck.status === "fulfilled" && robotsCheck.value;
       audit.seo = buildSEOMetrics(sr, hasSitemap, hasRobots);
       audit.keywords = buildKeywords(sr);
       pending.delete("semrush");

@@ -72,6 +72,7 @@ export async function POST(request) {
       aiSeo: buildAISEOMetrics(cr),
       entity: buildEntityMetrics(pl, cr),
       places: pl?.data || null,
+      siteAudit: siteAudit || null,
       errors: {
         pageSpeed: pageSpeed.status === "rejected" ? pageSpeed.reason?.message : null,
         crawl: crawl.status === "rejected" ? crawl.reason?.message : null,

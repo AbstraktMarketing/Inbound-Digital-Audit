@@ -11,13 +11,18 @@ export default function ResultsPage({ params }) {
   const t = getTheme("light");
 
   useEffect(() => {
-    fetch(`/api/audit/${id}`)
+    const controller = new AbortController();
+    fetch(`/api/audit/${id}`, { signal: controller.signal })
       .then(res => {
         if (!res.ok) throw new Error(res.status === 404 ? "Audit not found" : "Failed to load");
         return res.json();
       })
       .then(data => { setAuditData(data); setLoading(false); })
-      .catch(err => { setError(err.message); setLoading(false); });
+      .catch(err => {
+        if (err.name === "AbortError") return;
+        setError(err.message); setLoading(false);
+      });
+    return () => controller.abort();
   }, [id]);
 
   if (loading) {
