@@ -1,4 +1,5 @@
 // SEMrush API — domain metrics + competitor analysis
+import { cleanDomain } from "./utils.js";
 
 const SEMRUSH_BASE = "https://api.semrush.com";
 
@@ -6,17 +7,17 @@ export async function fetchSemrush(domain) {
   const apiKey = process.env.SEMRUSH_API_KEY;
   if (!apiKey) throw new Error("SEMRUSH_API_KEY not configured");
 
-  const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
-  console.log(`[SEMrush] Fetching data for domain: ${cleanDomain}`);
+  const clean = cleanDomain(domain);
+  console.log(`[SEMrush] Fetching data for domain: ${clean}`);
 
   const [domainRanks, backlinks, topKeywords, competitors] = await Promise.allSettled([
-    fetchDomainRanks(cleanDomain, apiKey),
-    fetchBacklinksOverview(cleanDomain, apiKey),
-    fetchTopKeywords(cleanDomain, apiKey),
-    fetchCompetitors(cleanDomain, apiKey),
+    fetchDomainRanks(clean, apiKey),
+    fetchBacklinksOverview(clean, apiKey),
+    fetchTopKeywords(clean, apiKey),
+    fetchCompetitors(clean, apiKey),
   ]);
 
-  console.log(`[SEMrush] Results for ${cleanDomain}: ranks=${domainRanks.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}`);
+  console.log(`[SEMrush] Results for ${clean}: ranks=${domainRanks.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}`);
   if (domainRanks.status === "rejected") console.error(`[SEMrush] domainRanks error: ${domainRanks.reason?.message}`);
   if (backlinks.status === "rejected") console.error(`[SEMrush] backlinks error: ${backlinks.reason?.message}`);
 

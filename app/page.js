@@ -2,26 +2,8 @@
 import React, { useState } from "react";
 import AuditForm from "../components/AuditForm";
 import AuditLoading from "../components/AuditLoading";
-import DigitalHealthAssessment from "../components/BeaconAudit";
-
-const brand = { talentTeal: "#42BFBA", cloudBlue: "#0481A3" };
-
-function getTheme(mode) {
-  if (mode === "dark") return {
-    bg: "#111114", bgGrad: "linear-gradient(180deg, #111114 0%, #0d0d12 50%, #0f1015 100%)",
-    cardBg: "rgba(255,255,255,0.035)", cardBorder: "rgba(255,255,255,0.07)",
-    subtle: "rgba(239,239,239,0.55)", body: "rgba(239,239,239,0.72)",
-    text: "#EFEFEF", inputBg: "rgba(255,255,255,0.025)",
-    hoverRow: "rgba(66,191,186,0.03)", logoFill: "#EFEFEF",
-  };
-  return {
-    bg: "#f5f5f7", bgGrad: "linear-gradient(180deg, #f5f5f7 0%, #eeeef0 50%, #e8e8ec 100%)",
-    cardBg: "rgba(255,255,255,0.85)", cardBorder: "rgba(0,0,0,0.08)",
-    subtle: "rgba(51,51,51,0.58)", body: "rgba(51,51,51,0.75)",
-    text: "#1a1a1a", inputBg: "rgba(0,0,0,0.03)",
-    hoverRow: "rgba(66,191,186,0.05)", logoFill: "#333333",
-  };
-}
+import DigitalHealthAssessment from "../components/DigitalHealthAssessment";
+import { getTheme } from "../constants/brand.js";
 
 export default function Home() {
   const [view, setView] = useState("form"); // "form" | "loading" | "results"

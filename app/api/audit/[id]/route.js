@@ -1,4 +1,5 @@
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+const kv = Redis.fromEnv();
 import { fetchPageSpeed } from "../../providers/pagespeed.js";
 import { fetchCrawlData } from "../../providers/crawl.js";
 import { fetchSemrush } from "../../providers/semrush.js";
@@ -14,12 +15,10 @@ export async function GET(request, { params }) {
     return Response.json({ error: "Invalid audit ID" }, { status: 400 });
   }
 
-  const raw = await kv.get(`audit:${id}`);
-  if (!raw) {
+  const audit = await kv.get(`audit:${id}`);
+  if (!audit) {
     return Response.json({ error: "Audit not found" }, { status: 404 });
   }
-
-  const audit = typeof raw === "string" ? JSON.parse(raw) : raw;
 
   // If ?refresh=true and there are pending providers, re-run them
   const url = new URL(request.url);
@@ -112,7 +111,7 @@ export async function GET(request, { params }) {
     }
 
     // Always save — either we got new data or we updated retry counts
-    await kv.set(`audit:${id}`, JSON.stringify(audit));
+    await kv.set(`audit:${id}`, audit);
   }
 
   return Response.json(audit);
@@ -125,13 +124,17 @@ export async function PATCH(request, { params }) {
     return Response.json({ error: "Invalid audit ID" }, { status: 400 });
   }
 
-  const raw = await kv.get(`audit:${id}`);
-  if (!raw) {
+  const audit = await kv.get(`audit:${id}`);
+  if (!audit) {
     return Response.json({ error: "Audit not found" }, { status: 404 });
   }
 
-  const audit = typeof raw === "string" ? JSON.parse(raw) : raw;
-  const body = await request.json();
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
   // Merge recap data
   if (body.recap) {
@@ -149,6 +152,6 @@ export async function PATCH(request, { params }) {
     audit.recap = { ...(audit.recap || {}), ...sanitized };
   }
 
-  await kv.set(`audit:${id}`, JSON.stringify(audit));
+  await kv.set(`audit:${id}`, audit);
   return Response.json({ ok: true, recap: audit.recap });
 }

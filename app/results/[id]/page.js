@@ -1,17 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import DigitalHealthAssessment from "../../../components/BeaconAudit";
-
-function getTheme(mode) {
-  if (mode === "dark") return {
-    bg: "#111114", bgGrad: "linear-gradient(180deg, #111114 0%, #0d0d12 50%, #0f1015 100%)",
-    text: "#EFEFEF", subtle: "rgba(239,239,239,0.55)", body: "rgba(239,239,239,0.72)",
-  };
-  return {
-    bg: "#f5f5f7", bgGrad: "linear-gradient(180deg, #f5f5f7 0%, #eeeef0 50%, #e8e8ec 100%)",
-    text: "#1a1a1a", subtle: "rgba(51,51,51,0.58)", body: "rgba(51,51,51,0.75)",
-  };
-}
+import DigitalHealthAssessment from "../../../components/DigitalHealthAssessment";
+import { getTheme } from "../../../constants/brand.js";
 
 export default function ResultsPage({ params }) {
   const { id } = params;

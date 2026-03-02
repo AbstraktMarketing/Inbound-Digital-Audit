@@ -1,9 +1,16 @@
 // Diagnostic endpoint — test Google Places API
 // GET /api/debug/places?company=Abstrakt+Marketing+Group&url=abstraktmg.com
+// Protected by DEBUG_API_SECRET bearer token
 
 import { fetchPlacesData } from "../../providers/places.js";
 
 export async function GET(request) {
+  const secret = process.env.DEBUG_API_SECRET;
+  const auth = request.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const company = searchParams.get("company") || "Abstrakt Marketing Group";
   const url = searchParams.get("url") || "abstraktmg.com";
@@ -32,7 +39,7 @@ export async function GET(request) {
       company,
       url,
       apiKeySet: true,
-      apiKeyPrefix: apiKey.substring(0, 12) + "...",
+      apiKeySet: true,
       rawAPI: {
         status: rawData.status,
         errorMessage: rawData.error_message || null,

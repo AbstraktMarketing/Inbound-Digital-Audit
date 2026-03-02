@@ -1,10 +1,16 @@
 // Diagnostic endpoint — test SEMrush API connectivity
 // GET /api/debug/semrush?domain=abstraktmg.com
-// Protected by API secret to prevent abuse
+// Protected by DEBUG_API_SECRET bearer token
 
 import { fetchSemrush } from "../../providers/semrush.js";
 
 export async function GET(request) {
+  const secret = process.env.DEBUG_API_SECRET;
+  const auth = request.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const domain = searchParams.get("domain") || "abstraktmg.com";
 
@@ -19,8 +25,6 @@ export async function GET(request) {
   
   try {
     console.log(`[SEMrush Debug] Testing domain: ${domain}`);
-    console.log(`[SEMrush Debug] API key starts with: ${apiKey.substring(0, 8)}...`);
-    
     const directRes = await fetch(testUrl, { signal: AbortSignal.timeout(15000) });
     const directText = await directRes.text();
     console.log(`[SEMrush Debug] Direct response status: ${directRes.status}`);
@@ -38,7 +42,7 @@ export async function GET(request) {
     return Response.json({
       domain,
       apiKeySet: true,
-      apiKeyPrefix: apiKey.substring(0, 8) + "...",
+      apiKeySet: true,
       directAPI: {
         status: directRes.status,
         body: directText.substring(0, 1000),

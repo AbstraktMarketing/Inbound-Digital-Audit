@@ -55,7 +55,7 @@ app/
     semrush.js               # SEMrush API
     places.js                # Google Places API
 components/
-  BeaconAudit.jsx            # Results display (1700 lines)
+  DigitalHealthAssessment.jsx # Results display
   AuditForm.jsx              # Intake form
   AuditLoading.jsx           # Loading animation
 ```

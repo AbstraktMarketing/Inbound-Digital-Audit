@@ -1,13 +1,6 @@
 "use client";
 import React from "react";
-
-const brand = {
-  pipelineRed: "#FF210F",
-  talentTeal: "#42BFBA",
-  cloudBlue: "#0481A3",
-};
-const accent = brand.talentTeal;
-const accentAlt = brand.cloudBlue;
+import { brand, accent, accentAlt } from "../constants/brand.js";
 
 export default function AuditForm({ onSubmit, theme: t }) {
   const [form, setForm] = React.useState({
@@ -33,8 +26,14 @@ export default function AuditForm({ onSubmit, theme: t }) {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setSubmitting(true);
-    const cleaned = { ...form };
-    onSubmit(cleaned);
+    try {
+      const cleaned = { ...form };
+      await onSubmit(cleaned);
+    } catch (err) {
+      setErrors({ submit: err.message || "Something went wrong. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function update(field, value) {

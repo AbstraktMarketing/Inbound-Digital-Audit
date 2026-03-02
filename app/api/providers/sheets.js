@@ -3,8 +3,8 @@
 
 import crypto from "crypto";
 
-const SPREADSHEET_ID = "1re1Nu4n7JfKhZEFikvcq_0k8AnhNQE9Xim9Qxip8m_I";
-const SHEET_NAME = "Inbound Digital Audit";
+const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID || "1re1Nu4n7JfKhZEFikvcq_0k8AnhNQE9Xim9Qxip8m_I";
+const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || "Inbound Digital Audit";
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 let sheetVerified = false;
 

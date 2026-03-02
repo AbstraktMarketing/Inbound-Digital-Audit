@@ -1,16 +1,17 @@
 // Custom URL crawl provider — extracts hyper-specific findings for personalization
+import { USER_AGENT } from "./utils.js";
 
 export async function fetchCrawlData(url) {
   const fullUrl = url.startsWith("http") ? url : `https://${url}`;
   let html = "", headers = {}, sslValid = false, statusCode = 0;
 
   try {
-    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(5000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
+    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(5000), redirect: "follow", headers: { "User-Agent": USER_AGENT } });
     statusCode = res.status; html = await res.text(); headers = Object.fromEntries(res.headers.entries());
     sslValid = fullUrl.startsWith("https://") && statusCode < 400;
   } catch (e) {
     try {
-      const res = await fetch(fullUrl.replace("https://", "http://"), { signal: AbortSignal.timeout(5000), redirect: "follow", headers: { "User-Agent": "AbstraktAuditBot/1.0" } });
+      const res = await fetch(fullUrl.replace("https://", "http://"), { signal: AbortSignal.timeout(5000), redirect: "follow", headers: { "User-Agent": USER_AGENT } });
       statusCode = res.status; html = await res.text(); headers = Object.fromEntries(res.headers.entries());
     } catch (e2) { throw new Error(`Could not reach ${url}: ${e2.message}`); }
   }
@@ -43,7 +44,7 @@ export async function fetchCrawlData(url) {
       blogPaths.map(async (path) => {
         const blogRes = await fetch(new URL(path, fullUrl).href, {
           signal: AbortSignal.timeout(3000), redirect: "follow",
-          headers: { "User-Agent": "AbstraktAuditBot/1.0" },
+          headers: { "User-Agent": USER_AGENT },
         });
         if (!blogRes.ok) throw new Error("not ok");
         const text = await blogRes.text();
@@ -217,7 +218,7 @@ function parseCrawlData(html, headers, sslValid, url, blogHtml, blogPath) {
 
     // Extract post titles from h2/h3 tags
     const ptRegex = /<(?:h2|h3)[^>]*>([\s\S]*?)<\/(?:h2|h3)>/gi; let pt;
-    while ((pt = ptRegex.exec(blogHtml || "")) !== null) {
+    while ((pt = ptRegex.exec(htmlToParse)) !== null) {
       const text = pt[1].replace(/<[^>]+>/g, "").trim();
       if (text.length > 10 && text.length < 200) blogPostTitles.push(text);
     }

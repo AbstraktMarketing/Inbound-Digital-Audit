@@ -1,7 +1,14 @@
 // Debug endpoint to see raw SEMrush Site Audit API response
 // GET /api/debug/siteaudit?projectId=YOUR_PROJECT_ID
+// Protected by DEBUG_API_SECRET bearer token
 
 export async function GET(request) {
+  const secret = process.env.DEBUG_API_SECRET;
+  const auth = request.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("projectId");
   const apiKey = process.env.SEMRUSH_API_KEY;

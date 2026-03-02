@@ -1,13 +1,14 @@
 // Main audit orchestration endpoint
 // POST /api/audit — accepts { url, companyName, contactName, email, phone }
-// Returns unified audit data matching BeaconAudit.jsx metric format
+// Returns unified audit data matching DigitalHealthAssessment.jsx metric format
 
 import { fetchPageSpeed } from "../providers/pagespeed.js";
 import { fetchCrawlData } from "../providers/crawl.js";
 import { fetchSemrush, fetchSiteAudit } from "../providers/semrush.js";
 import { fetchPlacesData } from "../providers/places.js";
 import { appendAuditToSheet } from "../providers/sheets.js";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+const kv = Redis.fromEnv();
 
 export const maxDuration = 60; // Allow up to 60s for all providers to complete
 
@@ -94,7 +95,7 @@ export async function POST(request) {
     // Store in KV with unique ID
     const id = generateId();
     audit.id = id;
-    await kv.set(`audit:${id}`, JSON.stringify(audit));
+    await kv.set(`audit:${id}`, audit);
 
     // Log to Google Sheets (fire-and-forget — don't block response)
     appendAuditToSheet(audit).catch(err => console.error("Sheets log failed:", err.message));
@@ -121,7 +122,7 @@ async function checkUrl(url) {
 }
 
 // ── Metric Builders ──
-// Each returns { score, metrics[] } matching BeaconAudit.jsx format
+// Each returns { score, metrics[] } matching DigitalHealthAssessment.jsx format
 // Metric shape: { label, value, status, detail, impact, weighted?, why, fix, expectedImpact, difficulty }
 
 function toStatus(val, goodThresh, warnThresh, invert = false) {

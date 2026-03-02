@@ -1,11 +1,12 @@
 // Google Places API provider
 // Uses Text Search to find business, then Place Details for full data
+import { cleanDomain } from "./utils.js";
 
 export async function fetchPlacesData(companyName, url) {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_API_KEY not configured");
 
-  const domain = url.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+  const domain = cleanDomain(url);
 
   // Try multiple search strategies — domain in query often confuses Google
   const queries = [

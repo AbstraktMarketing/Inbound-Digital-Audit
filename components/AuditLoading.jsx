@@ -1,8 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-
-const brand = { talentTeal: "#42BFBA", cloudBlue: "#0481A3" };
-const accent = brand.talentTeal;
+import { brand, accent } from "../constants/brand.js";
 
 const steps = [
   { label: "Connecting to website", icon: "🌐", duration: 2000 },
