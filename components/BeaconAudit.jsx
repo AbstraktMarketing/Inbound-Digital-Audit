@@ -1136,7 +1136,7 @@ export default function DigitalHealthAssessment() {
               <p style={{ fontSize: 14, color: t.subtle, textAlign: "center", marginBottom: 36 }}>
                 Enter your business details to get a comprehensive performance audit
               </p>
-              {["Full Name", "Email Address", "Business Name", "Website URL", "Competitor URL", "Industry", "Business Address"].map((label, i) => (
+              {["Full Name", "Email Address", "Business Name", "Business Address", "Company Website URL", "Competitor URL", "Industry"].map((label, i) => (
                 <div key={i} style={{ marginBottom: 22 }}>
                   <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase",
                     letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>{label}</label>
