@@ -51,7 +51,7 @@ const tabs = [
 
 /* -- Mock Data -- */
 const webPerfMetrics = [
-  { label: "SEMrush Site Health", value: "68%", status: "poor", detail: "Overall site health score from SEMrush audit (aim for 90%+)", impact: "high", confidence: "measured" },
+  { label: "SEMrush Site Health", value: "68%", status: "poor", detail: "Overall site health score from SEMrush audit (aim for 90%+)", confidence: "measured" },
   { label: "GTMetrix Performance Score", value: "62%", status: "poor", detail: "Overall GTMetrix performance grade (aim for 90%+)" , confidence: "measured" },
   { label: "Mobile Friendly & Responsive", value: "Yes", status: "good", detail: "Passes Google mobile-friendly test and adapts to all screen sizes" , confidence: "measured" },
   { label: "Website Security / SSL Certificate", value: "Valid", status: "good", detail: "Expires in 243 days" , confidence: "measured" },
