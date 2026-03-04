@@ -1188,6 +1188,39 @@ export default function DigitalHealthAssessment() {
 
             {tabContent[activeTab]}
 
+            {/* Export Actions */}
+            <div style={{
+              display: "flex", justifyContent: "center", gap: 12, marginTop: 32,
+              flexWrap: "wrap",
+            }}>
+              <button onClick={() => alert("PDF download will be available when connected to live data.")} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 10,
+                border: `1px solid ${t.cardBorder}`, background: t.cardBg,
+                color: t.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                transition: "all 0.25s", letterSpacing: 0.3,
+                backdropFilter: "blur(8px)",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
+              >
+                <span style={{ fontSize: 16 }}>{"\u2193"}</span>
+                Download PDF
+              </button>
+              <button onClick={() => alert("Email delivery will be available when connected to live data.")} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 10,
+                border: `1px solid ${t.cardBorder}`, background: t.cardBg,
+                color: t.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                transition: "all 0.25s", letterSpacing: 0.3,
+                backdropFilter: "blur(8px)",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
+              >
+                <span style={{ fontSize: 16 }}>{"\u2709"}</span>
+                Email Report
+              </button>
+            </div>
+
             {/* CTA */}
             {(() => {
               
