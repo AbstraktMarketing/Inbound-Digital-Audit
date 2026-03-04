@@ -5,3 +5,11 @@ node_modules/
 .env.local
 .vercel
 .env*.local
+
+# Local project docs (not for GitHub)
+PROCESS.md
+CLAUDE.md
+app/api/audit/CLAUDE.md
+app/api/providers/CLAUDE.md
+components/CLAUDE.md
+.claude/
