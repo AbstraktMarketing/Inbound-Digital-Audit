@@ -12,9 +12,44 @@ const steps = [
   { label: "Compiling your results", icon: "📊", duration: 2000 },
 ];
 
+const funPhrases = [
+  "Convincing the servers to cooperate...",
+  "Checking if your meta tags spark joy...",
+  "Reticulating splines...",
+  "Asking Google where it ranks your site... awkward...",
+  "Counting every pixel, twice...",
+  "Your h1 tag is having an identity crisis...",
+  "Teaching robots to read your website...",
+  "Googling how to improve your Google ranking...",
+  "Bribing the internet for faster results...",
+  "Whispering sweet nothings to the algorithm...",
+  "Almost there... probably...",
+  "Your sitemap is a treasure map... with no X...",
+  "Making sure all the 1s and 0s are in order...",
+  "Trying to rank for 'best website ever'...",
+  "Consulting the digital oracle...",
+  "Your bounce rate just bounced...",
+  "Running diagnostics on the hamster wheel...",
+  "Alt text: 'a picture is worth 1,000 keywords'...",
+  "Asking Google nicely for your data...",
+  "Schema markup? More like schema mark-up-your-score...",
+  "Converting caffeine into insights...",
+  "Canonical URLs are just URLs with trust issues...",
+  "Double-checking the math... carry the one...",
+  "404: patience not found...",
+  "Herding digital cats...",
+  "Your backlinks are talking behind your back...",
+  "Negotiating with third-party APIs...",
+  "Stuffing keywords into this loading screen...",
+  "Your audit is worth the wait, promise...",
+  "Robots.txt said 'no comment'...",
+];
+
 export default function AuditLoading({ url, companyName, theme: t }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [showPhrases, setShowPhrases] = useState(false);
+  const [phraseIndex, setPhraseIndex] = useState(0);
 
   useEffect(() => {
     let stepIdx = 0;
@@ -32,10 +67,21 @@ export default function AuditLoading({ url, companyName, theme: t }) {
         if (elapsed < acc) { setCurrentStep(i); break; }
         if (i === steps.length - 1) setCurrentStep(i);
       }
+
+      if (pct >= 90 && !showPhrases) setShowPhrases(true);
     }, 100);
 
     return () => clearInterval(interval);
   }, []);
+
+  // Rotate phrases every 3s once triggered
+  useEffect(() => {
+    if (!showPhrases) return;
+    const interval = setInterval(() => {
+      setPhraseIndex(prev => (prev + 1) % funPhrases.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [showPhrases]);
 
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
@@ -84,6 +130,60 @@ export default function AuditLoading({ url, companyName, theme: t }) {
           </div>
         ))}
       </div>
+
+      {/* Overlay popup — appears at 90% */}
+      {showPhrases && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          animation: "auditOverlayFadeIn 0.4s ease",
+        }}>
+          <div style={{
+            background: t.cardBg, border: `1px solid ${t.cardBorder}`,
+            borderRadius: 16, maxWidth: 420, width: "90%", padding: "40px 32px",
+            textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          }}>
+            {/* Progress ring */}
+            <div style={{ position: "relative", width: 100, height: 100, margin: "0 auto 24px" }}>
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke={t.cardBorder} strokeWidth="5" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke={accent} strokeWidth="5"
+                  strokeDasharray={`${progress * 2.64} 264`}
+                  strokeLinecap="round" transform="rotate(-90 50 50)"
+                  style={{ transition: "stroke-dasharray 0.3s ease" }}
+                />
+              </svg>
+              <div style={{
+                position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
+                fontSize: 20, fontWeight: 700, color: t.text,
+              }}>
+                {progress}%
+              </div>
+            </div>
+
+            <h3 style={{
+              fontSize: 18, fontWeight: 700, color: t.text, margin: "0 0 8px",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>
+              Still working...
+            </h3>
+            <p style={{
+              fontSize: 14, color: t.subtle, margin: "0 0 4px",
+              minHeight: 22, transition: "opacity 0.3s ease",
+            }}>
+              {funPhrases[phraseIndex]}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes auditOverlayFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

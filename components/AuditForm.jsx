@@ -4,7 +4,7 @@ import { brand, accent, accentAlt } from "../constants/brand.js";
 
 export default function AuditForm({ onSubmit, theme: t }) {
   const [form, setForm] = React.useState({
-    companyName: "", url: "", contactName: "", email: "", phone: "", semrushProjectId: "",
+    companyName: "", url: "", contactName: "", email: "", phone: "", semrushProjectId: "", linkedinUrl: "", facebookUrl: "", blogUrl: "",
   });
   const [errors, setErrors] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
@@ -143,6 +143,34 @@ export default function AuditForm({ onSubmit, theme: t }) {
               type="text" value={form.semrushProjectId} placeholder="e.g. 4594705336925861"
               onChange={e => update("semrushProjectId", e.target.value)}
               style={inputStyle("semrushProjectId")}
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <label style={labelStyle}>LinkedIn URL <span style={{ opacity: 0.5, textTransform: "none", fontWeight: 400 }}>(optional)</span></label>
+              <input
+                type="text" value={form.linkedinUrl} placeholder="linkedin.com/company/acme"
+                onChange={e => update("linkedinUrl", e.target.value)}
+                style={inputStyle("linkedinUrl")}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Facebook URL <span style={{ opacity: 0.5, textTransform: "none", fontWeight: 400 }}>(optional)</span></label>
+              <input
+                type="text" value={form.facebookUrl} placeholder="facebook.com/acmecorp"
+                onChange={e => update("facebookUrl", e.target.value)}
+                style={inputStyle("facebookUrl")}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={labelStyle}>Blog URL <span style={{ opacity: 0.5, textTransform: "none", fontWeight: 400 }}>(optional — if different from /blog)</span></label>
+            <input
+              type="text" value={form.blogUrl} placeholder="https://example.com/insights"
+              onChange={e => update("blogUrl", e.target.value)}
+              style={inputStyle("blogUrl")}
             />
           </div>
 

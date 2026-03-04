@@ -10,14 +10,16 @@ export async function fetchSemrush(domain) {
   const clean = cleanDomain(domain);
   console.log(`[SEMrush] Fetching data for domain: ${clean}`);
 
-  const [domainRanks, backlinks, topKeywords, competitors] = await Promise.allSettled([
+  // PPC calls (fetchPaidKeywords, fetchPaidCompetitors) disabled to save ~400 units/audit
+  const [domainRanks, backlinks, topKeywords, competitors, rankHistory] = await Promise.allSettled([
     fetchDomainRanks(clean, apiKey),
     fetchBacklinksOverview(clean, apiKey),
     fetchTopKeywords(clean, apiKey),
     fetchCompetitors(clean, apiKey),
+    fetchRankHistory(clean, apiKey),
   ]);
 
-  console.log(`[SEMrush] Results for ${clean}: ranks=${domainRanks.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}`);
+  console.log(`[SEMrush] Results for ${clean}: ranks=${domainRanks.status}, backlinks=${backlinks.status}, keywords=${topKeywords.status}, competitors=${competitors.status}, rankHistory=${rankHistory.status}`);
   if (domainRanks.status === "rejected") console.error(`[SEMrush] domainRanks error: ${domainRanks.reason?.message}`);
   if (backlinks.status === "rejected") console.error(`[SEMrush] backlinks error: ${backlinks.reason?.message}`);
 
@@ -26,6 +28,9 @@ export async function fetchSemrush(domain) {
     backlinks: backlinks.status === "fulfilled" ? backlinks.value : null,
     topKeywords: topKeywords.status === "fulfilled" ? topKeywords.value : [],
     competitors: competitors.status === "fulfilled" ? competitors.value : [],
+    rankHistory: rankHistory.status === "fulfilled" ? rankHistory.value : [],
+    paidKeywords: null,
+    paidCompetitors: null,
   };
 }
 
@@ -45,6 +50,7 @@ async function fetchDomainRanks(domain, apiKey) {
     organicCost: parseFloat(data["Organic Cost"] || data["Oc"]) || 0,
     adwordsKeywords: parseInt(data["Adwords Keywords"] || data["Ad"]) || 0,
     adwordsTraffic: parseInt(data["Adwords Traffic"] || data["At"]) || 0,
+    adwordsCost: parseFloat(data["Adwords Cost"] || data["Ac"]) || 0,
   };
 }
 
@@ -66,7 +72,7 @@ async function fetchBacklinksOverview(domain, apiKey) {
 }
 
 async function fetchTopKeywords(domain, apiKey) {
-  const url = `${SEMRUSH_BASE}/?type=domain_organic&key=${apiKey}&export_columns=Ph,Po,Nq,Tr,Kd&domain=${domain}&database=us&display_limit=10&display_sort=tr_desc`;
+  const url = `${SEMRUSH_BASE}/?type=domain_organic&key=${apiKey}&export_columns=Ph,Po,Nq,Tr,Kd&domain=${domain}&database=us&display_limit=50&display_sort=tr_desc`;
   const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
   const text = await res.text();
   if (text.includes("ERROR")) return [];
@@ -108,6 +114,80 @@ async function fetchCompetitors(domain, apiKey) {
       organicKeywords: parseInt(row["Organic Keywords"] || row["Or"]) || 0,
       organicTraffic: parseInt(row["Organic Traffic"] || row["Ot"]) || 0,
       organicCost: parseFloat(row["Organic Cost"] || row["Oc"]) || 0,
+    };
+  }).filter(c => c.domain);
+}
+
+// Fetch 12 months of domain rank history for traffic trend
+async function fetchRankHistory(domain, apiKey) {
+  const url = `${SEMRUSH_BASE}/?type=domain_rank_history&key=${apiKey}&export_columns=Dt,Rk,Or,Ot,Oc,Ad,At,Ac&domain=${domain}&database=us&display_limit=12&display_sort=dt_desc`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const text = await res.text();
+  if (text.includes("ERROR")) return [];
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(";").map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const values = line.split(";");
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values[i]?.trim(); });
+    return {
+      date: row["Date"] || row["Dt"] || "",
+      rank: parseInt(row["Rank"] || row["Rk"]) || 0,
+      organicKeywords: parseInt(row["Organic Keywords"] || row["Or"]) || 0,
+      organicTraffic: parseInt(row["Organic Traffic"] || row["Ot"]) || 0,
+      organicCost: parseFloat(row["Organic Cost"] || row["Oc"]) || 0,
+      adwordsKeywords: parseInt(row["Adwords Keywords"] || row["Ad"]) || 0,
+      adwordsTraffic: parseInt(row["Adwords Traffic"] || row["At"]) || 0,
+    };
+  });
+}
+
+// Fetch top 10 paid search keywords via domain_adwords
+async function fetchPaidKeywords(domain, apiKey) {
+  const url = `${SEMRUSH_BASE}/?type=domain_adwords&key=${apiKey}&export_columns=Ph,Po,Nq,Cp,Tr,Tt,Ds,Vu&domain=${domain}&database=us&display_limit=10&display_sort=tr_desc`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const text = await res.text();
+  if (text.includes("ERROR")) return [];
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(";").map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const values = line.split(";");
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values[i]?.trim(); });
+    return {
+      keyword: row["Keyword"] || row["Ph"] || "",
+      position: parseInt(row["Position"] || row["Po"]) || 0,
+      volume: parseInt(row["Search Volume"] || row["Nq"]) || 0,
+      cpc: parseFloat(row["CPC"] || row["Cp"]) || 0,
+      traffic: parseFloat(row["Traffic (%)"] || row["Tr"]) || 0,
+      adTitle: row["Title"] || row["Tt"] || "",
+      adDescription: row["Description"] || row["Ds"] || "",
+      targetUrl: row["Visible Url"] || row["Vu"] || "",
+    };
+  }).filter(kw => kw.keyword);
+}
+
+// Fetch top 5 PPC competitors via domain_adwords_adwords
+async function fetchPaidCompetitors(domain, apiKey) {
+  const url = `${SEMRUSH_BASE}/?type=domain_adwords_adwords&key=${apiKey}&export_columns=Dn,Np,Ad,At,Ac&domain=${domain}&database=us&display_limit=5&display_sort=np_desc`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  const text = await res.text();
+  if (text.includes("ERROR")) return [];
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(";").map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const values = line.split(";");
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values[i]?.trim(); });
+    return {
+      domain: row["Domain"] || row["Dn"] || "",
+      commonKeywords: parseInt(row["Common Keywords"] || row["Np"]) || 0,
+      adwordsKeywords: parseInt(row["Adwords Keywords"] || row["Ad"]) || 0,
+      adwordsTraffic: parseInt(row["Adwords Traffic"] || row["At"]) || 0,
+      adwordsCost: parseFloat(row["Adwords Cost"] || row["Ac"]) || 0,
     };
   }).filter(c => c.domain);
 }

@@ -73,6 +73,17 @@ export async function fetchPageSpeed(url) {
   const lcpAudit = audits["largest-contentful-paint-element"] || {};
   const lcpElement = lcpAudit.details?.items?.[0]?.items?.[0]?.node?.snippet || null;
 
+  // SEO/content audits from Lighthouse
+  const metaDescAudit = audits["meta-description"] || {};
+  const titleAudit = audits["document-title"] || {};
+  const imageAltAudit = audits["image-alt"] || {};
+  const anchorsAudit = audits["crawlable-anchors"] || {};
+  const isCrawlableAudit = audits["is-crawlable"] || {};
+  const canonicalAudit = audits["canonical"] || {};
+  const linkTextAudit = audits["link-text"] || {};
+  const metaDescText = metaDescAudit.details?.items?.[0]?.description || null;
+  const titleTextLH = titleAudit.details?.items?.[0]?.title || null;
+
   console.log(`[PSI] Scores: mobile=${mobileScore}, desktop=${desktopScore}, perf=${perfScore}, seo=${seoScore}, a11y=${a11yScore}`);
   console.log(`[PSI] CWV: LCP=${lcp}ms, FCP=${fcp}ms, TBT=${tbt}ms, CLS=${cls}`);
 
@@ -104,6 +115,26 @@ export async function fetchPageSpeed(url) {
     lcpElement,
     // Accessibility issues from Lighthouse
     a11yIssues: extractA11yIssues(audits),
+    // SEO/content audit data
+    meta: {
+      hasDescription: metaDescAudit.score === 1,
+      description: metaDescText,
+      descriptionLength: metaDescText ? metaDescText.length : 0,
+      hasTitle: titleAudit.score === 1,
+      title: titleTextLH,
+      titleLength: titleTextLH ? titleTextLH.length : 0,
+      noindex: isCrawlableAudit.score === 0,
+      hasCanonical: canonicalAudit.score === 1,
+    },
+    imageAlt: {
+      score: imageAltAudit.score ?? null,
+      failingCount: (imageAltAudit.details?.items || []).length,
+      failingExamples: (imageAltAudit.details?.items || []).slice(0, 5).map(i => i.node?.snippet || "").filter(Boolean),
+    },
+    links: {
+      emptyAnchors: (anchorsAudit.details?.items || []).length,
+      nonDescriptiveLinks: (linkTextAudit.details?.items || []).length,
+    },
   };
 }
 

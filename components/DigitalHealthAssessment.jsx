@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import { brand, accent, accentAlt, getTheme } from "../constants/brand.js";
-import { mockWebPerf, mockSEO, mockContentPerf, mockSocialLocal, mockAISEO, mockEntity } from "../constants/mockData.js";
+import StatusBanner from "./StatusBanner.jsx";
+import { POLL_INTERVAL_MS, MAX_POLL_ATTEMPTS } from "../constants/statusConfig.js";
 
 const tabs = [
   "Website Performance",
@@ -23,7 +24,14 @@ function statusIcon(s) {
   return "✗";
 }
 
-
+function DataUnavailable({ message, t }) {
+  return (
+    <div style={{ padding: "40px 24px", textAlign: "center", color: t.subtle, fontSize: 14 }}>
+      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: t.text, opacity: 0.5 }}>No Data Available</div>
+      <div style={{ lineHeight: 1.5 }}>{message}</div>
+    </div>
+  );
+}
 
 /* ── Abstrakt Logo SVG Component ── */
 function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
@@ -648,19 +656,17 @@ function Card({ title, subtitle, children, t, style: s }) {
 
 /* ── Tab Renderers ── */
 function WebPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const webPerfData = data?.webPerf || mockWebPerf;
-  const allIssues = [
-    { issue: "Broken Internal Links", count: 23, severity: "high", detail: "Pages returning 4xx errors hurt crawlability and user experience" },
-    { issue: "Slow Page Load (>3s)", count: 18, severity: "high", detail: "18 pages exceed the 3-second threshold — primarily image-heavy landing pages" },
-    { issue: "Missing Meta Descriptions", count: 14, severity: "medium", detail: "Pages without meta descriptions lose click-through potential in SERPs" },
-    { issue: "Redirect Chains", count: 11, severity: "medium", detail: "Multiple sequential redirects (3+ hops) slowing crawl efficiency" },
-    { issue: "Duplicate Title Tags", count: 9, severity: "medium", detail: "Identical titles across service pages reduce search differentiation" },
-    { issue: "Images Without Alt Text", count: 31, severity: "high", detail: "Missing alt attributes hurt accessibility and image search rankings" },
-    { issue: "Mixed Content (HTTP/HTTPS)", count: 6, severity: "low", detail: "Some resources still loading over HTTP on secure pages" },
-    { issue: "Orphan Pages", count: 4, severity: "low", detail: "Pages with no internal links pointing to them — invisible to crawlers" },
-  ];
-  const sevOrder = { high: 0, medium: 1, low: 2 };
-  const sorted = [...allIssues].sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity] || b.count - a.count);
+  const webPerfData = data?.webPerf;
+  if (!webPerfData) return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <Card title="Website Performance" t={t}>
+        <DataUnavailable message="Website performance data not available. Run an audit to populate this section." t={t} />
+      </Card>
+    </div>
+  );
+  // Extract real findings from Site Health metric (populated by PageSpeed a11y issues)
+  const siteHealthMetric = webPerfData.metrics?.find(m => m.label === "Site Health");
+  const findings = siteHealthMetric?.findings || [];
   return (
     <div style={{ display: "grid", gap: 24 }}>
       {(() => { const s = generateTabSummary(webPerfData.metrics, "website"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={webPerfData.score} scoreLabel="Website Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
@@ -668,57 +674,58 @@ function WebPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
         {webPerfData.metrics.map((m, i) => (
           <ExpandableMetricRow key={i} {...m} t={t} index={i} />
         ))}
+        {data?.gtmetrixReportUrl && (
+          <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.cardBorder}`, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, color: t.subtle }}>GTmetrix Report:</span>
+            <a href={data.gtmetrixReportUrl} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 13, color: accent, textDecoration: "none", fontWeight: 500 }}>
+              View Full Report →
+            </a>
+          </div>
+        )}
       </Card>
-      <Card title="Site Health — Highest Impact Issues" t={t}>
-        <div style={{ padding: 0, display: "flex", flexDirection: "column" }}>
-          {sorted.map((item, i) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "13px 18px 13px 16px", borderBottom: `1px solid ${t.cardBorder}`,
-              borderLeft: `3px solid ${item.severity === "high" ? brand.pipelineRed : item.severity === "medium" ? brand.inboundOrange : brand.talentTeal}`,
-              background: i % 2 !== 0 ? t.hoverRow : "transparent",
-              transition: "background 0.2s", cursor: "default",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-              onMouseLeave={e => e.currentTarget.style.background = i % 2 !== 0 ? t.hoverRow : "transparent"}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{item.issue}</span>
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
-                    padding: "2px 7px", borderRadius: 4,
-                    color: item.severity === "high" ? brand.pipelineRed : item.severity === "medium" ? brand.inboundOrange : brand.talentTeal,
-                    background: item.severity === "high" ? "rgba(255,33,15,0.1)" : item.severity === "medium" ? "rgba(244,111,10,0.1)" : "rgba(66,191,186,0.1)",
-                    border: `1px solid ${item.severity === "high" ? "rgba(255,33,15,0.2)" : item.severity === "medium" ? "rgba(244,111,10,0.2)" : "rgba(66,191,186,0.2)"}`,
-                  }}>{item.severity}</span>
-                </div>
-                <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4, marginTop: 3 }}>{item.detail}</div>
+      {findings.length > 0 ? (
+        <Card title="Site Health — Highest Impact Issues" t={t}>
+          <div style={{ padding: 0, display: "flex", flexDirection: "column" }}>
+            {findings.map((item, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center",
+                padding: "13px 18px 13px 16px", borderBottom: `1px solid ${t.cardBorder}`,
+                borderLeft: `3px solid ${brand.inboundOrange}`,
+                background: i % 2 !== 0 ? t.hoverRow : "transparent",
+              }}>
+                <span style={{ fontSize: 14, color: t.text }}>{item}</span>
               </div>
-              <div style={{
-                fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                color: item.severity === "high" ? brand.pipelineRed : item.severity === "medium" ? brand.inboundOrange : brand.talentTeal,
-                minWidth: 36, textAlign: "right",
-              }}>{item.count}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            ))}
+          </div>
+        </Card>
+      ) : (
+        <Card title="Site Health — Highest Impact Issues" t={t}>
+          <DataUnavailable message="Connect a site audit provider (e.g., SEMrush Site Audit) for detailed issue findings." t={t} />
+        </Card>
+      )}
     </div>
   );
 }
 
 function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const seoData = data?.seo || mockSEO;
-  const aiSeoData = data?.aiSeo || mockAISEO;
+  const seoData = data?.seo;
+  const aiSeoData = data?.aiSeo;
   const keywordsData = data?.keywords || [];
-  const combinedScore = Math.round((seoData.score + aiSeoData.score) / 2);
+  if (!seoData && !aiSeoData) return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <Card title="Search Visibility" t={t}>
+        <DataUnavailable message="Search visibility data not available. Run an audit to populate this section." t={t} />
+      </Card>
+    </div>
+  );
+  const combinedScore = Math.round(((seoData?.score || 0) + (aiSeoData?.score || 0)) / (seoData && aiSeoData ? 2 : 1));
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary([...seoData.metrics, ...aiSeoData.metrics], "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
+      {(() => { const allMetrics = [...(seoData?.metrics || []), ...(aiSeoData?.metrics || [])]; const s = generateTabSummary(allMetrics, "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
 
       <Card title="Organic Search Health" t={t}>
-        {seoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
+        {seoData ? seoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />) : <DataUnavailable message="SEO data not available. SEMrush connection required." t={t} />}
       </Card>
       <Card title="Top Performing Search Terms" t={t}>
         {keywordsData.length > 0 ? (
@@ -769,7 +776,14 @@ function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
 }
 
 function ContentPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const contentData = data?.content || mockContentPerf;
+  const contentData = data?.content;
+  if (!contentData) return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <Card title="Content Performance" t={t}>
+        <DataUnavailable message="Content performance data not available. Run an audit to populate this section." t={t} />
+      </Card>
+    </div>
+  );
   return (
     <div style={{ display: "grid", gap: 24 }}>
       {(() => { const s = generateTabSummary(contentData.metrics, "content"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={contentData.score} scoreLabel="Content Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
@@ -783,50 +797,60 @@ function ContentPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
 }
 
 function SocialLocalTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const d = data?.socialLocal || mockSocialLocal;
-  const aiSeoData = data?.aiSeo || mockAISEO;
-  const combinedScore = Math.round((aiSeoData.score + (d.socialScore || 45)) / 2);
-  // Use places reviews if available
-  const reviews = data?.places?.reviews?.length > 0 ? data.places.reviews : (d.reviews || []);
+  const d = data?.socialLocal;
+  const aiSeoData = data?.aiSeo;
+  if (!d && !aiSeoData) return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <Card title="Social & AI Visibility" t={t}>
+        <DataUnavailable message="Social and AI visibility data not available. Run an audit to populate this section." t={t} />
+      </Card>
+    </div>
+  );
+  const combinedScore = Math.round(((aiSeoData?.score || 0) + (d?.socialScore || 0)) / (aiSeoData && d ? 2 : 1));
+  const reviews = data?.places?.reviews?.length > 0 ? data.places.reviews : [];
   return (
     <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary([...aiSeoData.metrics, ...(d.signals || [])], "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
+      {(() => { const allMetrics = [...(aiSeoData?.metrics || []), ...(d?.signals || [])]; const s = generateTabSummary(allMetrics, "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
 
       <Card title="AI Visibility Metrics" t={t}>
-        {aiSeoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
+        {aiSeoData ? aiSeoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />) : <DataUnavailable message="AI visibility data not available." t={t} />}
       </Card>
 
-      <Card title="Platform Presence" t={t}>
-        <div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", padding: "10px 18px",
-            borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
-          }}>
-            {["Platform", "Status", "Followers", "Activity"].map(h => (
-              <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
-                textAlign: h === "Activity" ? "right" : h === "Status" || h === "Followers" ? "center" : "left" }}>{h}</span>
+      {d?.platforms?.length > 0 && (
+        <Card title="Platform Presence" t={t}>
+          <div>
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", padding: "10px 18px",
+              borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
+            }}>
+              {["Platform", "Status", "Followers", "Activity"].map(h => (
+                <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
+                  textAlign: h === "Activity" ? "right" : h === "Status" || h === "Followers" ? "center" : "left" }}>{h}</span>
+              ))}
+            </div>
+            {d.platforms.map((p, i) => (
+              <div key={i} style={{
+                display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", alignItems: "center",
+                padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8, transition: "background 0.2s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+              >
+                <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{p.name}</span>
+                <span style={{ fontSize: 12, color: statusColor(p.health), textAlign: "center", fontWeight: 600 }}>{p.status}</span>
+                <span style={{ fontSize: 12, color: t.body, fontFamily: "'JetBrains Mono', monospace", textAlign: "center" }}>{p.followers}</span>
+                <span style={{ fontSize: 11, color: t.subtle, textAlign: "right" }}>{p.activity}</span>
+              </div>
             ))}
           </div>
-          {d.platforms.map((p, i) => (
-            <div key={i} style={{
-              display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", alignItems: "center",
-              padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8, transition: "background 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{p.name}</span>
-              <span style={{ fontSize: 12, color: statusColor(p.health), textAlign: "center", fontWeight: 600 }}>{p.status}</span>
-              <span style={{ fontSize: 12, color: t.body, fontFamily: "'JetBrains Mono', monospace", textAlign: "center" }}>{p.followers}</span>
-              <span style={{ fontSize: 11, color: t.subtle, textAlign: "right" }}>{p.activity}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
+        </Card>
+      )}
 
-      <Card title="Social SEO Signals" t={t}>
-        {d.signals.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
-      </Card>
+      {d?.signals?.length > 0 && (
+        <Card title="Social SEO Signals" t={t}>
+          {d.signals.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
+        </Card>
+      )}
 
       <Card title="Recent Reviews" t={t}>
         <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -987,7 +1011,14 @@ function SummaryCard({ summary, risks, opportunity, t, score, scoreLabel, recap,
 }
 
 function EntitySEOTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const entityData = data?.entity || mockEntity;
+  const entityData = data?.entity;
+  if (!entityData) return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <Card title="Local Search Performance" t={t}>
+        <DataUnavailable message="Local search data not available. Run an audit to populate this section." t={t} />
+      </Card>
+    </div>
+  );
   return (
     <div style={{ display: "grid", gap: 24 }}>
       {(() => { const s = generateTabSummary(entityData.metrics, "local"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={entityData.score} scoreLabel="Local Search Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
@@ -1031,7 +1062,7 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
     if (!auditId || !hasPendingProviders) return;
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 6; // 6 x 30s = 3 minutes max
+    const maxAttempts = MAX_POLL_ATTEMPTS;
 
     const poll = async () => {
       if (cancelled || attempts >= maxAttempts) return;
@@ -1054,17 +1085,33 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
       } catch (e) { console.error("Refresh poll failed:", e); }
       if (!cancelled) {
         setRefreshing(false);
-        setTimeout(poll, 30000);
+        setTimeout(poll, POLL_INTERVAL_MS);
       }
     };
 
     // First poll after 30 seconds
-    const timer = setTimeout(poll, 30000);
+    const timer = setTimeout(poll, POLL_INTERVAL_MS);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [auditId, hasPendingProviders]);
 
   const auditData = liveAudit;
   const hasPending = auditData?.pendingProviders?.length > 0;
+  const hasIncompleteGtmetrix = !!auditData?.gtmetrixTestId;
+  const showRefreshButton = hasPending || hasIncompleteGtmetrix;
+
+  const manualRefresh = async () => {
+    if (!auditId || refreshing) return;
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/audit/${auditId}?refresh=true&force=true`);
+      if (res.ok) {
+        const updated = await res.json();
+        setLiveAudit(updated);
+        if (updated.recap) setRecap(updated.recap);
+      }
+    } catch (e) { console.error("Manual refresh failed:", e); }
+    setRefreshing(false);
+  };
 
   const saveRecap = async (tabKey, tabRecap) => {
     const next = { ...recap, [tabKey]: tabRecap };
@@ -1081,17 +1128,18 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
     setRecapSaving(false);
   };
 
-  // Resolve data: use auditData from API if available, fallback to mock
+  // Resolve data: use auditData from API — no mock fallbacks
   const data = {
     meta: auditData?.meta || {},
-    webPerf: auditData?.webPerf || mockWebPerf,
-    seo: auditData?.seo || mockSEO,
+    webPerf: auditData?.webPerf || null,
+    seo: auditData?.seo || null,
     keywords: auditData?.keywords?.length > 0 ? auditData.keywords : [],
-    content: auditData?.content || mockContentPerf,
-    socialLocal: auditData?.socialLocal || mockSocialLocal,
-    aiSeo: auditData?.aiSeo || mockAISEO,
-    entity: auditData?.entity || mockEntity,
+    content: auditData?.content || null,
+    socialLocal: auditData?.socialLocal || null,
+    aiSeo: auditData?.aiSeo || null,
+    entity: auditData?.entity || null,
     places: auditData?.places || null,
+    gtmetrixReportUrl: auditData?.gtmetrixReportUrl || null,
   };
 
   const tabContent = [
@@ -1103,11 +1151,11 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
   ];
 
   const tabScores = [
-    data.webPerf.score,
-    Math.round((data.seo.score + data.aiSeo.score) / 2),
-    data.entity.score,
-    data.content.score,
-    Math.round((data.aiSeo.score + (data.socialLocal.socialScore || 45)) / 2),
+    data.webPerf?.score ?? null,
+    data.seo?.score != null || data.aiSeo?.score != null ? Math.round(((data.seo?.score || 0) + (data.aiSeo?.score || 0)) / ((data.seo?.score != null ? 1 : 0) + (data.aiSeo?.score != null ? 1 : 0) || 1)) : null,
+    data.entity?.score ?? null,
+    data.content?.score ?? null,
+    data.socialLocal?.socialScore != null || data.aiSeo?.score != null ? Math.round(((data.aiSeo?.score || 0) + (data.socialLocal?.socialScore || 0)) / ((data.aiSeo?.score != null ? 1 : 0) + (data.socialLocal?.socialScore != null ? 1 : 0) || 1)) : null,
   ];
 
   return (
@@ -1182,37 +1230,25 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
           )}
           <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>{"Understand exactly where your online presence is driving growth \u2014 and where it\u2019s holding you back."}</p>
 
-          {/* Audit status banner */}
-          {hasPending && (
-            <div style={{
-              marginTop: 16, padding: "12px 20px", borderRadius: 10,
-              background: `${brand.inboundOrange}08`, border: `1px solid ${brand.inboundOrange}20`,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-            }}>
-              {refreshing ? (
-                <span style={{ display: "inline-block", width: 14, height: 14, border: `2px solid ${brand.inboundOrange}40`, borderTopColor: brand.inboundOrange, borderRadius: "50%", animation: "auditSpin 0.8s linear infinite" }} />
-              ) : (
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: brand.inboundOrange, animation: "auditPulse 2s ease-in-out infinite" }} />
-              )}
-              <span style={{ fontSize: 12, fontWeight: 600, color: brand.inboundOrange }}>
-                {refreshing ? "Updating metrics..." : `${auditData.pendingProviders.length} data source${auditData.pendingProviders.length > 1 ? "s" : ""} still processing \u2014 auto-refreshing`}
-              </span>
-            </div>
+          {/* Audit status banner — config in constants/statusConfig.js */}
+          <StatusBanner variant={refreshing ? "refreshing" : "pending"} count={auditData?.pendingProviders?.length} visible={hasPending} t={t} />
+          {showRefreshButton && (
+            <>
+              <button onClick={manualRefresh} disabled={refreshing}
+                style={{
+                  marginTop: 10, padding: "8px 20px", fontSize: 13, fontWeight: 600,
+                  background: refreshing ? t.cardBorder : accent, color: "#fff",
+                  border: "none", borderRadius: 8, cursor: refreshing ? "not-allowed" : "pointer",
+                  opacity: refreshing ? 0.6 : 1, transition: "opacity 0.2s ease",
+                }}>
+                {refreshing ? "Updating..." : "Update Results"}
+              </button>
+              <p style={{ marginTop: 8, fontSize: 12, color: t.subtle, fontStyle: "italic" }}>
+                Some data sources may take a few minutes to finish processing. Check back shortly for full results.
+              </p>
+            </>
           )}
-          {!hasPending && auditId && (
-            <div style={{
-              marginTop: 16, padding: "10px 20px", borderRadius: 10,
-              background: `${brand.talentTeal}08`, border: `1px solid ${brand.talentTeal}20`,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            }}>
-              <span style={{ fontSize: 12, color: brand.talentTeal }}>{String.fromCodePoint(0x2705)}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: brand.talentTeal }}>Audit complete \u2014 all data sources loaded</span>
-            </div>
-          )}
-          <style>{`
-            @keyframes auditSpin { to { transform: rotate(360deg); } }
-            @keyframes auditPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-          `}</style>
+          <StatusBanner variant="complete" visible={!showRefreshButton && !!auditId} t={t} />
         </div>
 
         {/* View Toggle */}
@@ -1301,7 +1337,7 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
             }}>
               {tabs.map((tab, i) => {
                 const s = tabScores[i];
-                const dotColor = s >= 90 ? brand.talentTeal : s >= 70 ? brand.inboundOrange : s >= 50 ? brand.inboundOrange : brand.pipelineRed;
+                const dotColor = s == null ? t.subtle : s >= 90 ? brand.talentTeal : s >= 70 ? brand.inboundOrange : s >= 50 ? brand.inboundOrange : brand.pipelineRed;
                 return (
                 <button key={tab} onClick={() => setActiveTab(i)} style={{
                   flex: "0 0 auto", padding: "10px 16px", borderRadius: 8, border: "none",
@@ -1319,7 +1355,7 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
                     background: i === activeTab ? "rgba(255,255,255,0.2)" : `${dotColor}18`,
                     color: i === activeTab ? "#fff" : dotColor,
                     lineHeight: 1.2,
-                  }}>{s}<span style={{ fontSize: 8, opacity: 0.7, fontWeight: 500 }}>/100</span></span>
+                  }}>{s != null ? s : "—"}{s != null && <span style={{ fontSize: 8, opacity: 0.7, fontWeight: 500 }}>/100</span>}</span>
                 </button>
                 );
               })}
