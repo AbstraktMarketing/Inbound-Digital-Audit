@@ -270,7 +270,7 @@ const mockRevenueInfra = {
 const pipelineHealth = {
   score: 48,
   pillars: [
-    { label: "Traffic Capture", score: 64, detail: "You’re ranking for 312 keywords but competitors own 1,240 — 62% of potential demand is going elsewhere" },
+    { label: "Traffic Capture", score: 64, detail: hasCompetitors ? "You’re ranking for 312 keywords but competitors own 1,240 — 62% of potential demand is going elsewhere" : "You’re ranking for 312 keywords — add a competitor URL to see how you compare" },
     { label: "Lead Conversion", score: 42, detail: "Forms exist but no submission tracking fires — you can’t optimize what you can’t measure" },
     { label: "Attribution Integrity", score: 28, detail: "No UTM capture, no call tracking, no CRM sync — pipeline data is unreliable" },
     { label: "Lead Qualification", score: 37, detail: "No scoring model or qualification criteria detected — sales is chasing unqualified volume" },
@@ -853,11 +853,11 @@ function SEOTab({ t }) {
         <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Authority & Search Score</div>
       </div>
 
-      {/* Competitor Comparison */}
-      <CompetitorComparisonTable t={t} />
+      {/* Competitor Comparison — only shown when competitor URLs provided */}
+      {hasCompetitors && <CompetitorComparisonTable t={t} />}
 
-      {/* Competitive Velocity */}
-      <TrendVelocityCard t={t} />
+      {/* Competitive Velocity — only shown when competitor URLs provided */}
+      {hasCompetitors && <TrendVelocityCard t={t} />}
 
       <Card title="Search Authority Metrics" t={t}>
         {mockSEO.metrics.filter(m => m.status !== "good").map((m, i) => <MetricRow key={i} {...m} t={t} />)}
@@ -865,10 +865,15 @@ function SEOTab({ t }) {
       </Card>
       <Card title="Recommendations" t={t}>
         <RecommendationList t={t} items={[
-          "Your domain authority (32) is 15 points behind your top competitor — every point costs you rankings on high-value keywords",
-          "423 backlinks vs. 1,890 for competitors — your content isn’t being referenced as an authority source",
+          ...(hasCompetitors ? [
+            "Your domain authority (32) is 15 points behind your top competitor — every point costs you rankings on high-value keywords",
+            "423 backlinks vs. 1,890 for competitors — your content isn’t being referenced as an authority source",
+            "Ranking for 312 keywords vs. 1,240 — competitors own 4x more search real estate than you",
+          ] : [
+            "Your domain authority (32) has room for growth — increasing it directly improves rankings on high-value keywords",
+            "423 backlinks is a starting foundation — building authoritative links will accelerate search visibility",
+          ]),
           "68% of meta descriptions are optimized — the other 32% are costing you clicks in search results",
-          "Ranking for 312 keywords vs. 1,240 — competitors own 4x more search real estate than you",
         ]} />
       </Card>
     </div>
@@ -1133,6 +1138,7 @@ function ModeToggle({ mode, setMode, t }) {
 export default function DigitalHealthAssessment() {
   const [view, setView] = useState("results");
   const [activeTab, setActiveTab] = useState(0);
+  const [hasCompetitors] = useState(true); /* Set to false when no competitor URLs provided */
   const [mode, setMode] = useState("dark");
   const t = getTheme(mode);
 
@@ -1346,7 +1352,11 @@ export default function DigitalHealthAssessment() {
                     You{"’"}re Leaving ${ctaLow.pipeline.toLocaleString()}{""}–${ctaHigh.pipeline.toLocaleString()} in Monthly Pipeline Untapped
                   </h3>
                   <p style={{ fontSize: 15, color: t.body, marginBottom: 28, maxWidth: 520, margin: "0 auto 28px", position: "relative", lineHeight: 1.6 }}>
-                    Your Revenue Visibility Index is <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed }}>{ctaScore}/100</span>. Competitors are ranking for <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>4x</span> more keywords and capturing the demand you{"’"}re missing. Let{"’"}s capture it.
+                    Your Revenue Visibility Index is <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed }}>{ctaScore}/100</span>.{" "}
+                    {hasCompetitors
+                      ? <>Competitors are ranking for <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>4x</span> more keywords and capturing the demand you{"’"}re missing.</>
+                      : <>Your search visibility has significant room to grow — potential buyers searching for your services aren{"’"}t finding you.</>
+                    }{" "}Let{"’"}s capture it.
                   </p>
                   <button style={{
                     padding: "15px 40px", borderRadius: 10, border: "none",
