@@ -1156,6 +1156,24 @@ export default function DigitalHealthAssessment() {
                   />
                 </div>
               ))}
+              <div style={{ marginBottom: 22 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: t.subtle, textTransform: "uppercase",
+                  letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>
+                  SEMrush Project ID
+                  <span style={{ fontSize: 9, fontWeight: 600, color: t.subtle, background: t.toggleBg, border: "1px solid " + t.cardBorder, padding: "1px 6px", borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.8 }}>Optional</span>
+                </label>
+                <input type="text" placeholder="e.g. 12345678" style={{
+                  width: "100%", padding: "13px 16px", borderRadius: 10,
+                  border: `1px solid ${t.cardBorder}`, background: t.inputBg,
+                  color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s",
+                }}
+                  onFocus={e => e.target.style.borderColor = accent}
+                  onBlur={e => e.target.style.borderColor = t.cardBorder}
+                />
+                <div style={{ fontSize: 10, color: t.subtle, marginTop: 5, lineHeight: 1.4 }}>
+                  Enables detailed site health audit data. Find this in SEMrush under Projects {"\u2192"} Site Audit {"\u2192"} Project ID in the URL.
+                </div>
+              </div>
               <button style={{
                 width: "100%", padding: "15px", borderRadius: 10, border: "none",
                 background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
