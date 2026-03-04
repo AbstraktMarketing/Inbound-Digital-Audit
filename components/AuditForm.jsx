@@ -175,6 +175,7 @@ export default function AuditForm({ onSubmit, theme: t }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
           <label style={labelStyle}>Website URL *</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>We’ll scan your site for performance, SEO, and visibility issues.</div>
           <input type="text" value={form.url} placeholder="https://abstraktmg.com"
             onChange={e => update("url", e.target.value)} style={inputStyle("url")}
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleNext(); } }}
@@ -183,6 +184,7 @@ export default function AuditForm({ onSubmit, theme: t }) {
         </div>
         <div>
           <label style={labelStyle}>Primary goal of your website *</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>Helps us tailor recommendations to what actually drives your revenue.</div>
           <ChoiceGrid options={goalOptions} field="goal" multi />
         </div>
       </div>
@@ -192,10 +194,12 @@ export default function AuditForm({ onSubmit, theme: t }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
           <label style={labelStyle}>Do you run paid ads? *</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>We’ll check if your attribution can tie ad spend to actual leads.</div>
           <ChoiceGrid options={adOptions} field="paidAds" multi />
         </div>
         <div>
           <label style={labelStyle}>Monthly website visitors (estimate)</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>This helps us estimate lost revenue opportunities.</div>
           <ChoiceGrid options={trafficOptions} field="monthlyTraffic" />
         </div>
       </div>
@@ -205,10 +209,12 @@ export default function AuditForm({ onSubmit, theme: t }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
           <label style={labelStyle}>How do customers contact you?</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>We’ll verify these conversion paths are being tracked properly.</div>
           <ChoiceGrid options={contactOptions} field="contactMethods" multi />
         </div>
         <div>
           <label style={labelStyle}>Biggest marketing challenge</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>Your audit will prioritize recommendations around this.</div>
           <ChoiceGrid options={challengeOptions} field="challenge" />
         </div>
       </div>
