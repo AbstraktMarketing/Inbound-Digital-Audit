@@ -11,19 +11,20 @@ const accentAlt = brand.cloudBlue;
 
 export default function AuditForm({ onSubmit, theme: t }) {
   const [form, setForm] = React.useState({
-    companyName: "", url: "", contactName: "", email: "", phone: "", semrushProjectId: "",
+    contactName: "", email: "", companyName: "", address: "", url: "", competitorUrl: "", industry: "", semrushProjectId: "",
   });
   const [errors, setErrors] = React.useState({});
   const [submitting, setSubmitting] = React.useState(false);
 
   function validate() {
     const e = {};
-    if (!form.companyName.trim()) e.companyName = "Company name is required";
-    if (!form.url.trim()) e.url = "Website URL is required";
-    else if (!/^(https?:\/\/)?[\w.-]+\.\w{2,}/.test(form.url.trim())) e.url = "Enter a valid URL";
-    if (!form.contactName.trim()) e.contactName = "Contact name is required";
+    if (!form.contactName.trim()) e.contactName = "Full name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Enter a valid email";
+    if (!form.companyName.trim()) e.companyName = "Business name is required";
+    if (!form.url.trim()) e.url = "Website URL is required";
+    else if (!/^(https?:\/\/)?[\w.-]+\.\w{2,}/.test(form.url.trim())) e.url = "Enter a valid URL";
+    if (form.competitorUrl.trim() && !/^(https?:\/\/)?[\w.-]+\.\w{2,}/.test(form.competitorUrl.trim())) e.competitorUrl = "Enter a valid URL";
     return e;
   }
 
@@ -46,7 +47,7 @@ export default function AuditForm({ onSubmit, theme: t }) {
     width: "100%", padding: "14px 16px", borderRadius: 10, fontSize: 14,
     border: `1px solid ${errors[field] ? brand.pipelineRed + "60" : t.cardBorder}`,
     background: t.inputBg, color: t.text, outline: "none",
-    fontFamily: "'DM Sans', sans-serif", transition: "border 0.2s",
+    fontFamily: "'Barlow', 'DM Sans', sans-serif", transition: "border 0.2s",
   });
 
   const labelStyle = {
@@ -68,7 +69,7 @@ export default function AuditForm({ onSubmit, theme: t }) {
         </div>
         <h1 style={{
           fontSize: 32, fontWeight: 700, color: t.text, lineHeight: 1.3,
-          margin: "0 0 12px", fontFamily: "'DM Sans', sans-serif",
+          margin: "0 0 12px", fontFamily: "'Barlow', 'DM Sans', sans-serif",
         }}>
           How Visible Is Your Business Online?
         </h1>
@@ -88,29 +89,9 @@ export default function AuditForm({ onSubmit, theme: t }) {
         }} />
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div>
-            <label style={labelStyle}>Company Name *</label>
-            <input
-              type="text" value={form.companyName} placeholder="Acme Corp"
-              onChange={e => update("companyName", e.target.value)}
-              style={inputStyle("companyName")}
-            />
-            {errors.companyName && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.companyName}</div>}
-          </div>
-
-          <div>
-            <label style={labelStyle}>Website URL *</label>
-            <input
-              type="text" value={form.url} placeholder="https://example.com"
-              onChange={e => update("url", e.target.value)}
-              style={inputStyle("url")}
-            />
-            {errors.url && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.url}</div>}
-          </div>
-
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
-              <label style={labelStyle}>Contact Name *</label>
+              <label style={labelStyle}>Full Name *</label>
               <input
                 type="text" value={form.contactName} placeholder="Jane Smith"
                 onChange={e => update("contactName", e.target.value)}
@@ -119,32 +100,77 @@ export default function AuditForm({ onSubmit, theme: t }) {
               {errors.contactName && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.contactName}</div>}
             </div>
             <div>
-              <label style={labelStyle}>Phone</label>
+              <label style={labelStyle}>Email Address *</label>
               <input
-                type="tel" value={form.phone} placeholder="(555) 123-4567"
-                onChange={e => update("phone", e.target.value)}
-                style={inputStyle("phone")}
+                type="email" value={form.email} placeholder="jane@acmecorp.com"
+                onChange={e => update("email", e.target.value)}
+                style={inputStyle("email")}
               />
+              {errors.email && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.email}</div>}
             </div>
           </div>
 
           <div>
-            <label style={labelStyle}>Email *</label>
+            <label style={labelStyle}>Business Name *</label>
             <input
-              type="email" value={form.email} placeholder="jane@acmecorp.com"
-              onChange={e => update("email", e.target.value)}
-              style={inputStyle("email")}
+              type="text" value={form.companyName} placeholder="Abstrakt Marketing Group"
+              onChange={e => update("companyName", e.target.value)}
+              style={inputStyle("companyName")}
             />
-            {errors.email && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.email}</div>}
+            {errors.companyName && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.companyName}</div>}
           </div>
 
           <div>
-            <label style={labelStyle}>SEMrush Project ID <span style={{ opacity: 0.5, textTransform: "none", fontWeight: 400 }}>(optional — for Site Health)</span></label>
+            <label style={labelStyle}>Business Address</label>
+            <input
+              type="text" value={form.address} placeholder="701 N 1st St, St. Louis, MO 63102"
+              onChange={e => update("address", e.target.value)}
+              style={inputStyle("address")}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Company Website URL *</label>
+            <input
+              type="text" value={form.url} placeholder="https://abstraktmg.com"
+              onChange={e => update("url", e.target.value)}
+              style={inputStyle("url")}
+            />
+            {errors.url && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.url}</div>}
+          </div>
+
+          <div>
+            <label style={labelStyle}>Competitor URL</label>
+            <input
+              type="text" value={form.competitorUrl} placeholder="https://competitor.com"
+              onChange={e => update("competitorUrl", e.target.value)}
+              style={inputStyle("competitorUrl")}
+            />
+            {errors.competitorUrl && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.competitorUrl}</div>}
+          </div>
+
+          <div>
+            <label style={labelStyle}>Industry</label>
+            <input
+              type="text" value={form.industry} placeholder="e.g. B2B Services, SaaS, Healthcare"
+              onChange={e => update("industry", e.target.value)}
+              style={inputStyle("industry")}
+            />
+          </div>
+
+          <div>
+            <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+              SEMrush Project ID
+              <span style={{ fontSize: 9, fontWeight: 600, color: t.subtle, background: t.toggleBg || "rgba(128,128,128,0.1)", border: `1px solid ${t.cardBorder}`, padding: "1px 6px", borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.8 }}>Optional</span>
+            </label>
             <input
               type="text" value={form.semrushProjectId} placeholder="e.g. 4594705336925861"
               onChange={e => update("semrushProjectId", e.target.value)}
               style={inputStyle("semrushProjectId")}
             />
+            <div style={{ fontSize: 10, color: t.subtle, marginTop: 5, lineHeight: 1.4 }}>
+              Enables detailed site health audit data. Find this in SEMrush under Projects → Site Audit → Project ID in the URL.
+            </div>
           </div>
 
           <button
@@ -156,7 +182,7 @@ export default function AuditForm({ onSubmit, theme: t }) {
               letterSpacing: 0.5, marginTop: 8, transition: "transform 0.15s, box-shadow 0.15s",
               boxShadow: "0 4px 20px rgba(66,191,186,0.3)",
               opacity: submitting ? 0.7 : 1,
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Barlow', 'DM Sans', sans-serif",
             }}
           >
             {submitting ? "Starting Audit..." : "Run My Free Audit →"}
