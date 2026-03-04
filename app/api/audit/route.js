@@ -1,5 +1,5 @@
 // Main audit orchestration endpoint
-// POST /api/audit — accepts { url, companyName, contactName, email, phone }
+// POST /api/audit — accepts form data including url, companyName, contactName, email, and business intelligence fields
 // Returns unified audit data matching DigitalHealthAssessment.jsx metric format
 
 import { fetchPageSpeed } from "../providers/pagespeed.js";
@@ -17,7 +17,7 @@ export const maxDuration = 300; // Pro plan: up to 5 minutes for all providers
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { url, companyName, contactName, email, phone, semrushProjectId, linkedinUrl, facebookUrl, blogUrl } = body;
+    const { url, companyName, contactName, email, phone, semrushProjectId, linkedinUrl, facebookUrl, blogUrl, goal, paidAds, monthlyTraffic, contactMethods, challenge, competitorUrl } = body;
 
     if (!url) {
       return Response.json({ error: "URL is required" }, { status: 400 });
@@ -79,7 +79,7 @@ export async function POST(request) {
 
     // --- Map to metric format ---
     const audit = {
-      meta: { url: fullUrl, companyName, contactName, email, phone, semrushProjectId: semrushProjectId || null, socialProfiles, blogUrl: blogUrl || null, timestamp: new Date().toISOString() },
+      meta: { url: fullUrl, companyName, contactName, email, phone, semrushProjectId: semrushProjectId || null, socialProfiles, blogUrl: blogUrl || null, goal: goal || [], paidAds: paidAds || [], monthlyTraffic: monthlyTraffic || null, contactMethods: contactMethods || [], challenge: challenge || null, competitorUrl: competitorUrl || null, timestamp: new Date().toISOString() },
       webPerf: buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit, gt),
       seo: buildSEOMetrics(sr, sitemap, hasRobots, companyName),
       keywords: buildKeywords(sr),

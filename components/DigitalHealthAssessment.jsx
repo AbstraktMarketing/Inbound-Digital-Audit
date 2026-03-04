@@ -1,39 +1,38 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { brand, accent, accentAlt, getTheme } from "../constants/brand.js";
-import StatusBanner from "./StatusBanner.jsx";
-import { POLL_INTERVAL_MS, MAX_POLL_ATTEMPTS } from "../constants/statusConfig.js";
 
 const tabs = [
-  "Website Performance",
-  "Search Visibility",
-  "Local Search Performance",
-  "Content Performance",
-  "Social & AI Visibility",
+  "Technical Foundation",
+  "Authority & Search",
+  "Content & Topical Depth",
+  "Entity & Brand Authority",
+  "Revenue & Attribution",
 ];
 
-/* ── Helpers ── */
+/* -- Helpers -- */
 function statusColor(s) {
   if (s === "good") return brand.talentTeal;
   if (s === "warning") return brand.inboundOrange;
   return brand.pipelineRed;
 }
 function statusIcon(s) {
-  if (s === "good") return "✓";
+  if (s === "good") return "\u2713";
   if (s === "warning") return "!";
-  return "✗";
+  return "\u2717";
+}
+function getRevenueVerdict(score) {
+  if (score < 40) return "Your business is nearly invisible to buyers actively searching for your services. Revenue is being lost every day.";
+  if (score < 60) return "Your business is capturing approximately " + score + "% of its potential digital demand. Competitors are capturing the remaining market share.";
+  if (score < 75) return "Buyers searching for your services today are finding competitors first. You are capturing roughly " + score + "% of available demand.";
+  return "Strong position \u2014 targeted improvements can accelerate pipeline growth significantly.";
+}
+function calcGrowth(arr) {
+  if (!arr || arr.length < 2) return 0;
+  return Math.round(((arr[arr.length - 1] - arr[0]) / Math.max(arr[0], 1)) * 100);
 }
 
-function DataUnavailable({ message, t }) {
-  return (
-    <div style={{ padding: "40px 24px", textAlign: "center", color: t.subtle, fontSize: 14 }}>
-      <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, color: t.text, opacity: 0.5 }}>No Data Available</div>
-      <div style={{ lineHeight: 1.5 }}>{message}</div>
-    </div>
-  );
-}
-
-/* ── Abstrakt Logo SVG Component ── */
+/* -- Abstrakt Logo SVG Component -- */
 function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
   const aspect = 190.42 / 60.65;
   const w = height * aspect;
@@ -54,581 +53,134 @@ function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
   );
 }
 
-/* ── Shared Components ── */
-function scoreTier(score) {
-  if (score >= 90) return { label: "Industry Leader", color: brand.talentTeal };
-  if (score >= 70) return { label: "Competitive", color: brand.inboundOrange };
-  if (score >= 50) return { label: "Growth Opportunity", color: brand.inboundOrange };
-  return { label: "High Risk", color: brand.pipelineRed };
-}
-
+/* -- Shared Components -- */
 function ScoreRing({ score, size = 130, t }) {
   const r = (size - 14) / 2;
   const circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
   const color = score >= 90 ? brand.talentTeal : score >= 70 ? brand.inboundOrange : brand.pipelineRed;
   const glowColor = score >= 90 ? "rgba(66,191,186,0.25)" : score >= 70 ? "rgba(244,111,10,0.25)" : "rgba(255,33,15,0.25)";
-  const tier = scoreTier(score);
   return (
-    <div style={{ position: "relative", width: size, height: size + 22, margin: "0 auto 14px" }}>
+    <div style={{ position: "relative", width: size, height: size, margin: "0 auto 14px" }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)", filter: `drop-shadow(0 0 12px ${glowColor})` }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={t.cardBorder} strokeWidth="9" />
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="9"
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
       </svg>
-      <div style={{ position: "absolute", top: 0, left: 0, width: size, height: size, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <span style={{ fontSize: size * 0.3, fontWeight: 700, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{score}</span>
         <span style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 500 }}>/ 100</span>
       </div>
-      <div style={{
-        position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
-        padding: "3px 10px", borderRadius: 6, whiteSpace: "nowrap",
-        background: `${tier.color}12`, border: `1px solid ${tier.color}25`,
-        fontSize: 10, fontWeight: 700, color: tier.color, letterSpacing: 0.5,
-      }}>{tier.label}</div>
     </div>
   );
 }
 
-function statusLabel(s) {
-  if (s === "good") return "\u2705 Healthy";
-  if (s === "warning") return "\uD83D\uDC40 Opportunity";
-  return "\uD83D\uDC4B Needs Attention";
-}
-
-function impactBadge(impact) {
-  if (!impact) return null;
-  const cfg = {
-    high: { emoji: "🔥", label: "High Impact", color: brand.pipelineRed, bg: "rgba(255,33,15,0.08)", border: "rgba(255,33,15,0.18)" },
-    medium: { emoji: "⚡", label: "Medium Impact", color: brand.inboundOrange, bg: "rgba(244,111,10,0.08)", border: "rgba(244,111,10,0.18)" },
-    foundational: { emoji: "🟢", label: "Foundational", color: brand.talentTeal, bg: "rgba(66,191,186,0.08)", border: "rgba(66,191,186,0.18)" },
-  }[impact];
-  if (!cfg) return null;
-  return { ...cfg };
-}
-
-function ImpactTag({ impact }) {
-  const b = impactBadge(impact);
-  if (!b) return null;
-  return React.createElement("span", { style: {
-    fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
-    padding: "2px 7px", borderRadius: 4,
-    color: b.color, background: b.bg, border: `1px solid ${b.border}`,
-    whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 3,
-  }}, b.emoji + " " + b.label);
-}
-
-function generateTabSummary(metrics, tabType) {
-  const good = metrics.filter(m => m.status === "good");
-  const warning = metrics.filter(m => m.status === "warning");
-  const poor = metrics.filter(m => m.status === "poor");
-  const highImpactFailing = metrics.filter(m => m.impact === "high" && m.status !== "good");
-
-  /* ── Risk label humanizer ── */
-  const riskPhrases = {
-    "Site Health": "Technical issues driving away visitors",
-    "Page Speed & Performance": "Slow pages costing you leads",
-    "Image Optimization": "Heavy images slowing conversions",
-    "Alt Tags": "Missing image tags hurting accessibility",
-    "Organic Keywords": "Competitors capturing your buyers' searches",
-    "Branded Traffic Share": "Weak brand recognition in search",
-    "Indexation Efficiency": "Pages invisible to search engines",
-    "Domain Authority Score": "Low competitive strength online",
-    "Backlink Profile": "Thin endorsement signals from other sites",
-    "Content Freshness": "Stale content making you look inactive",
-    "Meta Descriptions": "Weak search result copy losing clicks",
-    "Bounce Rate": "Visitors leaving without converting",
-    "Word Count (top pages)": "Thin pages that don't convince buyers",
-    "Internal Links / Page": "Poor navigation costing page views",
-    "Duplicate Content": "Duplicate pages confusing search engines",
-    "Readability Score": "Complex content limiting your audience",
-    "Content-to-Code Ratio": "Pages heavy on code, light on substance",
-    "Open Graph Tags": "Broken social sharing previews",
-    "Twitter Cards": "Missing X/Twitter card previews",
-    "Social Share Buttons": "No way for visitors to amplify your content",
-    "Brand Consistency": "Inconsistent brand eroding trust",
-    "AI Search Mentions": "Invisible in AI-powered search",
-    "Structured Data": "Search engines can't fully understand your business",
-    "Entity Recognition": "Google doesn't recognize your brand",
-    "Content Depth": "Content too shallow for AI citations",
-    "FAQ Schema": "Missing FAQ rich results opportunity",
-    "Topical Authority": "Not seen as an expert in your space",
-    "Citation Likelihood": "AI tools unlikely to reference you",
-    "Knowledge Panel": "No Knowledge Panel on branded searches",
-    "NAP Consistency": "Conflicting business info across directories",
-    "Schema Markup": "Incomplete business data for search engines",
-    "Knowledge Graph": "Missing from Google's Knowledge Graph",
-    "Entity Associations": "Weak connections between your brand properties",
-    "Brand SERP Control": "Competitors appearing on your branded searches",
-    "Wikidata": "No Wikidata entry for your business",
-    "Same-As Links": "Disconnected social profiles",
-    "Entity Descriptions": "Inconsistent business descriptions online",
+function SourceBadge({ confidence, t }) {
+  if (!confidence) return null;
+  const config = {
+    measured: { label: "Measured", color: brand.talentTeal, bg: "rgba(66,191,186,0.1)", border: "rgba(66,191,186,0.2)" },
+    estimated: { label: "Estimated", color: brand.inboundOrange, bg: "rgba(244,111,10,0.1)", border: "rgba(244,111,10,0.2)" },
+    assumed: { label: "Assumed", color: t.subtle, bg: "rgba(128,128,128,0.1)", border: "rgba(128,128,128,0.2)" },
   };
-  const humanizeRisk = label => riskPhrases[label] || label;
-  const risks = poor.filter(m => m.impact === "high" || m.impact === "medium").map(m => humanizeRisk(m.label));
-  const topRisks = risks.slice(0, 3);
-
-  const hasFoundation = good.length >= 2;
-  const severityRatio = poor.length / (metrics.length || 1);
-  const isHealthy = severityRatio < 0.15 && poor.length <= 1;
-  const isCritical = severityRatio > 0.4;
-
-  const summaries = {
-    website: {
-      summary: isHealthy
-        ? "Your site delivers a fast, secure experience that keeps visitors engaged and converts. This technical edge means more of your ad spend and content investment turns into pipeline."
-        : hasFoundation
-        ? `Your site has a stable base, but ${isCritical ? "several" : "a few"} performance issues are costing you visitors. Slow pages and crawl problems mean prospects are bouncing before they ever see your offer.`
-        : `Your site's technical issues are actively losing you business. ${poor.length} critical problems are driving prospects to competitors with faster, cleaner experiences.`,
-      opportunity: isHealthy
-        ? "Protect this advantage \u2014 monitor Core Web Vitals to stay ahead of competitors who are catching up."
-        : "Fixing these issues can recover lost visitors, reduce cost-per-lead, and turn your website into the pipeline engine it should be.",
-    },
-    seo: {
-      summary: isHealthy
-        ? "You're capturing high-intent search traffic and converting searchers who are ready to buy. This organic pipeline reduces dependency on paid channels and lowers acquisition costs."
-        : hasFoundation
-        ? "Your SEO foundation is in place, but competitors are claiming the high-value keywords you're missing. Every keyword gap is a prospect choosing them over you."
-        : "Your search visibility gaps mean buyers can't find you when they're actively looking to purchase. Competitors are capturing this demand instead.",
-      opportunity: "Own page one for high-intent keywords \u2014 these searchers convert at 3-5x the rate of outbound leads.",
-    },
-    content: {
-      summary: isHealthy
-        ? "Your content is working as a sales asset \u2014 attracting qualified visitors, keeping them engaged, and building the trust that shortens sales cycles."
-        : hasFoundation
-        ? "Your content infrastructure exists, but thin pages and stale publishing mean you're leaving revenue on the table. Prospects aren't finding the answers they need to move forward."
-        : "Content gaps are a direct revenue leak. Without fresh, in-depth pages, prospects leave your site unconvinced \u2014 and find what they need on a competitor's blog.",
-      opportunity: "Consistent, expert-level content turns your website into a 24/7 sales rep that qualifies leads before your team ever picks up the phone.",
-    },
-    social: {
-      summary: isHealthy
-        ? "Your brand shows up consistently across social and AI search surfaces. This multi-channel presence builds the familiarity that makes outreach warmer and close rates higher."
-        : hasFoundation
-        ? "You have some social presence, but gaps in AI visibility and inconsistent branding mean you're invisible in the channels where modern buyers do research."
-        : "Your brand is largely invisible across social and AI search. When prospects research your company before a call, they're finding very little \u2014 and that kills trust.",
-      opportunity: "Capture buyers before competitors do \u2014 show up in the AI answers and social feeds where your prospects spend their time.",
-    },
-    local: {
-      summary: isHealthy
-        ? "Your local search presence is a competitive moat. Verified listings, strong reviews, and entity signals mean you show up when nearby buyers are ready to act."
-        : hasFoundation
-        ? "Your local foundation is solid, but entity gaps mean Google doesn't fully understand your business. This limits map pack appearances and branded search control."
-        : "Weak local signals are handing nearby customers to competitors. Missing listings, thin reviews, and incomplete entity data mean you're invisible in local search.",
-      opportunity: "Turn branded searches into a controlled traffic funnel \u2014 own your local map pack and Knowledge Panel to capture high-intent local buyers.",
-    },
-  };
-
-  const s = summaries[tabType] || summaries.website;
-  return { summary: s.summary, risks: topRisks, opportunity: s.opportunity };
-}
-
-function getLocalLiftScenario(metrics) {
-  const m = {};
-  metrics.forEach(x => { m[x.label] = x.status; });
-  const knowledgeGraphMissing = m["Knowledge Graph"] === "poor";
-  const schemaPoor = m["Schema Markup"] !== "good";
-  const entityWeak = m["Entity Associations"] === "poor";
-  const napBad = m["NAP Consistency"] === "poor";
-  const gbpGood = m["Verified Google Business Profile"] === "good";
-  const reviewsGood = m["Google Reviews"] === "good";
-  const highRiskCount = [knowledgeGraphMissing, schemaPoor, entityWeak, napBad].filter(Boolean).length;
-
-  if (highRiskCount >= 3) {
-    return {
-      badge: "\uD83D\uDD34 High Risk",
-      badgeColor: brand.pipelineRed,
-      headline: "Local Buyers Can't Find You",
-      body: "Critical gaps in your local presence mean nearby customers are finding competitors instead of you.",
-      subBody: "Without proper entity data and structured markup, Google can't confidently show your business in local results.",
-      listLabel: "Priority Fixes",
-      items: ["Establish Knowledge Graph presence", "Expand schema markup coverage", "Correct citation inconsistencies", "Strengthen entity associations"],
-    };
-  }
-  if (gbpGood && reviewsGood && (schemaPoor || entityWeak)) {
-    return {
-      badge: "🟠 Moderate Opportunity",
-      badgeColor: brand.inboundOrange,
-      headline: "Your Foundation Is Strong \u2014 Now Dominate Local Search",
-      body: "You've built a solid local presence. Now it's time to turn that into a competitive moat \u2014 own your map pack, control your branded searches, and capture high-intent local buyers.",
-      subBody: null,
-      listLabel: "Growth Opportunities",
-      items: ["Expand structured schema types", "Improve brand SERP control", "Strengthen entity associations", "Increase authoritative citations"],
-    };
-  }
-  if (knowledgeGraphMissing) {
-    return {
-      badge: "🟡 Missing Signal",
-      badgeColor: brand.inboundOrange,
-      headline: "You're Missing a Major Authority Signal",
-      body: "A Knowledge Panel increases trust, credibility, and brand control in search results.",
-      subBody: "Building entity alignment and structured data increases your eligibility for Knowledge Graph inclusion.",
-      listLabel: null,
-      items: [],
-    };
-  }
-  return {
-    badge: null,
-    badgeColor: null,
-    headline: "Turn Local Search Into a Growth Channel",
-    body: "Most businesses stop at \"having a Google Business Profile.\" That's only the starting line.",
-    subBody: "Abstrakt helps strengthen the signals that influence local rankings, trust, and visibility:",
-    listLabel: null,
-    items: ["Entity alignment", "Structured data enhancements", "Brand SERP improvements", "Authority-building citations"],
-  };
-}
-
-function getSEOScenario(seoMetrics, contentMetrics) {
-  const seo = {};
-  seoMetrics.forEach(x => { seo[x.label] = x.status; });
-  const content = {};
-  contentMetrics.forEach(x => { content[x.label] = x.status; });
-
-  const keywordsWeak = seo["Organic Keywords"] !== "good";
-  const brandedPoor = seo["Branded Traffic Share"] === "poor";
-  const daLow = seo["Domain Authority Score"] !== "good";
-  const backlinkWeak = seo["Backlink Profile"] !== "good";
-  const wordCountPoor = content["Word Count (top pages)"] === "poor";
-  const bouncePoor = content["Bounce Rate"] === "poor";
-  const freshWarn = content["Content Freshness"] !== "good";
-  const duplicatePoor = content["Duplicate Content"] === "poor";
-
-  const seoFailCount = [keywordsWeak, brandedPoor, daLow, backlinkWeak].filter(Boolean).length;
-  const contentFailCount = [wordCountPoor, bouncePoor, freshWarn, duplicatePoor].filter(Boolean).length;
-
-  if (seoFailCount >= 3 && contentFailCount >= 3) {
-    return {
-      badge: "🔴 High Risk",
-      badgeColor: brand.pipelineRed,
-      headline: "Your Search Visibility Needs a Strategic Overhaul",
-      body: "Multiple high-impact SEO and content signals are underperforming — limiting your ability to rank, attract traffic, and convert visitors.",
-      subBody: "Without keyword depth, domain authority, and quality content working together, organic growth stays flat.",
-      listLabel: "Priority Fixes",
-      items: ["Expand keyword coverage and targeting", "Strengthen domain authority through backlinks", "Deepen content quality and publishing cadence", "Resolve technical indexation gaps"],
-    };
-  }
-  if (contentFailCount >= 3 && seoFailCount < 3) {
-    return {
-      badge: "🟠 Content Gap",
-      badgeColor: brand.inboundOrange,
-      headline: "Your Content Strategy Is Holding Back Your Rankings",
-      body: "Your technical SEO foundation is workable, but thin content, high bounce rates, and inconsistent publishing are limiting ranking potential.",
-      subBody: "Search engines reward sites that publish deep, valuable content consistently. Closing this gap is the fastest path to organic growth.",
-      listLabel: "Growth Opportunities",
-      items: ["Increase page depth to 1,200+ words", "Establish a consistent publishing cadence", "Reduce bounce rate with stronger engagement", "Resolve duplicate content issues"],
-    };
-  }
-  if (daLow && backlinkWeak) {
-    return {
-      badge: "🟡 Authority Gap",
-      badgeColor: brand.inboundOrange,
-      headline: "Your Domain Authority Is Limiting Competitive Rankings",
-      body: "Your content and technical signals show potential, but low domain authority and a weak backlink profile are keeping you out of competitive keyword positions.",
-      subBody: "Building authoritative backlinks is the most impactful lever to unlock rankings for mid-to-high difficulty keywords.",
-      listLabel: null,
-      items: [],
-    };
-  }
-  return {
-    badge: null,
-    badgeColor: null,
-    headline: "Accelerate Your Organic Growth with Abstrakt",
-    body: "Ranking on page one isn't luck — it's a system. Abstrakt combines technical SEO, strategic content, and authority building into a unified growth engine.",
-    subBody: null,
-    listLabel: null,
-    items: ["Keyword strategy & gap analysis", "SEO-optimized content production", "Technical SEO & site performance", "Backlink acquisition & authority building"],
-  };
-}
-
-function getWebPerfScenario(metrics) {
-  const m = {};
-  metrics.forEach(x => { m[x.label] = x.status; });
-  const siteHealthPoor = m["Site Health"] === "poor";
-  const speedPoor = m["Page Speed & Performance"] === "poor";
-  const imagePoor = m["Image Optimization"] === "poor";
-  const altPoor = m["Alt Tags"] === "poor";
-  const failCount = metrics.filter(x => x.status === "poor").length;
-  const highImpactFails = metrics.filter(x => x.impact === "high" && x.status !== "good").length;
-
-  if (failCount >= 3 && highImpactFails >= 2) {
-    return {
-      badge: "🔴 High Risk",
-      badgeColor: brand.pipelineRed,
-      headline: "Ready to Fix These High-Impact Issues?",
-      body: "Your audit uncovered performance gaps that are limiting visibility and conversions.",
-      subBody: "Without addressing speed, crawl efficiency, and optimization issues, your site is leaving traffic and revenue on the table.",
-      listLabel: "Let's build a plan to improve",
-      items: ["Page speed & crawl efficiency", "Technical SEO health", "Image & accessibility optimization", "Search performance & rankings"],
-    };
-  }
-  if (speedPoor || imagePoor) {
-    return {
-      badge: "🟠 Performance Gap",
-      badgeColor: brand.inboundOrange,
-      headline: "Your Foundation Is Solid — Speed Is Holding You Back",
-      body: "Core technical elements are in place, but load time and image optimization issues are creating friction for users and search engines.",
-      subBody: null,
-      listLabel: "Quick wins to unlock",
-      items: ["Page load speed improvements", "Image compression & delivery", "Core Web Vitals optimization", "Crawl efficiency gains"],
-    };
-  }
-  if (siteHealthPoor) {
-    return {
-      badge: "🟡 Health Check",
-      badgeColor: brand.inboundOrange,
-      headline: "Your Site Health Score Needs Attention",
-      body: "Crawlability and technical errors are reducing how effectively search engines can discover and index your pages.",
-      subBody: "Improving site health is foundational — it directly impacts how many of your pages can rank.",
-      listLabel: null,
-      items: [],
-    };
-  }
-  return {
-    badge: null,
-    badgeColor: null,
-    headline: "Keep Your Technical Edge Sharp",
-    body: "Your site's technical foundation is performing well. A proactive website strategy ensures you stay ahead as your business grows.",
-    subBody: null,
-    listLabel: null,
-    items: ["Ongoing performance monitoring", "Proactive technical maintenance", "Speed & UX optimization", "Scalable site architecture"],
-  };
-}
-
-function GrowthRoadmap({ tabType, t }) {
-  const roadmaps = {
-    website: [
-      { month: "Month 1", title: "Technical Fixes & Speed", items: ["Resolve crawl errors and broken links", "Compress images and implement lazy loading", "Fix render-blocking resources", "Enable browser caching"] },
-      { month: "Month 2", title: "Core Web Vitals", items: ["Optimize Largest Contentful Paint", "Reduce Total Blocking Time", "Improve mobile performance scores", "Implement CDN and HTTP/2 optimizations"] },
-      { month: "Month 3", title: "Conversion Optimization", items: ["A/B test page layouts for conversions", "Optimize CTAs above the fold", "Reduce bounce rate on key pages", "Launch ongoing monitoring dashboard"] },
-    ],
-    seo: [
-      { month: "Month 1", title: "Technical Fixes + Speed", items: ["Fix indexation gaps and crawl issues", "Optimize site speed for Core Web Vitals", "Submit updated sitemaps", "Resolve duplicate content"] },
-      { month: "Month 2", title: "Keyword Expansion + Content", items: ["Target high-intent keyword gaps", "Publish 4-6 keyword-targeted pages", "Optimize existing page titles and metas", "Build internal linking structure"] },
-      { month: "Month 3", title: "Authority + Entity Reinforcement", items: ["Launch link-building campaigns", "Build topical authority clusters", "Strengthen entity signals and schema", "Expand to competitive keyword territory"] },
-    ],
-    content: [
-      { month: "Month 1", title: "Content Audit + Quick Wins", items: ["Audit and refresh top-traffic pages", "Fix all meta descriptions and H1 tags", "Expand thin pages to 1,200+ words", "Establish publishing calendar"] },
-      { month: "Month 2", title: "Content Engine", items: ["Publish 6-8 keyword-targeted articles", "Build pillar page + cluster strategy", "Optimize internal linking between posts", "Add FAQ schema to key pages"] },
-      { month: "Month 3", title: "Engagement + Conversion", items: ["Reduce bounce rate with better CTAs", "Add lead magnets to top content", "Implement content scoring", "Launch newsletter or content series"] },
-    ],
-    social: [
-      { month: "Month 1", title: "Foundation + Structured Data", items: ["Fix Open Graph and Twitter Card tags", "Implement full schema markup", "Establish consistent brand profiles", "Create shareable content templates"] },
-      { month: "Month 2", title: "AI Visibility", items: ["Build FAQ and How-To content for AI citation", "Optimize content structure for AI parsing", "Add BreadcrumbList and Service schema", "Create data-rich comparison pages"] },
-      { month: "Month 3", title: "Social Amplification", items: ["Launch social content calendar", "Build thought leadership presence", "Monitor AI search mentions", "Expand brand consistency across platforms"] },
-    ],
-    local: [
-      { month: "Month 1", title: "Listings + Citations", items: ["Verify and optimize Google Business Profile", "Fix NAP inconsistencies across directories", "Add LocalBusiness and FAQ schema", "Respond to all existing reviews"] },
-      { month: "Month 2", title: "Review Engine", items: ["Launch review generation strategy", "Target 5+ new reviews per month", "Implement review response workflow", "Build location-specific landing pages"] },
-      { month: "Month 3", title: "Entity Authority", items: ["Establish Knowledge Graph presence", "Create Wikidata entry", "Strengthen entity associations", "Build same-as links across properties"] },
-    ],
-  };
-  const plan = roadmaps[tabType] || roadmaps.seo;
+  const c = config[confidence] || config.assumed;
   return (
-    <div style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>
-        90-Day Growth Roadmap
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-        {plan.map((phase, i) => (
-          <div key={i} style={{
-            padding: "16px 14px", borderRadius: 10,
-            background: i === 0 ? `${accent}08` : t.hoverRow,
-            border: `1px solid ${i === 0 ? accent + "25" : t.cardBorder}`,
-          }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: i === 0 ? accent : t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>{phase.month}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: t.text, marginBottom: 10 }}>{phase.title}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              {phase.items.map((item, j) => (
-                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: t.body, lineHeight: 1.4 }}>
-                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: i === 0 ? accent : t.subtle, flexShrink: 0, marginTop: 5 }} />
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <span style={{
+      fontSize: 8, fontWeight: 700, color: c.color,
+      background: c.bg, border: "1px solid " + c.border,
+      padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.8,
+      whiteSpace: "nowrap",
+    }}>{c.label}</span>
   );
 }
 
-function ROIScenario({ t, data }) {
-  // Use real organic traffic if available, otherwise estimate
-  const seoData = data?.seo || {};
-  const metrics = seoData.metrics || [];
-  const kwMetric = metrics.find(m => m.label === "Organic Keywords");
-  // Extract current traffic from detail string or estimate from keyword count
-  let currentTraffic = 0;
-  if (kwMetric?.detail) {
-    const trafficMatch = kwMetric.detail.match(/~?([\d,]+)\s*monthly/i);
-    if (trafficMatch) currentTraffic = parseInt(trafficMatch[1].replace(/,/g, ""), 10);
-  }
-  if (!currentTraffic) {
-    const kwVal = kwMetric?.value ? parseInt(String(kwMetric.value).replace(/,/g, ""), 10) : 0;
-    currentTraffic = kwVal > 0 ? Math.round(kwVal * 5) : 500;
-  }
-
-  const liftPct = 30;
-  const additionalTraffic = Math.round(currentTraffic * (liftPct / 100));
-  const conversionRate = 1.5; // 1.5% visitor-to-lead
-  const additionalLeads = Math.round(additionalTraffic * (conversionRate / 100));
-  const avgDealValue = 5000;
-  const closeRate = 15; // 15% close rate
-  const revenueImpact = Math.round(additionalLeads * avgDealValue * (closeRate / 100));
-
+function WeightBadge({ impact }) {
+  if (!impact || impact === "medium") return null;
+  const tier = impact === "high" ? { label: "High Impact", color: brand.pipelineRed, bg: "rgba(255,33,15,0.08)", border: "rgba(255,33,15,0.18)" }
+    : impact === "low" ? { label: "Low Impact", color: brand.cloudBlue, bg: "rgba(4,129,163,0.08)", border: "rgba(4,129,163,0.18)" }
+    : null;
+  if (!tier) return null;
   return (
-    <div style={{
-      marginBottom: 28, padding: "20px 24px", borderRadius: 10,
-      background: `linear-gradient(135deg, ${accent}06, ${brand.cloudBlue}04)`,
-      border: `1px solid ${accent}20`,
-    }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 14 }}>
-        ROI Scenario: If Organic Visibility Increased by {liftPct}%
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>
-            +{additionalTraffic.toLocaleString()}
-          </div>
-          <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Additional monthly visitors</div>
-        </div>
-        <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: accent, fontFamily: "'JetBrains Mono', monospace" }}>
-            +{additionalLeads}
-          </div>
-          <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Estimated new leads/mo</div>
-        </div>
-        <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: brand.talentTeal, fontFamily: "'JetBrains Mono', monospace" }}>
-            ${revenueImpact.toLocaleString()}
-          </div>
-          <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Estimated monthly revenue impact</div>
-        </div>
-      </div>
-      <div style={{ fontSize: 10, color: t.subtle, marginTop: 12, lineHeight: 1.5, borderTop: `1px solid ${t.cardBorder}`, paddingTop: 10 }}>
-        Based on {currentTraffic.toLocaleString()} current monthly organic visitors, {conversionRate}% visitor-to-lead rate, ${avgDealValue.toLocaleString()} avg deal value, and {closeRate}% close rate.
-      </div>
-    </div>
+    <span style={{
+      fontSize: 8, fontWeight: 700, color: tier.color,
+      background: tier.bg, border: "1px solid " + tier.border,
+      padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.8,
+      whiteSpace: "nowrap",
+    }}>{tier.label}</span>
   );
 }
 
-function ExpandableMetricRow({ label, value, status, detail, t, index = 0, impact, weighted, estimated, why, fix, expectedImpact, difficulty, findings }) {
-  const [open, setOpen] = React.useState(false);
-  const isEven = index % 2 === 0;
-  const sColor = statusColor(status);
-  const ctaText = statusLabel(status);
-  const hasExpand = why || fix || (findings && findings.length > 0);
-  const diffColor = { Low: brand.talentTeal, Medium: brand.inboundOrange, High: brand.pipelineRed }[difficulty] || t.subtle;
+function MetricRow({ label, value, status, detail, confidence, impact, issues, findings, t }) {
+  const [expanded, setExpanded] = useState(false);
+  // Normalize: backend sends findings (string[]), main UI expects issues (object[])
+  const displayItems = issues || (findings ? findings.map(f => typeof f === "string" ? { issue: f } : f) : null);
+  const hasItems = displayItems && displayItems.length > 0;
+  const sevColor = { high: brand.pipelineRed, medium: brand.inboundOrange, low: brand.cloudBlue };
   return (
-    <div style={{ borderBottom: `1px solid ${t.cardBorder}`, borderLeft: `3px solid ${sColor}` }}>
+    <div style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "13px 18px 13px 16px",
-        background: isEven ? "transparent" : t.hoverRow,
-        transition: "background 0.2s", cursor: hasExpand ? "pointer" : "default",
+        padding: "13px 18px", transition: "background 0.2s", cursor: hasItems ? "pointer" : "default",
       }}
-        onClick={() => hasExpand && setOpen(!open)}
+        onClick={() => hasItems && setExpanded(!expanded)}
         onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-        onMouseLeave={e => e.currentTarget.style.background = isEven ? "transparent" : t.hoverRow}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
       >
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {hasExpand && <span style={{ fontSize: 10, color: t.subtle, transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0deg)", flexShrink: 0 }}>▶</span>}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: detail ? 3 : 0 }}>
             <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{label}</span>
-            {weighted && (
+            <SourceBadge confidence={confidence} t={t} />
+            <WeightBadge impact={impact} />
+            {hasItems && (
               <span style={{
-                fontSize: 9, fontWeight: 700, color: brand.cloudBlue,
-                background: "rgba(4,129,163,0.1)", border: "1px solid rgba(4,129,163,0.2)",
-                padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
-              }}>+25% weight</span>
+                fontSize: 8, fontWeight: 700, color: brand.inboundOrange,
+                background: "rgba(244,111,10,0.1)", border: "1px solid rgba(244,111,10,0.2)",
+                padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.8,
+              }}>{displayItems.length} issues</span>
             )}
-            {estimated && (
-              <span style={{
-                fontSize: 9, fontWeight: 600, color: brand.inboundOrange,
-                background: "rgba(244,111,10,0.08)", border: "1px solid rgba(244,111,10,0.18)",
-                padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
-              }}>Estimated</span>
-            )}
-            <ImpactTag impact={impact} />
           </div>
-          {detail && <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4, marginTop: 3, marginLeft: hasExpand ? 18 : 0 }}>{detail}</div>}
+          {detail && <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{detail}</div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 14, color: sColor, fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{value}</span>
+          <span style={{ fontSize: 13, color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
           <span style={{
-            padding: "3px 9px", borderRadius: 6,
-            fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-            color: t.text, background: `${sColor}12`, border: `1px solid ${sColor}25`,
-            textTransform: "uppercase", whiteSpace: "nowrap",
-          }}>{ctaText}</span>
+            width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: t.statusDot, background: statusColor(status),
+          }}>{statusIcon(status)}</span>
+          {hasItems && (
+            <span style={{ fontSize: 10, color: t.subtle, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}>{"\u25BC"}</span>
+          )}
         </div>
       </div>
-      {open && hasExpand && (
-        <div style={{
-          padding: "0 18px 16px 37px",
-          background: isEven ? `${t.hoverRow}` : t.hoverRow,
-        }}>
-          {findings && findings.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: sColor, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Specific Findings</div>
-              <div style={{
-                background: t.bg, borderRadius: 8, border: `1px solid ${t.cardBorder}`,
-                padding: "10px 14px",
-              }}>
-                {findings.map((f, i) => (
-                  <div key={i} style={{
-                    fontSize: 12, color: t.body, lineHeight: 1.6,
-                    padding: "4px 0",
-                    borderBottom: i < findings.length - 1 ? `1px solid ${t.cardBorder}` : "none",
-                    fontFamily: f.startsWith("/") || f.includes("(") ? "'JetBrains Mono', monospace" : "inherit",
-                  }}>
-                    <span style={{ color: sColor, marginRight: 6, fontSize: 8 }}>{"\u25CF"}</span>
-                    {f}
-                  </div>
-                ))}
+      {hasItems && expanded && (
+        <div style={{ padding: "0 18px 14px", background: t.toggleBg }}>
+          {displayItems.map((item, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 12px", borderBottom: i < displayItems.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: sevColor[item.severity] || t.subtle, flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 12, color: t.text }}>{item.issue}</span>
               </div>
+              {item.count != null && (
+                <span style={{
+                  fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                  color: sevColor[item.severity] || t.subtle,
+                }}>{item.count}</span>
+              )}
             </div>
-          )}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 24px" }}>
-          {why && (
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Why It Matters</div>
-              <div style={{ fontSize: 12, color: t.body, lineHeight: 1.5 }}>{why}</div>
-            </div>
-          )}
-          {fix && (
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Recommended Fix</div>
-              <div style={{ fontSize: 12, color: t.body, lineHeight: 1.5 }}>{fix}</div>
-            </div>
-          )}
-          {expectedImpact && (
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Expected Impact</div>
-              <div style={{ fontSize: 12, color: t.body, lineHeight: 1.5 }}>{expectedImpact}</div>
-            </div>
-          )}
-          {difficulty && difficulty !== "N/A" && (
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Difficulty</div>
-              <span style={{
-                fontSize: 11, fontWeight: 700, color: diffColor,
-                padding: "3px 10px", borderRadius: 6,
-                background: `${diffColor}12`, border: `1px solid ${diffColor}25`,
-              }}>{difficulty}</span>
-            </div>
-          )}
-          </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-/* kept as alias for backward compatibility */
-function MetricRow(props) { return <ExpandableMetricRow {...props} />; }
-
-function Card({ title, subtitle, children, t, style: s }) {
+function Card({ title, children, t, style: s }) {
   return (
     <div style={{
       background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14,
@@ -636,17 +188,12 @@ function Card({ title, subtitle, children, t, style: s }) {
     }}>
       {title && (
         <div style={{
-          padding: subtitle ? "14px 18px 10px" : "14px 18px", borderBottom: subtitle ? "none" : `1px solid ${t.cardBorder}`, fontSize: 13,
-          fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2,
+          padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`, fontSize: 12,
+          fontWeight: 600, color: accent, textTransform: "uppercase", letterSpacing: 2,
           display: "flex", alignItems: "center", gap: 8,
         }}>
           <span style={{ width: 3, height: 14, background: accent, borderRadius: 2, display: "inline-block" }} />
           {title}
-        </div>
-      )}
-      {subtitle && (
-        <div style={{ padding: "0 18px 12px", borderBottom: `1px solid ${t.cardBorder}`, fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>
-          {subtitle}
         </div>
       )}
       {children}
@@ -654,382 +201,74 @@ function Card({ title, subtitle, children, t, style: s }) {
   );
 }
 
-/* ── Tab Renderers ── */
-function WebPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const webPerfData = data?.webPerf;
-  if (!webPerfData) return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <Card title="Website Performance" t={t}>
-        <DataUnavailable message="Website performance data not available. Run an audit to populate this section." t={t} />
-      </Card>
-    </div>
-  );
-  // Extract real findings from Site Health metric (populated by PageSpeed a11y issues)
-  const siteHealthMetric = webPerfData.metrics?.find(m => m.label === "Site Health");
-  const findings = siteHealthMetric?.findings || [];
+function RecommendationList({ items, t }) {
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(webPerfData.metrics, "website"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={webPerfData.score} scoreLabel="Website Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
-      <Card title="Audit Findings" t={t}>
-        {webPerfData.metrics.map((m, i) => (
-          <ExpandableMetricRow key={i} {...m} t={t} index={i} />
-        ))}
-        {data?.gtmetrixReportUrl && (
-          <div style={{ padding: "12px 18px", borderTop: `1px solid ${t.cardBorder}`, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 13, color: t.subtle }}>GTmetrix Report:</span>
-            <a href={data.gtmetrixReportUrl} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 13, color: accent, textDecoration: "none", fontWeight: 500 }}>
-              View Full Report →
-            </a>
-          </div>
-        )}
-      </Card>
-      {findings.length > 0 ? (
-        <Card title="Site Health — Highest Impact Issues" t={t}>
-          <div style={{ padding: 0, display: "flex", flexDirection: "column" }}>
-            {findings.map((item, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center",
-                padding: "13px 18px 13px 16px", borderBottom: `1px solid ${t.cardBorder}`,
-                borderLeft: `3px solid ${brand.inboundOrange}`,
-                background: i % 2 !== 0 ? t.hoverRow : "transparent",
-              }}>
-                <span style={{ fontSize: 14, color: t.text }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      ) : (
-        <Card title="Site Health — Highest Impact Issues" t={t}>
-          <DataUnavailable message="Connect a site audit provider (e.g., SEMrush Site Audit) for detailed issue findings." t={t} />
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function SEOTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const seoData = data?.seo;
-  const aiSeoData = data?.aiSeo;
-  const keywordsData = data?.keywords || [];
-  if (!seoData && !aiSeoData) return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <Card title="Search Visibility" t={t}>
-        <DataUnavailable message="Search visibility data not available. Run an audit to populate this section." t={t} />
-      </Card>
-    </div>
-  );
-  const combinedScore = Math.round(((seoData?.score || 0) + (aiSeoData?.score || 0)) / (seoData && aiSeoData ? 2 : 1));
-  return (
-    <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const allMetrics = [...(seoData?.metrics || []), ...(aiSeoData?.metrics || [])]; const s = generateTabSummary(allMetrics, "seo"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Search Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
-
-      <Card title="Organic Search Health" t={t}>
-        {seoData ? seoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />) : <DataUnavailable message="SEO data not available. SEMrush connection required." t={t} />}
-      </Card>
-      <Card title="Top Performing Search Terms" t={t}>
-        {keywordsData.length > 0 ? (
-        <div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 80px 80px 80px 80px", padding: "10px 18px",
-            borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
-          }}>
-            {["Keyword", "Ranking Position", "Monthly Search Volume", "Estimated Traffic", "Competitive Difficulty"].map(h => (
-              <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
-                textAlign: h === "Keyword" ? "left" : "center" }}>{h}</span>
-            ))}
-          </div>
-          {keywordsData.map((kw, i) => {
-            const posColor = kw.position <= 5 ? brand.talentTeal : kw.position <= 10 ? brand.inboundOrange : brand.pipelineRed;
-            const diffColor = kw.difficulty <= 35 ? brand.talentTeal : kw.difficulty <= 60 ? brand.inboundOrange : brand.pipelineRed;
-            return (
-              <div key={i} style={{
-                display: "grid", gridTemplateColumns: "1fr 80px 80px 80px 80px", alignItems: "center",
-                padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8, transition: "background 0.2s",
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >
-                <span style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{kw.keyword}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: posColor, fontWeight: 600 }}>#{kw.position}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: t.body }}>{kw.volume.toLocaleString()}</span>
-                <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: t.body }}>{kw.traffic.toLocaleString()}</span>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <div style={{ width: 36, height: 5, borderRadius: 3, background: t.cardBorder, overflow: "hidden" }}>
-                    <div style={{ width: `${kw.difficulty}%`, height: "100%", borderRadius: 3, background: diffColor }} />
-                  </div>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: diffColor, fontWeight: 600 }}>{kw.difficulty}</span>
-                </div>
-              </div>
-            );
-          })}
+    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+      {items.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <span style={{
+            width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: "#fff",
+            background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+            flexShrink: 0, marginTop: 1,
+          }}>{i + 1}</span>
+          <span style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>{r}</span>
         </div>
-        ) : (
-          <div style={{ padding: "32px 18px", textAlign: "center" }}>
-            <div style={{ fontSize: 13, color: t.subtle, marginBottom: 8 }}>No keyword ranking data available for this domain yet.</div>
-            <div style={{ fontSize: 11, color: t.subtle }}>This data comes from SEMrush and may take time to populate for newer or smaller domains.</div>
-          </div>
-        )}
-      </Card>
+      ))}
     </div>
   );
 }
 
-function ContentPerformanceTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const contentData = data?.content;
-  if (!contentData) return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <Card title="Content Performance" t={t}>
-        <DataUnavailable message="Content performance data not available. Run an audit to populate this section." t={t} />
-      </Card>
-    </div>
-  );
+/* Collapsible Foundational Section */
+function FoundationalCollapsible({ items, t }) {
+  const [open, setOpen] = useState(false);
+  const count = items.length;
+  if (count === 0) return null;
   return (
-    <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(contentData.metrics, "content"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={contentData.score} scoreLabel="Content Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
-      <Card title="Content Metrics" t={t}>
-        {contentData.metrics.map((m, i) => (
-          <ExpandableMetricRow key={i} {...m} t={t} index={i} />
-        ))}
-      </Card>
-    </div>
-  );
-}
-
-function SocialLocalTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const d = data?.socialLocal;
-  const aiSeoData = data?.aiSeo;
-  if (!d && !aiSeoData) return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <Card title="Social & AI Visibility" t={t}>
-        <DataUnavailable message="Social and AI visibility data not available. Run an audit to populate this section." t={t} />
-      </Card>
-    </div>
-  );
-  const combinedScore = Math.round(((aiSeoData?.score || 0) + (d?.socialScore || 0)) / (aiSeoData && d ? 2 : 1));
-  const reviews = data?.places?.reviews?.length > 0 ? data.places.reviews : [];
-  return (
-    <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const allMetrics = [...(aiSeoData?.metrics || []), ...(d?.signals || [])]; const s = generateTabSummary(allMetrics, "social"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={combinedScore} scoreLabel="Social & AI Visibility Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
-
-      <Card title="AI Visibility Metrics" t={t}>
-        {aiSeoData ? aiSeoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />) : <DataUnavailable message="AI visibility data not available." t={t} />}
-      </Card>
-
-      {d?.platforms?.length > 0 && (
-        <Card title="Platform Presence" t={t}>
-          <div>
-            <div style={{
-              display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", padding: "10px 18px",
-              borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
-            }}>
-              {["Platform", "Status", "Followers", "Activity"].map(h => (
-                <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
-                  textAlign: h === "Activity" ? "right" : h === "Status" || h === "Followers" ? "center" : "left" }}>{h}</span>
-              ))}
-            </div>
-            {d.platforms.map((p, i) => (
-              <div key={i} style={{
-                display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", alignItems: "center",
-                padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8, transition: "background 0.2s",
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              >
-                <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{p.name}</span>
-                <span style={{ fontSize: 12, color: statusColor(p.health), textAlign: "center", fontWeight: 600 }}>{p.status}</span>
-                <span style={{ fontSize: 12, color: t.body, fontFamily: "'JetBrains Mono', monospace", textAlign: "center" }}>{p.followers}</span>
-                <span style={{ fontSize: 11, color: t.subtle, textAlign: "right" }}>{p.activity}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {d?.signals?.length > 0 && (
-        <Card title="Social SEO Signals" t={t}>
-          {d.signals.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
-        </Card>
-      )}
-
-      <Card title="Recent Reviews" t={t}>
-        <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
-          {reviews.length > 0 ? reviews.map((review, i) => (
-            <div key={i} style={{ borderBottom: i < reviews.length - 1 ? `1px solid ${t.cardBorder}` : "none", paddingBottom: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{review.author}</span>
-                <span style={{ color: brand.inboundOrange, fontSize: 13 }}>{"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}</span>
-                <span style={{ fontSize: 11, color: t.subtle }}>{review.timeAgo}</span>
-              </div>
-              <p style={{ fontSize: 13, color: t.body, margin: 0, lineHeight: 1.5 }}>{review.text}</p>
-            </div>
-          )) : (
-            <p style={{ fontSize: 13, color: t.subtle, textAlign: "center", padding: 20 }}>No reviews available.</p>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function SummaryCard({ summary, risks, opportunity, t, score, scoreLabel, recap, onSaveRecap, canEdit }) {
-  const [editing, setEditing] = React.useState(false);
-  const [draft, setDraft] = React.useState({ summary: "", risks: "", opportunity: "" });
-
-  const hasRecap = recap && (recap.summary || recap.opportunity || (recap.risks && recap.risks.length > 0));
-  const displaySummary = hasRecap && recap.summary ? recap.summary : summary;
-  const displayRisks = hasRecap && recap.risks && recap.risks.length > 0 ? recap.risks : risks;
-  const displayOpportunity = hasRecap && recap.opportunity ? recap.opportunity : opportunity;
-
-  const startEdit = () => {
-    setDraft({
-      summary: (hasRecap && recap.summary) || summary || "",
-      risks: ((hasRecap && recap.risks && recap.risks.length > 0) ? recap.risks : risks || []).join("\n"),
-      opportunity: (hasRecap && recap.opportunity) || opportunity || "",
-    });
-    setEditing(true);
-  };
-
-  const saveEdit = () => {
-    const parsed = {
-      summary: draft.summary.trim() || undefined,
-      risks: draft.risks.trim() ? draft.risks.split("\n").map(r => r.trim()).filter(Boolean) : undefined,
-      opportunity: draft.opportunity.trim() || undefined,
-    };
-    onSaveRecap(parsed);
-    setEditing(false);
-  };
-
-  const textareaStyle = {
-    width: "100%", padding: "10px 12px", borderRadius: 8, fontSize: 12,
-    border: `1px solid ${t.cardBorder}`, background: t.bg, color: t.text,
-    fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, resize: "vertical", outline: "none",
-  };
-
-  return (
-    <Card title={null} t={t}>
-      <div style={{ padding: "14px 18px 6px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${t.cardBorder}` }}>
+    <div style={{ borderBottom: "1px solid " + t.cardBorder }}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "13px 18px", cursor: "pointer", transition: "background 0.2s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: t.text, letterSpacing: 0.3 }}>Recommendations</div>
-          {hasRecap && !editing && (
-            <span style={{
-              fontSize: 9, fontWeight: 700, color: brand.cloudBlue,
-              background: "rgba(4,129,163,0.1)", border: "1px solid rgba(4,129,163,0.2)",
-              padding: "2px 8px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
-            }}>Post-Call Recap</span>
-          )}
+          <span style={{
+            width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: t.statusDot, background: brand.talentTeal,
+          }}>{"\u2713"}</span>
+          <span style={{ fontSize: 14, color: t.subtle, fontWeight: 500 }}>
+            {count} foundational checks passing
+          </span>
         </div>
-        {canEdit && !editing && (
-          <button onClick={startEdit} style={{
-            padding: "4px 12px", borderRadius: 6, border: `1px solid ${t.cardBorder}`,
-            background: "transparent", color: t.subtle, fontSize: 11, fontWeight: 500,
-            cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-            transition: "all 0.2s",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.color = accent; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.color = t.subtle; }}
-          >
-            ✎ {hasRecap ? "Edit Recap" : "Customize"}
-          </button>
-        )}
+        <span style={{ fontSize: 12, color: t.subtle, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0)" }}>
+          {"\u25BC"}
+        </span>
       </div>
-
-      {editing ? (
-        <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.5, padding: "8px 12px", borderRadius: 8, background: `${brand.cloudBlue}08`, border: `1px solid ${brand.cloudBlue}15` }}>
-            Tie findings to what you discussed on the call. The prospect sees this version when they open the shareable link.
-          </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Summary</div>
-            <textarea rows={3} style={textareaStyle} value={draft.summary} onChange={e => setDraft({ ...draft, summary: e.target.value })}
-              placeholder="As we discussed, your team is relying heavily on outbound..." />
-          </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Key Risks (one per line)</div>
-            <textarea rows={3} style={textareaStyle} value={draft.risks} onChange={e => setDraft({ ...draft, risks: e.target.value })}
-              placeholder="Organic demand capture is underdeveloped&#10;No content engine to support outbound&#10;Competitors own high-intent keywords" />
-          </div>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Biggest Opportunity</div>
-            <textarea rows={2} style={textareaStyle} value={draft.opportunity} onChange={e => setDraft({ ...draft, opportunity: e.target.value })}
-              placeholder="Build an inbound engine that delivers warm leads to your sales team..." />
-          </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <button onClick={() => setEditing(false)} style={{
-              padding: "8px 18px", borderRadius: 8, border: `1px solid ${t.cardBorder}`,
-              background: "transparent", color: t.subtle, fontSize: 12, fontWeight: 600, cursor: "pointer",
-            }}>Cancel</button>
-            <button onClick={saveEdit} style={{
-              padding: "8px 18px", borderRadius: 8, border: "none",
-              background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-              color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer",
-              boxShadow: "0 2px 10px rgba(66,191,186,0.2)",
-            }}>Save Recap</button>
+      {open && items.map((m, i) => (
+        <div key={i} style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 18px 10px 50px", borderTop: "1px solid " + t.cardBorder,
+          opacity: 0.7,
+        }}>
+          <span style={{ fontSize: 13, color: t.subtle }}>{m.label}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 12, color: t.subtle, fontFamily: "'JetBrains Mono', monospace" }}>{m.value}</span>
+            <span style={{
+              width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 700, color: t.statusDot, background: brand.talentTeal,
+            }}>{"\u2713"}</span>
           </div>
         </div>
-      ) : (
-        <div style={{ padding: "16px 18px", display: "flex", gap: 20 }}>
-          {score !== undefined && (
-            <div style={{
-              textAlign: "center", flexShrink: 0, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", padding: "8px 12px",
-              borderRight: `1px solid ${t.cardBorder}`, paddingRight: 20,
-            }}>
-              <ScoreRing score={score} size={120} t={t} />
-              <div style={{ fontSize: 9, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 500, marginTop: 6, maxWidth: 120, lineHeight: 1.3 }}>{scoreLabel}</div>
-            </div>
-          )}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>{displaySummary}</div>
-            {displayRisks && displayRisks.length > 0 && (
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: brand.pipelineRed, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>Primary Risks</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {displayRisks.map((r, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: t.body }}>
-                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: brand.pipelineRed, flexShrink: 0 }} />
-                      {r}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {displayOpportunity && (
-              <div style={{
-                padding: "12px 16px", borderRadius: 8,
-                background: `${accent}08`, border: `1px solid ${accent}20`,
-              }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 4 }}>Biggest Opportunity</div>
-                <div style={{ fontSize: 12, color: t.body, lineHeight: 1.5 }}>{displayOpportunity}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </Card>
-  );
-}
-
-function EntitySEOTab({ t, data, recap, onSaveRecap, canEdit }) {
-  const entityData = data?.entity;
-  if (!entityData) return (
-    <div style={{ display: "grid", gap: 24 }}>
-      <Card title="Local Search Performance" t={t}>
-        <DataUnavailable message="Local search data not available. Run an audit to populate this section." t={t} />
-      </Card>
-    </div>
-  );
-  return (
-    <div style={{ display: "grid", gap: 24 }}>
-      {(() => { const s = generateTabSummary(entityData.metrics, "local"); return <SummaryCard t={t} summary={s.summary} risks={s.risks} opportunity={s.opportunity} score={entityData.score} scoreLabel="Local Search Performance Score" recap={recap} onSaveRecap={onSaveRecap} canEdit={canEdit} />; })()}
-      <Card title="How Your Brand Appears in Local Search" subtitle="Signals that influence how Google understands and ranks your business locally." t={t}>
-        {entityData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} index={i} />)}
-      </Card>
+      ))}
     </div>
   );
 }
 
-/* ── Light/Dark Toggle ── */
+/* -- Light/Dark Toggle -- */
 function ModeToggle({ mode, setMode, t }) {
   return (
     <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{
@@ -1044,128 +283,741 @@ function ModeToggle({ mode, setMode, t }) {
   );
 }
 
-/* ── Main Component ── */
-export default function DigitalHealthAssessment({ auditData: initialAuditData, auditId, onReset }) {
-  const [liveAudit, setLiveAudit] = useState(initialAuditData);
-  const [refreshing, setRefreshing] = useState(false);
-  const [view, setView] = useState("results");
+/* -- Main Component -- */
+export default function DigitalHealthAssessment({ auditData, auditId, onReset }) {
   const [activeTab, setActiveTab] = useState(0);
-  const [mode, setMode] = useState("light");
-  const [copied, setCopied] = useState(false);
-  const [recap, setRecap] = useState(initialAuditData?.recap || {});
-  const [recapSaving, setRecapSaving] = useState(false);
+  const [mode, setMode] = useState("dark");
   const t = getTheme(mode);
-  const hasPendingProviders = !!liveAudit?.pendingProviders?.length;
 
-  // Auto-refresh: poll every 30s if there are pending providers
-  React.useEffect(() => {
-    if (!auditId || !hasPendingProviders) return;
-    let cancelled = false;
-    let attempts = 0;
-    const maxAttempts = MAX_POLL_ATTEMPTS;
+  /* ── Derive all data from auditData prop ── */
+  const webPerf = auditData?.webPerf || { score: 0, metrics: [] };
+  const seo = auditData?.seo || { score: 0, metrics: [] };
+  const contentPerf = auditData?.content || { score: 0, metrics: [] };
+  const socialLocal = auditData?.socialLocal || { socialScore: 0, signals: [], platforms: [] };
+  const entityData = auditData?.entity || { score: 0, metrics: [] };
+  const aiSeoData = auditData?.aiSeo || { score: 0, metrics: [] };
+  const places = auditData?.places || null;
+  const keywordsData = auditData?.keywords || [];
 
-    const poll = async () => {
-      if (cancelled || attempts >= maxAttempts) return;
-      attempts++;
-      setRefreshing(true);
-      try {
-        const res = await fetch(`/api/audit/${auditId}?refresh=true`);
-        if (res.ok) {
-          const updated = await res.json();
-          if (!cancelled) {
-            setLiveAudit(updated);
-            if (updated.recap) setRecap(updated.recap);
-            // Stop polling if nothing pending
-            if (!updated.pendingProviders?.length) {
-              setRefreshing(false);
-              return;
-            }
-          }
-        }
-      } catch (e) { console.error("Refresh poll failed:", e); }
-      if (!cancelled) {
-        setRefreshing(false);
-        setTimeout(poll, POLL_INTERVAL_MS);
-      }
-    };
-
-    // First poll after 30 seconds
-    const timer = setTimeout(poll, POLL_INTERVAL_MS);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [auditId, hasPendingProviders]);
-
-  const auditData = liveAudit;
-  const hasPending = auditData?.pendingProviders?.length > 0;
-  const hasIncompleteGtmetrix = !!auditData?.gtmetrixTestId;
-  const showRefreshButton = hasPending || hasIncompleteGtmetrix;
-
-  const manualRefresh = async () => {
-    if (!auditId || refreshing) return;
-    setRefreshing(true);
-    try {
-      const res = await fetch(`/api/audit/${auditId}?refresh=true&force=true`);
-      if (res.ok) {
-        const updated = await res.json();
-        setLiveAudit(updated);
-        if (updated.recap) setRecap(updated.recap);
-      }
-    } catch (e) { console.error("Manual refresh failed:", e); }
-    setRefreshing(false);
+  /* ── Pipeline Health: derived from tab scores ── */
+  const pipelineHealth = {
+    score: Math.round((webPerf.score * 0.3) + (seo.score * 0.3) + (contentPerf.score * 0.2) + (entityData.score * 0.2)),
+    pillars: [
+      { label: "Traffic Capture", score: seo.score, detail: `Based on your Authority & Search performance (${seo.score}/100)` },
+      { label: "Lead Conversion", score: webPerf.score, detail: `Based on your Technical Foundation performance (${webPerf.score}/100)` },
+      { label: "Attribution Integrity", score: 0, detail: "Revenue infrastructure tracking not yet connected" },
+      { label: "Content Strategy", score: contentPerf.score, detail: `Based on your Content & Topical Depth performance (${contentPerf.score}/100)` },
+      { label: "Brand Authority", score: entityData.score, detail: `Based on your Entity & Brand Authority performance (${entityData.score}/100)` },
+    ],
   };
 
-  const saveRecap = async (tabKey, tabRecap) => {
-    const next = { ...recap, [tabKey]: tabRecap };
-    setRecap(next);
-    if (!auditId) return;
-    setRecapSaving(true);
-    try {
-      await fetch(`/api/audit/${auditId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recap: { [tabKey]: tabRecap } }),
-      });
-    } catch (e) { console.error("Recap save failed:", e); }
-    setRecapSaving(false);
-  };
+  /* ── Revenue Visibility Index ── */
+  const revenueIndex = Math.round(
+    (webPerf.score * 0.15) + (seo.score * 0.30) + (contentPerf.score * 0.20) +
+    (entityData.score * 0.15) + (socialLocal.socialScore * 0.10) + (aiSeoData.score * 0.10)
+  );
 
-  // Resolve data: use auditData from API — no mock fallbacks
-  const data = {
-    meta: auditData?.meta || {},
-    webPerf: auditData?.webPerf || null,
-    seo: auditData?.seo || null,
-    keywords: auditData?.keywords?.length > 0 ? auditData.keywords : [],
-    content: auditData?.content || null,
-    socialLocal: auditData?.socialLocal || null,
-    aiSeo: auditData?.aiSeo || null,
-    entity: auditData?.entity || null,
-    places: auditData?.places || null,
-    gtmetrixReportUrl: auditData?.gtmetrixReportUrl || null,
+  /* ── Revenue Scenarios: based on real organic traffic ── */
+  const orgTrafficMetric = seo.metrics?.find(m => m.label === "Organic Traffic" || m.label === "Organic Keywords");
+  const traffic = parseInt(String(orgTrafficMetric?.value || "0").replace(/[^0-9]/g, '')) || 0;
+  const avgDeal = 4200;
+  const revenueScenarios = {
+    traffic: traffic,
+    avgDeal: avgDeal,
+    conservative: { lift: 0.10, cvr: 0.015, label: "Conservative" },
+    expected:     { lift: 0.30, cvr: 0.028, label: "Expected" },
+    aggressive:   { lift: 0.50, cvr: 0.040, label: "Aggressive" },
   };
+  function calcScenario(s) {
+    const added = Math.round(revenueScenarios.traffic * s.lift);
+    const leads = Math.round(added * s.cvr);
+    const pipeline = leads * revenueScenarios.avgDeal;
+    return { added, leads, pipeline };
+  }
 
-  const tabContent = [
-    <WebPerformanceTab t={t} data={data} recap={recap.website} onSaveRecap={(r) => saveRecap("website", r)} canEdit={!!auditId} />,
-    <SEOTab t={t} data={data} recap={recap.seo} onSaveRecap={(r) => saveRecap("seo", r)} canEdit={!!auditId} />,
-    <EntitySEOTab t={t} data={data} recap={recap.local} onSaveRecap={(r) => saveRecap("local", r)} canEdit={!!auditId} />,
-    <ContentPerformanceTab t={t} data={data} recap={recap.content} onSaveRecap={(r) => saveRecap("content", r)} canEdit={!!auditId} />,
-    <SocialLocalTab t={t} data={data} recap={recap.social} onSaveRecap={(r) => saveRecap("social", r)} canEdit={!!auditId} />,
+  /* ── Competitor data: from SEMrush rank history or not shown ── */
+  const rankHistory = auditData?.seo?.rankHistory || [];
+  const hasTrendData = rankHistory.length >= 2;
+
+  /* ── Revenue Infrastructure: "Not Connected" since no backend data ── */
+  const revenueInfraMetrics = [
+    { label: "GA4 Installed & Firing", value: "Not Connected", status: "warning", detail: "Connect analytics to measure this metric" },
+    { label: "Primary Conversion Events Configured", value: "Not Connected", status: "warning", detail: "Connect analytics to measure this metric" },
+    { label: "Call Tracking Installed", value: "Not Connected", status: "warning", detail: "Connect call tracking to measure this metric" },
+    { label: "CRM Integration / Lead Sync", value: "Not Connected", status: "warning", detail: "Connect CRM to measure this metric" },
+    { label: "GTM Container Active", value: "Not Connected", status: "warning", detail: "Connect tag management to measure this metric" },
+    { label: "UTM Capture on Forms", value: "Not Connected", status: "warning", detail: "Connect form tracking to measure this metric" },
+    { label: "Enhanced Conversions / Offline Import", value: "Not Connected", status: "warning", detail: "Connect conversion tracking to measure this metric" },
+    { label: "Consent Mode / Tracking Integrity", value: "Not Connected", status: "warning", detail: "Connect consent mode to measure this metric" },
   ];
+  const revenueInfraScore = 0; // No backend data yet
 
-  const tabScores = [
-    data.webPerf?.score ?? null,
-    data.seo?.score != null || data.aiSeo?.score != null ? Math.round(((data.seo?.score || 0) + (data.aiSeo?.score || 0)) / ((data.seo?.score != null ? 1 : 0) + (data.aiSeo?.score != null ? 1 : 0) || 1)) : null,
-    data.entity?.score ?? null,
-    data.content?.score ?? null,
-    data.socialLocal?.socialScore != null || data.aiSeo?.score != null ? Math.round(((data.aiSeo?.score || 0) + (data.socialLocal?.socialScore || 0)) / ((data.aiSeo?.score != null ? 1 : 0) + (data.socialLocal?.socialScore != null ? 1 : 0) || 1)) : null,
+  /* ── Reviews: from Google Places if available ── */
+  const reviews = places?.reviews || [];
+
+  /* ── Inbound Pipeline Health Banner ── */
+  function InboundPipelineHealth() {
+    const s = pipelineHealth;
+    function barColor(score) {
+      if (score >= 70) return brand.talentTeal;
+      if (score >= 50) return brand.inboundOrange;
+      return brand.pipelineRed;
+    }
+    return (
+      <div style={{
+        background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 16,
+        padding: 0, marginBottom: 28, overflow: "hidden",
+      }}>
+        {/* Header */}
+        <div style={{ padding: "28px 28px 0", textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>
+            Inbound Pipeline Health
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
+            <span style={{
+              fontSize: 56, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+              color: barColor(s.score), lineHeight: 1,
+            }}>{s.score}</span>
+            <span style={{ fontSize: 18, color: t.subtle, fontWeight: 500 }}>/100</span>
+          </div>
+          <div style={{
+            fontSize: 13, color: t.body, lineHeight: 1.5, maxWidth: 440, margin: "12px auto 0",
+          }}>
+            {s.score < 50
+              ? "Your inbound pipeline has significant gaps. Leads are being lost between traffic, conversion, and follow-up."
+              : s.score < 70
+              ? "Your pipeline captures some demand but leaks at multiple stages. Optimization would recover meaningful revenue."
+              : "Your pipeline infrastructure is solid. Fine-tuning will maximize conversion at every stage."}
+          </div>
+        </div>
+
+        {/* Pillar Bars */}
+        <div style={{ padding: "24px 28px 28px" }}>
+          {s.pillars.map((p, i) => (
+            <div key={i} style={{ marginBottom: i < s.pillars.length - 1 ? 18 : 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{p.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: barColor(p.score) }}>{p.score}</span>
+              </div>
+              <div style={{ width: "100%", height: 8, borderRadius: 4, background: t.cardBorder, overflow: "hidden", marginBottom: 4 }}>
+                <div style={{
+                  width: `${p.score}%`, height: "100%", borderRadius: 4,
+                  background: barColor(p.score),
+                  transition: "width 0.6s ease",
+                }} />
+              </div>
+              <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{p.detail}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Revenue Visibility Banner ── */
+  function RevenueVisibilityBanner() {
+    const score = revenueIndex;
+    const verdict = getRevenueVerdict(score);
+    const color = score >= 80 ? brand.talentTeal : score >= 60 ? brand.inboundOrange : brand.pipelineRed;
+    const glowColor = score >= 80 ? "rgba(66,191,186,0.15)" : score >= 60 ? "rgba(244,111,10,0.15)" : "rgba(255,33,15,0.15)";
+    const low = calcScenario(revenueScenarios.conservative);
+    const mid = calcScenario(revenueScenarios.expected);
+    const high = calcScenario(revenueScenarios.aggressive);
+    return (
+      <div style={{
+        textAlign: "center", marginBottom: 32, padding: "32px 24px 28px",
+        background: t.cardBg, border: "1px solid " + t.cardBorder, borderRadius: 14,
+        position: "relative", overflow: "hidden",
+      }}>
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, height: 3,
+          background: "linear-gradient(90deg, " + color + ", " + brand.inboundOrange + ")",
+        }} />
+        <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 3, fontWeight: 600, marginBottom: 14 }}>
+          Revenue Visibility Index
+        </div>
+        <div style={{
+          fontSize: 72, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          color: color, lineHeight: 1, marginBottom: 4,
+          textShadow: "0 0 30px " + glowColor,
+        }}>
+          {score}
+          <span style={{ fontSize: 24, color: t.subtle, fontWeight: 400 }}> / 100</span>
+        </div>
+        <div style={{
+          fontSize: 15, color: t.body, fontWeight: 500, marginTop: 14,
+          letterSpacing: 0.2, lineHeight: 1.5, maxWidth: 520, margin: "14px auto 0",
+        }}>
+          {verdict}
+        </div>
+        {/* Pipeline Range */}
+        {traffic > 0 && (
+          <div style={{
+            marginTop: 24, paddingTop: 20, borderTop: "1px solid " + t.cardBorder,
+          }}>
+            <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 600, marginBottom: 14, textAlign: "center" }}>
+              Monthly Pipeline You{"'"}re Leaving on the Table
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 40, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed }}>
+                ${low.pipeline.toLocaleString()}
+              </span>
+              <span style={{ fontSize: 20, color: t.subtle, fontWeight: 500 }}>{"\u2013"}</span>
+              <span style={{ fontSize: 40, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed }}>
+                ${high.pipeline.toLocaleString()}
+              </span>
+            </div>
+            {/* Scenario breakdown */}
+            <div style={{
+              display: "flex", justifyContent: "center", gap: 16, marginTop: 18, flexWrap: "wrap",
+            }}>
+              {[
+                { ...low, ...revenueScenarios.conservative, color: t.subtle },
+                { ...mid, ...revenueScenarios.expected, color: brand.inboundOrange },
+                { ...high, ...revenueScenarios.aggressive, color: brand.talentTeal },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  padding: "10px 16px", borderRadius: 8,
+                  background: i === 1 ? t.toggleBg : "transparent",
+                  border: "1px solid " + (i === 1 ? t.cardBorder : "transparent"),
+                  textAlign: "center", minWidth: 130,
+                }}>
+                  <div style={{ fontSize: 9, color: s.color, textTransform: "uppercase", letterSpacing: 2, fontWeight: 700, marginBottom: 4 }}>
+                    {s.label}
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: t.text }}>
+                    ${s.pipeline.toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: 10, color: t.subtle, marginTop: 2 }}>
+                    +{s.added} visits {"\u00B7"} {s.leads} leads
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 10, color: t.subtle, marginTop: 14, letterSpacing: 0.3, textAlign: "center" }}>
+              Scenarios: {revenueScenarios.conservative.lift * 100}%/{revenueScenarios.expected.lift * 100}%/{revenueScenarios.aggressive.lift * 100}% visibility lift &nbsp;{"\u00B7"}&nbsp; {revenueScenarios.conservative.cvr * 100}%/{revenueScenarios.expected.cvr * 100}%/{revenueScenarios.aggressive.cvr * 100}% CVR &nbsp;{"\u00B7"}&nbsp; ${revenueScenarios.avgDeal.toLocaleString()} avg deal
+            </div>
+          </div>
+        )}
+        {traffic === 0 && (
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + t.cardBorder }}>
+            <div style={{ fontSize: 12, color: t.subtle, fontStyle: "italic" }}>
+              Revenue pipeline scenarios will appear when organic traffic data is available.
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── Competitor Comparison Table ── */
+  function CompetitorComparisonTable() {
+    // Build competitor data from SEMrush metrics
+    const findMetric = (label) => seo.metrics?.find(m => m.label === label);
+    const kwMetric = findMetric("Organic Keywords");
+    const daMetric = findMetric("Domain Authority");
+    const blMetric = findMetric("Backlinks");
+    const trafficMetric = findMetric("Organic Traffic");
+
+    const competitorData = [];
+    if (kwMetric) competitorData.push({ metric: "Organic Keywords", you: String(kwMetric.value), competitor: "Not Connected", youWins: false });
+    if (daMetric) competitorData.push({ metric: "Domain Authority", you: String(daMetric.value), competitor: "Not Connected", youWins: false });
+    if (blMetric) competitorData.push({ metric: "Backlinks", you: String(blMetric.value), competitor: "Not Connected", youWins: false });
+    if (trafficMetric) competitorData.push({ metric: "Monthly Traffic (est.)", you: String(trafficMetric.value), competitor: "Not Connected", youWins: false });
+
+    if (competitorData.length === 0) return null;
+
+    return (
+      <Card title="Competitive Gap Snapshot" t={t}>
+        <div>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 100px 100px", padding: "10px 18px",
+            borderBottom: "1px solid " + t.cardBorder, gap: 8,
+          }}>
+            {["Metric", "You", "Competitor"].map(h => (
+              <span key={h} style={{
+                fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
+                textAlign: h === "Metric" ? "left" : "center",
+              }}>{h}</span>
+            ))}
+          </div>
+          {competitorData.map((row, i) => (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 100px 100px", alignItems: "center",
+              padding: "13px 18px", borderBottom: "1px solid " + t.cardBorder, gap: 8,
+              transition: "background 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{row.metric}</span>
+              <span style={{
+                fontSize: 14, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                textAlign: "center", color: t.text,
+              }}>{row.you}</span>
+              <span style={{
+                fontSize: 14, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                textAlign: "center", color: t.subtle,
+              }}>{row.competitor}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  /* ── Competitive Velocity Card ── */
+  function TrendVelocityCard() {
+    if (!hasTrendData) return null;
+
+    // Build trend arrays from rank history
+    const kwArr = rankHistory.map(m => m.keywords || 0);
+    const trafficArr = rankHistory.map(m => m.traffic || 0);
+    const blArr = rankHistory.map(m => m.backlinks || 0);
+    const labels = rankHistory.map(m => m.month || "");
+
+    const youKwGrowth = calcGrowth(kwArr);
+    const youTrafficGrowth = calcGrowth(trafficArr);
+    const youBlGrowth = calcGrowth(blArr);
+
+    const rows = [
+      { metric: "Keyword Growth", you: youKwGrowth, data: kwArr },
+      { metric: "Traffic Growth", you: youTrafficGrowth, data: trafficArr },
+      { metric: "Backlink Growth", you: youBlGrowth, data: blArr },
+    ];
+
+    function Spark({ data, color }) {
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const range = max - min || 1;
+      const w = 80, h = 24;
+      const points = data.map((v, i) =>
+        (i / (data.length - 1)) * w + "," + (h - ((v - min) / range) * h)
+      ).join(" ");
+      return (
+        <svg width={w} height={h} style={{ display: "block" }}>
+          <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    }
+
+    return (
+      <Card title="Growth Velocity" t={t}>
+        <div>
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 100px 80px", padding: "10px 18px",
+            borderBottom: "1px solid " + t.cardBorder, gap: 8,
+          }}>
+            {["Metric", "Growth", "Trend"].map((h, i) => (
+              <span key={i} style={{
+                fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
+                textAlign: i === 0 ? "left" : "center",
+              }}>{h}</span>
+            ))}
+          </div>
+          {rows.map((row, i) => (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 100px 80px", alignItems: "center",
+              padding: "13px 18px", borderBottom: "1px solid " + t.cardBorder, gap: 8,
+              transition: "background 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{row.metric}</span>
+              <span style={{
+                fontSize: 14, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                textAlign: "center", color: row.you >= 0 ? brand.talentTeal : brand.pipelineRed,
+              }}>{row.you >= 0 ? "+" : ""}{row.you}%</span>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Spark data={row.data} color={row.you >= 0 ? brand.talentTeal : brand.pipelineRed} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  /* ── Tab Renderers (inside component for closure access) ── */
+
+  function WebPerformanceTab() {
+    return (
+      <div style={{ display: "grid", gap: 24 }}>
+        <div style={{ textAlign: "center" }}>
+          <ScoreRing score={webPerf.score} size={140} t={t} />
+          <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Technical Foundation Score</div>
+        </div>
+        <Card title="Performance Metrics" t={t}>
+          {webPerf.metrics.filter(m => m.status !== "good").map((m, i) => (
+            <MetricRow key={i} {...m} t={t} />
+          ))}
+          <FoundationalCollapsible items={webPerf.metrics.filter(m => m.status === "good")} t={t} />
+        </Card>
+
+        {auditData?.gtmetrixReportUrl && (
+          <Card title="GTmetrix Report" t={t}>
+            <div style={{ padding: "12px 18px", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, color: t.subtle }}>Full Report:</span>
+              <a href={auditData.gtmetrixReportUrl} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 13, color: accent, textDecoration: "none", fontWeight: 500 }}>
+                View on GTmetrix {"\u2192"}
+              </a>
+            </div>
+          </Card>
+        )}
+
+        <Card title="Recommendations" t={t}>
+          <RecommendationList t={t} items={buildRecommendations(webPerf.metrics, "webPerf")} />
+        </Card>
+      </div>
+    );
+  }
+
+  function SEOTab() {
+    return (
+      <div style={{ display: "grid", gap: 24 }}>
+        <div style={{ textAlign: "center" }}>
+          <ScoreRing score={seo.score} size={140} t={t} />
+          <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Authority & Search Score</div>
+        </div>
+
+        {/* Competitor Comparison */}
+        <CompetitorComparisonTable />
+
+        {/* Competitive Velocity */}
+        <TrendVelocityCard />
+
+        <Card title="Search Authority Metrics" t={t}>
+          {seo.metrics.filter(m => m.status !== "good").map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+          <FoundationalCollapsible items={seo.metrics.filter(m => m.status === "good")} t={t} />
+        </Card>
+
+        {/* Keywords Table */}
+        {keywordsData.length > 0 && (
+          <Card title="Top Performing Search Terms" t={t}>
+            <div>
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 80px 80px 80px 80px", padding: "10px 18px",
+                borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
+              }}>
+                {["Keyword", "Position", "Volume", "Traffic", "Difficulty"].map(h => (
+                  <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
+                    textAlign: h === "Keyword" ? "left" : "center" }}>{h}</span>
+                ))}
+              </div>
+              {keywordsData.map((kw, i) => {
+                const posColor = kw.position <= 5 ? brand.talentTeal : kw.position <= 10 ? brand.inboundOrange : brand.pipelineRed;
+                const diffColor = kw.difficulty <= 35 ? brand.talentTeal : kw.difficulty <= 60 ? brand.inboundOrange : brand.pipelineRed;
+                return (
+                  <div key={i} style={{
+                    display: "grid", gridTemplateColumns: "1fr 80px 80px 80px 80px", alignItems: "center",
+                    padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8, transition: "background 0.2s",
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
+                    <span style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{kw.keyword}</span>
+                    <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: posColor, fontWeight: 600 }}>#{kw.position}</span>
+                    <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: t.body }}>{(kw.volume || 0).toLocaleString()}</span>
+                    <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: t.body }}>{(kw.traffic || 0).toLocaleString()}</span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <div style={{ width: 36, height: 5, borderRadius: 3, background: t.cardBorder, overflow: "hidden" }}>
+                        <div style={{ width: `${kw.difficulty || 0}%`, height: "100%", borderRadius: 3, background: diffColor }} />
+                      </div>
+                      <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: diffColor, fontWeight: 600 }}>{kw.difficulty || 0}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        <Card title="Recommendations" t={t}>
+          <RecommendationList t={t} items={buildRecommendations(seo.metrics, "seo")} />
+        </Card>
+      </div>
+    );
+  }
+
+  function ContentPerformanceTab() {
+    return (
+      <div style={{ display: "grid", gap: 24 }}>
+        <div style={{ textAlign: "center" }}>
+          <ScoreRing score={contentPerf.score} size={140} t={t} />
+          <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Content & Topical Depth Score</div>
+        </div>
+        <Card title="Content Metrics" t={t}>
+          {contentPerf.metrics.map((m, i) => (
+            <MetricRow key={i} {...m} t={t} />
+          ))}
+        </Card>
+        <Card title="Recommendations" t={t}>
+          <RecommendationList t={t} items={buildRecommendations(contentPerf.metrics, "content")} />
+        </Card>
+      </div>
+    );
+  }
+
+  function EntityBrandTab() {
+    const combinedScore = Math.round(
+      (entityData.score * 0.5) +
+      ((socialLocal.socialScore || 0) * 0.3) +
+      ((aiSeoData.score || 0) * 0.2)
+    );
+    return (
+      <div style={{ display: "grid", gap: 24 }}>
+        <div style={{ textAlign: "center" }}>
+          <ScoreRing score={combinedScore} size={140} t={t} />
+          <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Entity & Brand Authority Score</div>
+        </div>
+
+        <Card title="Entity & Schema Signals" t={t}>
+          {entityData.metrics.length > 0
+            ? entityData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)
+            : <div style={{ padding: "20px 18px", color: t.subtle, fontSize: 13 }}>Entity data not yet connected.</div>
+          }
+        </Card>
+
+        {/* AI SEO Metrics */}
+        {aiSeoData.metrics.length > 0 && (
+          <Card title="AI Visibility Signals" t={t}>
+            {aiSeoData.metrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+          </Card>
+        )}
+
+        {socialLocal.platforms.length > 0 && (
+          <Card title="Platform Presence" t={t}>
+            <div>
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", padding: "10px 18px",
+                borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
+              }}>
+                {["Platform", "Status", "Followers", "Activity"].map(h => (
+                  <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600,
+                    textAlign: h === "Activity" ? "right" : h === "Status" || h === "Followers" ? "center" : "left" }}>{h}</span>
+                ))}
+              </div>
+              {socialLocal.platforms.map((p, i) => (
+                <div key={i} style={{
+                  display: "grid", gridTemplateColumns: "1fr 90px 80px 1fr", alignItems: "center",
+                  padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8, transition: "background 0.2s",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{p.name}</span>
+                  <span style={{ fontSize: 12, color: statusColor(p.health), textAlign: "center", fontWeight: 600 }}>{p.status}</span>
+                  <span style={{ fontSize: 12, color: t.body, fontFamily: "'JetBrains Mono', monospace", textAlign: "center" }}>{p.followers || "\u2014"}</span>
+                  <span style={{ fontSize: 11, color: t.subtle, textAlign: "right" }}>{p.activity || "\u2014"}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {socialLocal.signals.length > 0 && (
+          <Card title="Social SEO Signals" t={t}>
+            {socialLocal.signals.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+          </Card>
+        )}
+
+        <Card title="Recommendations" t={t}>
+          <RecommendationList t={t} items={buildRecommendations([...entityData.metrics, ...aiSeoData.metrics], "entity")} />
+        </Card>
+      </div>
+    );
+  }
+
+  function RevenueAttributionTab() {
+    const currentTraffic = revenueScenarios.traffic;
+    const low = calcScenario(revenueScenarios.conservative);
+    const mid = calcScenario(revenueScenarios.expected);
+    const high = calcScenario(revenueScenarios.aggressive);
+    const currentLeads = Math.round(currentTraffic * revenueScenarios.expected.cvr);
+    const currentPipeline = currentLeads * revenueScenarios.avgDeal;
+    return (
+      <div style={{ display: "grid", gap: 24 }}>
+        <div style={{ textAlign: "center" }}>
+          <ScoreRing score={revenueInfraScore} size={140} t={t} />
+          <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Revenue Infrastructure Score</div>
+          {(() => {
+            const s = revenueInfraScore;
+            const tier = s < 50
+              ? { icon: "\uD83D\uDD34", label: "High Revenue Leakage Risk", detail: "Attribution gaps likely causing under-reported performance", color: brand.pipelineRed, bg: "rgba(255,33,15,0.08)", border: "rgba(255,33,15,0.18)" }
+              : s < 75
+              ? { icon: "\uD83D\uDFE0", label: "Moderate Visibility, Incomplete Attribution", detail: "Some tracking in place but significant gaps remain", color: brand.inboundOrange, bg: "rgba(244,111,10,0.08)", border: "rgba(244,111,10,0.18)" }
+              : { icon: "\uD83D\uDFE2", label: "Strong Infrastructure, Ready to Scale", detail: "Attribution stack can support increased traffic investment", color: brand.talentTeal, bg: "rgba(66,191,186,0.08)", border: "rgba(66,191,186,0.18)" };
+            return (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                marginTop: 12, padding: "8px 16px", borderRadius: 8,
+                background: tier.bg, border: "1px solid " + tier.border,
+              }}>
+                <span style={{ fontSize: 14 }}>{tier.icon}</span>
+                <div style={{ textAlign: "left" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: tier.color }}>{tier.label}</div>
+                  <div style={{ fontSize: 10, color: t.subtle, lineHeight: 1.3 }}>{tier.detail}</div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Attribution Infrastructure */}
+        <div style={{ fontSize: 14, color: t.body, lineHeight: 1.6, padding: "0 4px", maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
+          Increasing traffic without reliable attribution creates invisible revenue. Before scaling visibility, your infrastructure must accurately capture, track, and attribute every lead.
+        </div>
+
+        <Card title="Revenue Infrastructure Health" t={t}>
+          {revenueInfraMetrics.map((m, i) => (
+            <MetricRow key={i} {...m} t={t} />
+          ))}
+        </Card>
+
+        {/* Scenario Model */}
+        {traffic > 0 && (
+          <Card title="Revenue Impact Model" t={t}>
+            <div>
+              <div style={{
+                display: "grid", gridTemplateColumns: "1fr 100px 100px 100px 100px", padding: "10px 18px",
+                borderBottom: `1px solid ${t.cardBorder}`, gap: 6,
+              }}>
+                {["Metric", "Current", "Conservative", "Expected", "Aggressive"].map(h => (
+                  <span key={h} style={{
+                    fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600,
+                    textAlign: h === "Metric" ? "left" : "center",
+                  }}>{h}</span>
+                ))}
+              </div>
+              {[
+                { metric: "Added Visits / mo", current: "\u2014", con: "+" + low.added, exp: "+" + mid.added, agg: "+" + high.added },
+                { metric: "New Leads / mo", current: currentLeads.toString(), con: "+" + low.leads, exp: "+" + mid.leads, agg: "+" + high.leads },
+                { metric: "Pipeline / mo", current: "$" + currentPipeline.toLocaleString(), con: "+$" + low.pipeline.toLocaleString(), exp: "+$" + mid.pipeline.toLocaleString(), agg: "+$" + high.pipeline.toLocaleString() },
+                { metric: "Pipeline / yr", current: "$" + (currentPipeline * 12).toLocaleString(), con: "+$" + (low.pipeline * 12).toLocaleString(), exp: "+$" + (mid.pipeline * 12).toLocaleString(), agg: "+$" + (high.pipeline * 12).toLocaleString() },
+              ].map((row, i) => (
+                <div key={i} style={{
+                  display: "grid", gridTemplateColumns: "1fr 100px 100px 100px 100px", alignItems: "center",
+                  padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 6,
+                }}>
+                  <span style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{row.metric}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: t.subtle }}>{row.current}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: t.body }}>{row.con}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: brand.inboundOrange }}>{row.exp}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", textAlign: "center", color: brand.talentTeal }}>{row.agg}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        <div style={{
+          padding: "12px 16px", background: t.toggleBg, borderRadius: 8, border: "1px solid " + t.cardBorder,
+          display: "flex", flexDirection: "column", gap: 4,
+        }}>
+          <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 600, marginBottom: 2 }}>
+            Assumptions
+          </div>
+          <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.6 }}>
+            <span style={{ color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>30%</span> visibility improvement &nbsp;{"\u00B7"}&nbsp;
+            <span style={{ color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>2.8%</span> site conversion rate &nbsp;{"\u00B7"}&nbsp;
+            <span style={{ color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>$4,200</span> avg deal size
+          </div>
+        </div>
+
+        {/* Review Sentiment */}
+        {reviews.length > 0 && (
+          <Card title="Review Sentiment" t={t}>
+            <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+              {reviews.map((review, i) => (
+                <div key={i} style={{ borderBottom: i < reviews.length - 1 ? `1px solid ${t.cardBorder}` : "none", paddingBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{review.author || review.author_name || "Anonymous"}</span>
+                    <span style={{ color: brand.inboundOrange, fontSize: 13 }}>
+                      {"\u2605".repeat(review.rating || 0)}{"\u2606".repeat(5 - (review.rating || 0))}
+                    </span>
+                    <span style={{ fontSize: 11, color: t.subtle }}>{review.timeAgo || review.relative_time_description || ""}</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: t.body, margin: 0, lineHeight: 1.5 }}>{review.text}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {places && !reviews.length && (
+          <Card title="Review Sentiment" t={t}>
+            <div style={{ padding: "20px 18px", textAlign: "center" }}>
+              <div style={{ fontSize: 14, color: t.text, fontWeight: 600, marginBottom: 6 }}>
+                {places.name || "Business"} {"\u2014"} {places.rating || 0}{"\u2605"} ({places.reviewCount || 0} reviews)
+              </div>
+              <div style={{ fontSize: 12, color: t.subtle }}>Individual reviews not available from this data source.</div>
+            </div>
+          </Card>
+        )}
+
+        <Card title="Recommendations" t={t}>
+          <RecommendationList t={t} items={[
+            "Connect Google Analytics to verify tracking is installed and firing correctly",
+            "Configure form submission and call events as conversions to measure lead generation",
+            "Add UTM hidden fields to every form to attribute leads to their traffic source",
+            "Connect a CRM (HubSpot, Salesforce, or webhook) to sync leads into your sales pipeline automatically",
+          ]} />
+        </Card>
+      </div>
+    );
+  }
+
+  /* ── Build dynamic recommendations from metric statuses ── */
+  function buildRecommendations(metrics, category) {
+    const poor = metrics.filter(m => m.status === "poor");
+    const warning = metrics.filter(m => m.status === "warning");
+    const recs = [];
+
+    // Use the metric's own "fix" field if present, otherwise generate from label
+    [...poor, ...warning].slice(0, 4).forEach(m => {
+      if (m.fix) {
+        recs.push(m.fix);
+      } else if (m.why) {
+        recs.push(`${m.label}: ${m.why}`);
+      } else if (m.detail) {
+        recs.push(`${m.label} \u2014 ${m.detail}`);
+      } else {
+        recs.push(`Improve ${m.label} (currently: ${m.value})`);
+      }
+    });
+
+    // Fallback recommendations by category if no real ones
+    if (recs.length === 0) {
+      const defaults = {
+        webPerf: ["Your technical foundation looks solid. Continue monitoring Core Web Vitals and page speed."],
+        seo: ["Your search authority metrics are healthy. Focus on expanding keyword coverage."],
+        content: ["Content performance is strong. Maintain your publishing cadence."],
+        entity: ["Your entity and brand signals are established. Look for opportunities to strengthen schema and structured data."],
+      };
+      return defaults[category] || ["No issues detected in this category."];
+    }
+    return recs;
+  }
+
+  /* ── Tab Content Array ── */
+  const tabContent = [
+    <WebPerformanceTab key="wp" />,
+    <SEOTab key="seo" />,
+    <ContentPerformanceTab key="content" />,
+    <EntityBrandTab key="entity" />,
+    <RevenueAttributionTab key="revenue" />,
   ];
 
   return (
     <div style={{
       minHeight: "100vh", background: t.bgGrad, color: t.text,
-      fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+      fontFamily: "'Barlow', 'Helvetica Neue', sans-serif",
       transition: "background 0.4s, color 0.3s",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -1175,32 +1027,25 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
 
       <div style={{ maxWidth: 920, margin: "0 auto", padding: "40px 20px" }}>
 
-        {/* ── Top Bar: Logo left, Mode toggle + Reset right ── */}
+        {/* -- Top Bar: Logo left, Mode toggle right -- */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
           <AbstraktLogo fill={t.logoFill} height={26} />
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {auditId && (
-              <button onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/results/${auditId}`);
-                setCopied(true); setTimeout(() => setCopied(false), 2000);
-              }} style={{
-                padding: "6px 14px", borderRadius: 20, border: `1px solid ${accent}30`,
-                background: `${accent}10`, color: accent, fontSize: 12, fontWeight: 500,
-                cursor: "pointer", transition: "all 0.25s", letterSpacing: 0.3,
-              }}>{copied ? "\u2713 Copied!" : "Share Link"}</button>
-            )}
             {onReset && (
               <button onClick={onReset} style={{
-                padding: "6px 14px", borderRadius: 20, border: `1px solid ${t.toggleBorder}`,
-                background: t.toggleBg, color: t.subtle, fontSize: 12, fontWeight: 500,
-                cursor: "pointer", transition: "all 0.25s", letterSpacing: 0.3,
-              }}>← New Audit</button>
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20,
+                border: `1px solid ${t.toggleBorder}`, background: t.toggleBg,
+                color: t.subtle, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                transition: "all 0.25s", letterSpacing: 0.3,
+              }}>
+                {"\u2190"} New Audit
+              </button>
             )}
             <ModeToggle mode={mode} setMode={setMode} t={t} />
           </div>
         </div>
 
-        {/* ── Header ── */}
+        {/* -- Header -- */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -1214,599 +1059,127 @@ export default function DigitalHealthAssessment({ auditData: initialAuditData, a
           </div>
           <h1 style={{
             fontSize: 32, fontWeight: 700, letterSpacing: -0.5, lineHeight: 1.2, marginBottom: 10,
-            color: brand.pipelineRed,
+            color: t.text,
           }}>
             Digital Visibility &<br />Performance Audit
           </h1>
-          {data.meta?.companyName && (
+          {auditData?.meta?.companyName && (
             <p style={{ fontSize: 16, fontWeight: 600, color: t.text, marginBottom: 6 }}>
-              {data.meta.companyName}
+              {auditData.meta.companyName}
             </p>
           )}
-          {data.meta?.url && (
+          {auditData?.meta?.url && (
             <p style={{ fontSize: 12, color: accent, fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>
-              {data.meta.url}
+              {auditData.meta.url}
             </p>
           )}
-          <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>{"Understand exactly where your online presence is driving growth \u2014 and where it\u2019s holding you back."}</p>
-
-          {/* Audit status banner — config in constants/statusConfig.js */}
-          <StatusBanner variant={refreshing ? "refreshing" : "pending"} count={auditData?.pendingProviders?.length} visible={hasPending} t={t} />
-          {showRefreshButton && (
-            <>
-              <button onClick={manualRefresh} disabled={refreshing}
-                style={{
-                  marginTop: 10, padding: "8px 20px", fontSize: 13, fontWeight: 600,
-                  background: refreshing ? t.cardBorder : accent, color: "#fff",
-                  border: "none", borderRadius: 8, cursor: refreshing ? "not-allowed" : "pointer",
-                  opacity: refreshing ? 0.6 : 1, transition: "opacity 0.2s ease",
-                }}>
-                {refreshing ? "Updating..." : "Update Results"}
-              </button>
-              <p style={{ marginTop: 8, fontSize: 12, color: t.subtle, fontStyle: "italic" }}>
-                Some data sources may take a few minutes to finish processing. Check back shortly for full results.
-              </p>
-            </>
-          )}
-          <StatusBanner variant="complete" visible={!showRefreshButton && !!auditId} t={t} />
+          <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.3 }}>How much revenue is your digital presence leaving on the table?</p>
         </div>
 
-        {/* View Toggle */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginBottom: 36 }}>
-          {view === "results" ? (
-            <>
-              <button onClick={() => setView("results")} style={{
-                padding: "11px 28px", borderRadius: 10, border: "none",
-                background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                textTransform: "uppercase", letterSpacing: 1.2,
-                boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-                transition: "all 0.25s ease",
-              }}>
-                Audit Results
-              </button>
-              <button onClick={() => setView("form")} style={{
-                padding: "8px 16px", borderRadius: 8, border: "none", background: "transparent",
-                color: t.subtle, fontSize: 12, fontWeight: 500, cursor: "pointer",
-                letterSpacing: 0.3, transition: "color 0.2s",
-                textDecoration: "underline", textUnderlineOffset: 3, textDecorationColor: "rgba(128,128,128,0.3)",
-              }}
-                onMouseEnter={e => e.currentTarget.style.color = t.text}
-                onMouseLeave={e => e.currentTarget.style.color = t.subtle}
-              >
-                Edit Submission
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setView("results")} style={{
-                padding: "11px 28px", borderRadius: 10, border: "none",
-                background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                textTransform: "uppercase", letterSpacing: 1.2,
-                boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-                transition: "all 0.25s ease",
-              }}>
-                View Audit Results →
-              </button>
-            </>
-          )}
+        {/* Inbound Pipeline Health */}
+        <InboundPipelineHealth />
+
+        {/* Revenue Visibility Score */}
+        <RevenueVisibilityBanner />
+
+        {/* Tab Bar */}
+        <div style={{
+          display: "flex", gap: 4, marginBottom: 30, overflowX: "auto",
+          padding: "5px", background: t.toggleBg, borderRadius: 12,
+          border: `1px solid ${t.cardBorder}`,
+        }}>
+          {tabs.map((tab, i) => (
+            <button key={tab} onClick={() => setActiveTab(i)} style={{
+              flex: "0 0 auto", padding: "10px 16px", borderRadius: 8, border: "none",
+              background: i === activeTab ? `linear-gradient(135deg, ${accent}, ${accentAlt})` : "transparent",
+              color: i === activeTab ? "#fff" : t.subtle,
+              fontSize: 12, fontWeight: 600, cursor: "pointer",
+              whiteSpace: "nowrap", transition: "all 0.25s", letterSpacing: 0.3,
+              boxShadow: i === activeTab ? "0 2px 10px rgba(66,191,186,0.2)" : "none",
+            }}>
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {view === "form" ? (
-          <Card t={t}>
-            <div style={{ padding: 36 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, textAlign: "center", color: t.text }}>
-                Assess Your Digital Visibility
-              </h2>
-              <p style={{ fontSize: 14, color: t.subtle, textAlign: "center", marginBottom: 36 }}>
-                Enter your business details to get a comprehensive performance audit
+        {tabContent[activeTab]}
+
+        {/* Export Actions */}
+        <div style={{
+          display: "flex", justifyContent: "center", gap: 12, marginTop: 32,
+          flexWrap: "wrap",
+        }}>
+          <button onClick={() => alert("PDF download will be available soon.")} style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 10,
+            border: `1px solid ${t.cardBorder}`, background: t.cardBg,
+            color: t.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            transition: "all 0.25s", letterSpacing: 0.3,
+            backdropFilter: "blur(8px)",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
+          >
+            <span style={{ fontSize: 16 }}>{"\u2193"}</span>
+            Download PDF
+          </button>
+          <button onClick={() => alert("Email delivery will be available soon.")} style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 10,
+            border: `1px solid ${t.cardBorder}`, background: t.cardBg,
+            color: t.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
+            transition: "all 0.25s", letterSpacing: 0.3,
+            backdropFilter: "blur(8px)",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
+          >
+            <span style={{ fontSize: 16 }}>{"\u2709"}</span>
+            Email Report
+          </button>
+        </div>
+
+        {/* CTA */}
+        {(() => {
+          const ctaLow = calcScenario(revenueScenarios.conservative);
+          const ctaHigh = calcScenario(revenueScenarios.aggressive);
+          const ctaScore = revenueIndex;
+          return (
+            <div style={{
+              textAlign: "center", marginTop: 40, padding: "44px 24px",
+              background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14,
+              position: "relative", overflow: "hidden",
+            }}>
+              <div style={{
+                position: "absolute", top: -60, right: -60, width: 200, height: 200,
+                background: "radial-gradient(circle, rgba(255,33,15,0.08) 0%, transparent 70%)", borderRadius: "50%",
+              }} />
+              <div style={{
+                position: "absolute", bottom: -40, left: -40, width: 160, height: 160,
+                background: "radial-gradient(circle, rgba(66,191,186,0.06) 0%, transparent 70%)", borderRadius: "50%",
+              }} />
+              <h3 style={{
+                fontSize: 22, fontWeight: 700, marginBottom: 14, position: "relative",
+                color: brand.pipelineRed, lineHeight: 1.3,
+              }}>
+                {traffic > 0
+                  ? <>You{"'"}re Leaving ${ctaLow.pipeline.toLocaleString()}{"\u2013"}${ctaHigh.pipeline.toLocaleString()} in Monthly Pipeline Untapped</>
+                  : <>Your Digital Visibility Needs Attention</>
+                }
+              </h3>
+              <p style={{ fontSize: 15, color: t.body, marginBottom: 28, maxWidth: 520, margin: "0 auto 28px", position: "relative", lineHeight: 1.6 }}>
+                Your Revenue Visibility Index is <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed }}>{ctaScore}/100</span>. {ctaScore < 70 ? "Competitors are capturing the demand you're missing." : "Targeted improvements can accelerate your pipeline growth."} Let{"'"}s capture it.
               </p>
-              {["Business Name", "Website URL", "Industry", "Address", "Phone Number"].map((label, i) => (
-                <div key={i} style={{ marginBottom: 22 }}>
-                  <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase",
-                    letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>{label}</label>
-                  <input type="text" placeholder={`Enter ${label.toLowerCase()}`} style={{
-                    width: "100%", padding: "13px 16px", borderRadius: 10,
-                    border: `1px solid ${t.cardBorder}`, background: t.inputBg,
-                    color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s",
-                  }}
-                    onFocus={e => e.target.style.borderColor = accent}
-                    onBlur={e => e.target.style.borderColor = t.cardBorder}
-                  />
-                </div>
-              ))}
               <button style={{
-                width: "100%", padding: "15px", borderRadius: 10, border: "none",
+                padding: "15px 40px", borderRadius: 10, border: "none",
                 background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
-                textTransform: "uppercase", letterSpacing: 1.5,
+                color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
+                letterSpacing: 0.5, position: "relative",
                 boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
               }}>
-                Run Assessment →
+                Get Your Personalized Strategy {"\u2192"}
               </button>
             </div>
-          </Card>
-        ) : (
-          <>
-            {/* Tab Bar */}
-            <div style={{
-              display: "flex", gap: 4, marginBottom: 30, overflowX: "auto",
-              padding: "5px", background: t.toggleBg, borderRadius: 12,
-              border: `1px solid ${t.cardBorder}`,
-            }}>
-              {tabs.map((tab, i) => {
-                const s = tabScores[i];
-                const dotColor = s == null ? t.subtle : s >= 90 ? brand.talentTeal : s >= 70 ? brand.inboundOrange : s >= 50 ? brand.inboundOrange : brand.pipelineRed;
-                return (
-                <button key={tab} onClick={() => setActiveTab(i)} style={{
-                  flex: "0 0 auto", padding: "10px 16px", borderRadius: 8, border: "none",
-                  background: i === activeTab ? `linear-gradient(135deg, ${accent}, ${accentAlt})` : "transparent",
-                  color: i === activeTab ? "#fff" : t.subtle,
-                  fontSize: 12, fontWeight: 600, cursor: "pointer",
-                  whiteSpace: "nowrap", transition: "all 0.25s", letterSpacing: 0.3,
-                  boxShadow: i === activeTab ? "0 2px 10px rgba(66,191,186,0.2)" : "none",
-                  display: "flex", alignItems: "center", gap: 7,
-                }}>
-                  {tab}
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                    padding: "2px 6px", borderRadius: 10,
-                    background: i === activeTab ? "rgba(255,255,255,0.2)" : `${dotColor}18`,
-                    color: i === activeTab ? "#fff" : dotColor,
-                    lineHeight: 1.2,
-                  }}>{s != null ? s : "—"}{s != null && <span style={{ fontSize: 8, opacity: 0.7, fontWeight: 500 }}>/100</span>}</span>
-                </button>
-                );
-              })}
-            </div>
-
-            {tabContent[activeTab]}
-
-            {/* Export Actions */}
-            <div style={{
-              display: "flex", justifyContent: "center", gap: 12, marginTop: 32,
-              flexWrap: "wrap",
-            }}>
-              <button onClick={() => alert("PDF download will be available when connected to live data.")} style={{
-                display: "flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 10,
-                border: `1px solid ${t.cardBorder}`, background: t.cardBg,
-                color: t.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                transition: "all 0.25s", letterSpacing: 0.3,
-                backdropFilter: "blur(8px)",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
-              >
-                <span style={{ fontSize: 16 }}>↓</span>
-                Download PDF
-              </button>
-              <button onClick={() => alert("Email delivery will be available when connected to live data.")} style={{
-                display: "flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 10,
-                border: `1px solid ${t.cardBorder}`, background: t.cardBg,
-                color: t.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
-                transition: "all 0.25s", letterSpacing: 0.3,
-                backdropFilter: "blur(8px)",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = t.hoverRow; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = t.cardBorder; e.currentTarget.style.background = t.cardBg; }}
-              >
-                <span style={{ fontSize: 16 }}>✉</span>
-                Email Report
-              </button>
-            </div>
-
-            {/* CTA */}
-            {activeTab === 2 ? (() => {
-              const scenario = getLocalLiftScenario(data.entity.metrics);
-              return (
-              <div style={{
-                marginTop: 40, padding: "0", borderRadius: 14,
-                background: t.cardBg, border: `1px solid ${t.cardBorder}`,
-                overflow: "hidden",
-              }}>
-                {/* Header */}
-                <div style={{
-                  padding: "28px 32px 20px", position: "relative", overflow: "hidden",
-                  background: scenario.badgeColor ? `${scenario.badgeColor}08` : `linear-gradient(135deg, ${accent}12, ${accentAlt}08)`,
-                  borderBottom: `1px solid ${t.cardBorder}`,
-                }}>
-                  <div style={{
-                    position: "absolute", top: -40, right: -40, width: 160, height: 160,
-                    background: `radial-gradient(circle, ${scenario.badgeColor ? scenario.badgeColor + "12" : "rgba(66,191,186,0.1)"} 0%, transparent 70%)`, borderRadius: "50%",
-                  }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, position: "relative" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2 }}>
-                      Abstrakt Local Lift
-                    </div>
-                    {scenario.badge && (
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, color: scenario.badgeColor,
-                        background: `${scenario.badgeColor}12`, border: `1px solid ${scenario.badgeColor}25`,
-                        padding: "2px 8px", borderRadius: 6, textTransform: "uppercase", letterSpacing: 0.5,
-                      }}>{scenario.badge}</span>
-                    )}
-                  </div>
-                  <h3 style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0, position: "relative", lineHeight: 1.3 }}>
-                    {scenario.headline}
-                  </h3>
-                </div>
-
-                {/* Body */}
-                <div style={{ padding: "24px 32px" }}>
-                  <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 20px" }}>
-                    {scenario.body}
-                  </p>
-                  {scenario.subBody && (
-                    <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 20px" }}>
-                      {scenario.subBody}
-                    </p>
-                  )}
-                  {scenario.items.length > 0 && (
-                    <>
-                      {scenario.listLabel && (
-                        <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>
-                          {scenario.listLabel}
-                        </div>
-                      )}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px", marginBottom: 24 }}>
-                        {scenario.items.map((item, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: t.text, fontWeight: 500 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: scenario.badgeColor || accent, flexShrink: 0 }} />
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 28px", fontStyle: "italic" }}>
-                    Let's build a structured plan to improve your Knowledge Graph presence and Entity authority signals.
-                  </p>
-
-                  <GrowthRoadmap tabType="local" t={t} />
-                  <ROIScenario t={t} data={data} />
-
-                  {/* Pricing Tiers */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
-                    {[
-                      { name: "Local Lift", price: "$500", period: "/mo", desc: "Full local visibility management", featured: true },
-                      { name: "Listing Management", price: "$300", period: "/mo", desc: "Up to 2 business listings" },
-                      { name: "Review Response", price: "$150", period: "/mo", desc: "Positive & negative review management" },
-                    ].map((tier, i) => (
-                      <div key={i} style={{
-                        padding: "20px 16px", borderRadius: 10, textAlign: "center",
-                        background: tier.featured ? `linear-gradient(135deg, ${accent}15, ${accentAlt}10)` : t.hoverRow,
-                        border: `1px solid ${tier.featured ? accent + "40" : t.cardBorder}`,
-                        position: "relative",
-                      }}>
-                        {tier.featured && (
-                          <div style={{
-                            position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)",
-                            fontSize: 8, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: 1.5,
-                            background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                            padding: "3px 10px", borderRadius: 10,
-                          }}>Most Popular</div>
-                        )}
-                        <div style={{ fontSize: 11, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{tier.name}</div>
-                        <div style={{ fontSize: 28, fontWeight: 800, color: t.text, lineHeight: 1, marginBottom: 4 }}>
-                          {tier.price}<span style={{ fontSize: 13, fontWeight: 500, color: t.subtle }}>{tier.period}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{tier.desc}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ textAlign: "center" }}>
-                    <button style={{
-                      padding: "15px 40px", borderRadius: 10, border: "none",
-                      background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                      color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
-                      letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-                    }}>
-                      Build My Local Strategy →
-                    </button>
-                  </div>
-                </div>
-              </div>
-              );
-            })() : activeTab === 1 ? (() => {
-              const scenario = getSEOScenario(data.seo.metrics, data.content.metrics);
-              return (
-              <div style={{
-                marginTop: 40, padding: "0", borderRadius: 14,
-                background: t.cardBg, border: `1px solid ${t.cardBorder}`,
-                overflow: "hidden",
-              }}>
-                {/* Header */}
-                <div style={{
-                  padding: "28px 32px 20px", position: "relative", overflow: "hidden",
-                  background: scenario.badgeColor ? `${scenario.badgeColor}08` : `linear-gradient(135deg, ${accent}12, ${accentAlt}08)`,
-                  borderBottom: `1px solid ${t.cardBorder}`,
-                }}>
-                  <div style={{
-                    position: "absolute", top: -40, right: -40, width: 160, height: 160,
-                    background: `radial-gradient(circle, ${scenario.badgeColor ? scenario.badgeColor + "12" : "rgba(66,191,186,0.1)"} 0%, transparent 70%)`, borderRadius: "50%",
-                  }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, position: "relative" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2 }}>
-                      Website & SEO Content
-                    </div>
-                    {scenario.badge && (
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, color: scenario.badgeColor,
-                        background: `${scenario.badgeColor}12`, border: `1px solid ${scenario.badgeColor}25`,
-                        padding: "2px 8px", borderRadius: 6, textTransform: "uppercase", letterSpacing: 0.5,
-                      }}>{scenario.badge}</span>
-                    )}
-                  </div>
-                  <h3 style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0, position: "relative", lineHeight: 1.3 }}>
-                    {scenario.headline}
-                  </h3>
-                </div>
-
-                {/* Body */}
-                <div style={{ padding: "24px 32px" }}>
-                  <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 20px" }}>
-                    {scenario.body}
-                  </p>
-                  {scenario.subBody && (
-                    <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 20px" }}>
-                      {scenario.subBody}
-                    </p>
-                  )}
-                  {scenario.items.length > 0 && (
-                    <>
-                      {scenario.listLabel && (
-                        <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>
-                          {scenario.listLabel}
-                        </div>
-                      )}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px", marginBottom: 24 }}>
-                        {scenario.items.map((item, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: t.text, fontWeight: 500 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: scenario.badgeColor || accent, flexShrink: 0 }} />
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  <GrowthRoadmap tabType="seo" t={t} />
-                  <ROIScenario t={t} data={data} />
-
-                  {/* Pricing */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
-                    {[
-                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement", featured: true },
-                      { name: "SEO Content Only", price: "From $1,500", period: "/mo", desc: "Based on content volume" },
-                      { name: "Backlinks Add-On", price: "$500–$1K+", period: "/mo", desc: "2–4 backlinks/month at $500, $750, or $1,000+" },
-                    ].map((tier, i) => (
-                      <div key={i} style={{
-                        padding: "20px 16px", borderRadius: 10, textAlign: "center",
-                        background: tier.featured ? `linear-gradient(135deg, ${accent}15, ${accentAlt}10)` : t.hoverRow,
-                        border: `1px solid ${tier.featured ? accent + "40" : t.cardBorder}`,
-                        position: "relative",
-                      }}>
-                        {tier.featured && (
-                          <div style={{
-                            position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)",
-                            fontSize: 8, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: 1.5,
-                            background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                            padding: "3px 10px", borderRadius: 10,
-                          }}>Recommended</div>
-                        )}
-                        <div style={{ fontSize: 11, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{tier.name}</div>
-                        <div style={{ fontSize: tier.price.length > 8 ? 22 : 28, fontWeight: 800, color: t.text, lineHeight: 1, marginBottom: 4 }}>
-                          {tier.price}{tier.period && <span style={{ fontSize: 13, fontWeight: 500, color: t.subtle }}>{tier.period}</span>}
-                        </div>
-                        <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{tier.desc}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ textAlign: "center" }}>
-                    <button style={{
-                      padding: "15px 40px", borderRadius: 10, border: "none",
-                      background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                      color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
-                      letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-                    }}>
-                      Build My SEO Growth Plan →
-                    </button>
-                  </div>
-                </div>
-              </div>
-              );
-            })() : activeTab === 0 ? (() => {
-              const scenario = getWebPerfScenario(data.webPerf.metrics);
-              return (
-              <div style={{
-                marginTop: 40, padding: "0", borderRadius: 14,
-                background: t.cardBg, border: `1px solid ${t.cardBorder}`,
-                overflow: "hidden",
-              }}>
-                {/* Header */}
-                <div style={{
-                  padding: "28px 32px 20px", position: "relative", overflow: "hidden",
-                  background: scenario.badgeColor ? `${scenario.badgeColor}08` : `linear-gradient(135deg, ${accent}12, ${accentAlt}08)`,
-                  borderBottom: `1px solid ${t.cardBorder}`,
-                }}>
-                  <div style={{
-                    position: "absolute", top: -40, right: -40, width: 160, height: 160,
-                    background: `radial-gradient(circle, ${scenario.badgeColor ? scenario.badgeColor + "12" : "rgba(66,191,186,0.1)"} 0%, transparent 70%)`, borderRadius: "50%",
-                  }} />
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, position: "relative" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2 }}>
-                      Website Performance
-                    </div>
-                    {scenario.badge && (
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, color: scenario.badgeColor,
-                        background: `${scenario.badgeColor}12`, border: `1px solid ${scenario.badgeColor}25`,
-                        padding: "2px 8px", borderRadius: 6, textTransform: "uppercase", letterSpacing: 0.5,
-                      }}>{scenario.badge}</span>
-                    )}
-                  </div>
-                  <h3 style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0, position: "relative", lineHeight: 1.3 }}>
-                    {scenario.headline}
-                  </h3>
-                </div>
-
-                {/* Body */}
-                <div style={{ padding: "24px 32px" }}>
-                  <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 20px" }}>
-                    {scenario.body}
-                  </p>
-                  {scenario.subBody && (
-                    <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 20px" }}>
-                      {scenario.subBody}
-                    </p>
-                  )}
-                  {scenario.items.length > 0 && (
-                    <>
-                      {scenario.listLabel && (
-                        <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10 }}>
-                          {scenario.listLabel}
-                        </div>
-                      )}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px", marginBottom: 24 }}>
-                        {scenario.items.map((item, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: t.text, fontWeight: 500 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: scenario.badgeColor || accent, flexShrink: 0 }} />
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  <GrowthRoadmap tabType="website" t={t} />
-                  <ROIScenario t={t} data={data} />
-
-                  {/* Pricing */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
-                    {[
-                      { name: "Project Website", price: "$6K\u201320K+", period: "", desc: "Based on pages needed and functionality requirements", featured: true },
-                      { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content \u2014 12 month engagement" },
-                    ].map((tier, i) => (
-                      <div key={i} style={{
-                        padding: "20px 16px", borderRadius: 10, textAlign: "center",
-                        background: tier.featured ? `linear-gradient(135deg, ${accent}15, ${accentAlt}10)` : t.hoverRow,
-                        border: `1px solid ${tier.featured ? accent + "40" : t.cardBorder}`,
-                        position: "relative",
-                      }}>
-                        {tier.featured && (
-                          <div style={{
-                            position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)",
-                            fontSize: 8, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: 1.5,
-                            background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                            padding: "3px 10px", borderRadius: 10,
-                          }}>Recommended</div>
-                        )}
-                        <div style={{ fontSize: 11, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{tier.name}</div>
-                        <div style={{ fontSize: tier.price.length > 8 ? 22 : 28, fontWeight: 800, color: t.text, lineHeight: 1, marginBottom: 4 }}>
-                          {tier.price}{tier.period && <span style={{ fontSize: 13, fontWeight: 500, color: t.subtle }}>{tier.period}</span>}
-                        </div>
-                        <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{tier.desc}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ textAlign: "center" }}>
-                    <button style={{
-                      padding: "15px 40px", borderRadius: 10, border: "none",
-                      background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                      color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
-                      letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-                    }}>
-                      Fix My Website Performance →
-                    </button>
-                  </div>
-                </div>
-              </div>
-              );
-            })() : (
-            <div style={{
-              marginTop: 40, padding: "0", borderRadius: 14,
-              background: t.cardBg, border: `1px solid ${t.cardBorder}`,
-              overflow: "hidden",
-            }}>
-              <div style={{
-                padding: "28px 32px 20px", position: "relative", overflow: "hidden",
-                background: `linear-gradient(135deg, ${accent}12, ${accentAlt}08)`,
-                borderBottom: `1px solid ${t.cardBorder}`,
-              }}>
-                <div style={{
-                  position: "absolute", top: -40, right: -40, width: 160, height: 160,
-                  background: "radial-gradient(circle, rgba(66,191,186,0.1) 0%, transparent 70%)", borderRadius: "50%",
-                }} />
-                <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 8, position: "relative" }}>
-                  {activeTab === 3 ? "Content Strategy" : "Social & AI Visibility"}
-                </div>
-                <h3 style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0, position: "relative", lineHeight: 1.3 }}>
-                  {activeTab === 3 ? "Turn Your Content Into a Pipeline Engine" : "Get Found Where Buyers Are Looking"}
-                </h3>
-              </div>
-              <div style={{ padding: "24px 32px" }}>
-                <p style={{ fontSize: 13, color: t.body, lineHeight: 1.7, margin: "0 0 24px" }}>
-                  {activeTab === 3
-                    ? "Your content should work as hard as your sales team. A structured content engine brings qualified prospects to your door before your team picks up the phone."
-                    : "AI search and social discovery are where your next wave of buyers will find you. Getting ahead now means capturing demand your competitors haven't woken up to yet."
-                  }
-                </p>
-
-                <GrowthRoadmap tabType={activeTab === 3 ? "content" : "social"} t={t} />
-                <ROIScenario t={t} data={data} />
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 28 }}>
-                  {(activeTab === 3 ? [
-                    { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement", featured: true },
-                    { name: "SEO Content Only", price: "From $1,500", period: "/mo", desc: "Based on content volume" },
-                    { name: "Backlinks Add-On", price: "$500-$1K+", period: "/mo", desc: "2-4 backlinks/month" },
-                  ] : [
-                    { name: "Website & SEO Content", price: "$2,500", period: "/mo", desc: "Full website + SEO content — 12 month engagement", featured: true },
-                    { name: "Local Lift", price: "$500", period: "/mo", desc: "Full local visibility management" },
-                    { name: "Listing Management", price: "$300", period: "/mo", desc: "Up to 2 business listings" },
-                  ]).map((tier, i) => (
-                    <div key={i} style={{
-                      padding: "20px 16px", borderRadius: 10, textAlign: "center",
-                      background: tier.featured ? `linear-gradient(135deg, ${accent}15, ${accentAlt}10)` : t.hoverRow,
-                      border: `1px solid ${tier.featured ? accent + "40" : t.cardBorder}`,
-                      position: "relative",
-                    }}>
-                      {tier.featured && (
-                        <div style={{
-                          position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)",
-                          fontSize: 8, fontWeight: 700, color: "#fff", textTransform: "uppercase", letterSpacing: 1.5,
-                          background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                          padding: "3px 10px", borderRadius: 10,
-                        }}>Recommended</div>
-                      )}
-                      <div style={{ fontSize: 11, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{tier.name}</div>
-                      <div style={{ fontSize: tier.price.length > 8 ? 22 : 28, fontWeight: 800, color: t.text, lineHeight: 1, marginBottom: 4 }}>
-                        {tier.price}{tier.period && <span style={{ fontSize: 13, fontWeight: 500, color: t.subtle }}>{tier.period}</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{tier.desc}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ textAlign: "center" }}>
-                  <button style={{
-                    padding: "15px 40px", borderRadius: 10, border: "none",
-                    background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                    color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
-                    letterSpacing: 0.5, boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-                  }}>
-                    {activeTab === 3 ? "Build My Content Engine \u2192" : "Boost My Visibility \u2192"}
-                  </button>
-                </div>
-              </div>
-            </div>
-            )}
-          </>
-        )}
+          );
+        })()}
 
         <div style={{
           textAlign: "center", padding: "28px", color: t.subtle, fontSize: 10,
