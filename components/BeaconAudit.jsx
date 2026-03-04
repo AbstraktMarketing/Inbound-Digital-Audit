@@ -265,6 +265,19 @@ const mockRevenueInfra = {
 
 
 /* -- Helpers -- */
+
+/* Inbound Pipeline Health */
+const pipelineHealth = {
+  score: 48,
+  pillars: [
+    { label: "Traffic Capture", score: 64, detail: "You’re ranking for 312 keywords but competitors own 1,240 — 62% of potential demand is going elsewhere" },
+    { label: "Lead Conversion", score: 42, detail: "Forms exist but no submission tracking fires — you can’t optimize what you can’t measure" },
+    { label: "Attribution Integrity", score: 28, detail: "No UTM capture, no call tracking, no CRM sync — pipeline data is unreliable" },
+    { label: "Lead Qualification", score: 37, detail: "No scoring model or qualification criteria detected — sales is chasing unqualified volume" },
+    { label: "Follow-Up Readiness", score: 55, detail: "CRM not connected — leads captured on the website aren’t reaching your sales team automatically" },
+  ],
+};
+
 function statusColor(s) {
   if (s === "good") return brand.talentTeal;
   if (s === "warning") return brand.inboundOrange;
@@ -460,6 +473,64 @@ function RecommendationList({ items, t }) {
 }
 
 /* Revenue Visibility Index Banner */
+function InboundPipelineHealth({ t }) {
+  const s = pipelineHealth;
+  function barColor(score) {
+    if (score >= 70) return brand.talentTeal;
+    if (score >= 50) return brand.inboundOrange;
+    return brand.pipelineRed;
+  }
+  return (
+    <div style={{
+      background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 16,
+      padding: 0, marginBottom: 28, overflow: "hidden",
+    }}>
+      {/* Header */}
+      <div style={{ padding: "28px 28px 0", textAlign: "center" }}>
+        <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 600, marginBottom: 8 }}>
+          Inbound Pipeline Health
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 6 }}>
+          <span style={{
+            fontSize: 56, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+            color: barColor(s.score), lineHeight: 1,
+          }}>{s.score}</span>
+          <span style={{ fontSize: 18, color: t.subtle, fontWeight: 500 }}>/100</span>
+        </div>
+        <div style={{
+          fontSize: 13, color: t.body, lineHeight: 1.5, maxWidth: 440, margin: "12px auto 0",
+        }}>
+          {s.score < 50
+            ? "Your inbound pipeline has significant gaps. Leads are being lost between traffic, conversion, and follow-up."
+            : s.score < 70
+            ? "Your pipeline captures some demand but leaks at multiple stages. Optimization would recover meaningful revenue."
+            : "Your pipeline infrastructure is solid. Fine-tuning will maximize conversion at every stage."}
+        </div>
+      </div>
+
+      {/* Pillar Bars */}
+      <div style={{ padding: "24px 28px 28px" }}>
+        {s.pillars.map((p, i) => (
+          <div key={i} style={{ marginBottom: i < s.pillars.length - 1 ? 18 : 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: t.text }}>{p.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: barColor(p.score) }}>{p.score}</span>
+            </div>
+            <div style={{ width: "100%", height: 8, borderRadius: 4, background: t.cardBorder, overflow: "hidden", marginBottom: 4 }}>
+              <div style={{
+                width: `${p.score}%`, height: "100%", borderRadius: 4,
+                background: barColor(p.score),
+                transition: "width 0.6s ease",
+              }} />
+            </div>
+            <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{p.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RevenueVisibilityBanner({ t }) {
   const score = calcRevenueIndex();
   const verdict = getRevenueVerdict(score);
@@ -1187,6 +1258,9 @@ export default function DigitalHealthAssessment() {
           </Card>
         ) : (
           <>
+            {/* Inbound Pipeline Health */}
+            <InboundPipelineHealth t={t} />
+
             {/* Revenue Visibility Score */}
             <RevenueVisibilityBanner t={t} />
 
