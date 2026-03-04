@@ -56,7 +56,7 @@ const challengeOptions = [
 export default function AuditForm({ onSubmit, theme: t }) {
   const [step, setStep] = React.useState(0);
   const [form, setForm] = React.useState({
-    url: "", competitorUrl: "", goal: [],
+    url: "", competitor1: "", competitor2: "", goal: [],
     paidAds: [], monthlyTraffic: "",
     contactMethods: [], challenge: "",
     contactName: "", email: "", companyName: "", phone: "",
@@ -94,6 +94,8 @@ export default function AuditForm({ onSubmit, theme: t }) {
       if (!form.url.trim()) e.url = "Website URL is required";
       else if (!/^(https?:\/\/)?[\w.-]+\.\w{2,}/.test(form.url.trim())) e.url = "Enter a valid URL";
       if (form.goal.length === 0) e.goal = "Select at least one goal";
+      if (form.competitor1.trim() && !/^(https?:\/\/)?[\w.-]+\.\w{2,}/.test(form.competitor1.trim())) e.competitor1 = "Enter a valid URL";
+      if (form.competitor2.trim() && !/^(https?:\/\/)?[\w.-]+\.\w{2,}/.test(form.competitor2.trim())) e.competitor2 = "Enter a valid URL";
     }
     if (s === 1) {
       if (form.paidAds.length === 0) e.paidAds = "Select at least one option";
@@ -181,6 +183,18 @@ export default function AuditForm({ onSubmit, theme: t }) {
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleNext(); } }}
           />
           {errors.url && <div style={{ fontSize: 11, color: brand.pipelineRed, marginTop: 4 }}>{errors.url}</div>}
+        </div>
+        <div>
+          <label style={labelStyle}>Competitor URLs</label>
+<div style={{ fontSize: 10, color: t.subtle, marginTop: -4, marginBottom: 4, lineHeight: 1.4 }}>We’ll benchmark your visibility against these competitors.</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input type="text" value={form.competitor1} placeholder="https://competitor1.com"
+              onChange={e => update("competitor1", e.target.value)} style={inputStyle("competitor1")}
+            />
+            <input type="text" value={form.competitor2} placeholder="https://competitor2.com (optional)"
+              onChange={e => update("competitor2", e.target.value)} style={inputStyle("competitor2")}
+            />
+          </div>
         </div>
         <div>
           <label style={labelStyle}>Primary goal of your website *</label>
