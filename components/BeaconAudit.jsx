@@ -51,7 +51,16 @@ const tabs = [
 
 /* -- Mock Data -- */
 const webPerfMetrics = [
-  { label: "SEMrush Site Health", value: "68%", status: "poor", detail: "Overall site health score from SEMrush audit (aim for 90%+)", confidence: "measured" },
+  { label: "SEMrush Site Health", value: "68%", status: "poor", detail: "Overall site health score from SEMrush audit (aim for 90%+)", confidence: "measured", issues: [
+      { issue: "Broken Internal Links", count: 23, severity: "high" },
+      { issue: "Slow Page Load (>3s)", count: 18, severity: "high" },
+      { issue: "Images Without Alt Text", count: 31, severity: "high" },
+      { issue: "Missing Meta Descriptions", count: 14, severity: "medium" },
+      { issue: "Redirect Chains", count: 11, severity: "medium" },
+      { issue: "Duplicate Title Tags", count: 9, severity: "medium" },
+      { issue: "Mixed Content (HTTP/HTTPS)", count: 6, severity: "low" },
+      { issue: "Orphan Pages", count: 4, severity: "low" },
+    ]},
   { label: "GTMetrix Performance Score", value: "62%", status: "poor", detail: "Overall GTMetrix performance grade (aim for 90%+)" , confidence: "measured" },
   { label: "Mobile Friendly & Responsive", value: "Yes", status: "good", detail: "Passes Google mobile-friendly test and adapts to all screen sizes" , confidence: "measured" },
   { label: "Website Security / SSL Certificate", value: "Valid", status: "good", detail: "Expires in 243 days" , confidence: "measured" },
@@ -345,30 +354,68 @@ function WeightBadge({ impact }) {
   );
 }
 
-function MetricRow({ label, value, status, detail, confidence, impact, t }) {
+function MetricRow({ label, value, status, detail, confidence, impact, issues, t }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasIssues = issues && issues.length > 0;
+  const sevColor = { high: brand.pipelineRed, medium: brand.inboundOrange, low: brand.cloudBlue };
   return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`, transition: "background 0.2s", cursor: "default",
-    }}
-      onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-    >
-      <div style={{ flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: detail ? 3 : 0 }}>
-          <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{label}</span>
-          <SourceBadge confidence={confidence} t={t} />
-          <WeightBadge impact={impact} />
+    <div style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "13px 18px", transition: "background 0.2s", cursor: hasIssues ? "pointer" : "default",
+      }}
+        onClick={() => hasIssues && setExpanded(!expanded)}
+        onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+      >
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: detail ? 3 : 0 }}>
+            <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{label}</span>
+            <SourceBadge confidence={confidence} t={t} />
+            <WeightBadge impact={impact} />
+            {hasIssues && (
+              <span style={{
+                fontSize: 8, fontWeight: 700, color: brand.inboundOrange,
+                background: "rgba(244,111,10,0.1)", border: "1px solid rgba(244,111,10,0.2)",
+                padding: "1px 5px", borderRadius: 3, textTransform: "uppercase", letterSpacing: 0.8,
+              }}>{issues.length} issues</span>
+            )}
+          </div>
+          {detail && <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{detail}</div>}
         </div>
-        {detail && <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{detail}</div>}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 13, color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
+          <span style={{
+            width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: t.statusDot, background: statusColor(status),
+          }}>{statusIcon(status)}</span>
+          {hasIssues && (
+            <span style={{ fontSize: 10, color: t.subtle, transition: "transform 0.2s", transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}>{"▼"}</span>
+          )}
+        </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 13, color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
-        <span style={{
-          width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 11, fontWeight: 700, color: t.statusDot, background: statusColor(status),
-        }}>{statusIcon(status)}</span>
-      </div>
+      {hasIssues && expanded && (
+        <div style={{ padding: "0 18px 14px", background: t.toggleBg }}>
+          {issues.map((item, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 12px", borderBottom: i < issues.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: sevColor[item.severity] || t.subtle, flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 12, color: t.text }}>{item.issue}</span>
+              </div>
+              <span style={{
+                fontSize: 12, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                color: sevColor[item.severity] || t.subtle,
+              }}>{item.count}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -714,48 +761,7 @@ function WebPerformanceTab({ t }) {
         ))}
         <FoundationalCollapsible items={mockWebPerf.metrics.filter(m => m.status === "good")} t={t} />
       </Card>
-      <Card title="SEMrush Site Health — Biggest Areas to Improve" t={t}>
-        <div style={{ padding: 0, display: "flex", flexDirection: "column" }}>
-          {[
-            { issue: "Broken Internal Links", count: 23, severity: "high", detail: "Pages returning 4xx errors hurt crawlability and user experience" },
-            { issue: "Slow Page Load (>3s)", count: 18, severity: "high", detail: "18 pages exceed the 3-second threshold — primarily image-heavy landing pages" },
-            { issue: "Missing Meta Descriptions", count: 14, severity: "medium", detail: "Pages without meta descriptions lose click-through potential in SERPs" },
-            { issue: "Redirect Chains", count: 11, severity: "medium", detail: "Multiple sequential redirects (3+ hops) slowing crawl efficiency" },
-            { issue: "Duplicate Title Tags", count: 9, severity: "medium", detail: "Identical titles across service pages reduce search differentiation" },
-            { issue: "Images Without Alt Text", count: 31, severity: "high", detail: "Missing alt attributes hurt accessibility and image search rankings" },
-            { issue: "Mixed Content (HTTP/HTTPS)", count: 6, severity: "low", detail: "Some resources still loading over HTTP on secure pages" },
-            { issue: "Orphan Pages", count: 4, severity: "low", detail: "Pages with no internal links pointing to them — invisible to crawlers" },
-          ].map((item, i) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`,
-              transition: "background 0.2s", cursor: "default",
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{item.issue}</span>
-                  <span style={{
-                    fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
-                    padding: "2px 7px", borderRadius: 4,
-                    color: item.severity === "high" ? brand.pipelineRed : item.severity === "medium" ? brand.inboundOrange : brand.talentTeal,
-                    background: item.severity === "high" ? "rgba(255,33,15,0.1)" : item.severity === "medium" ? "rgba(244,111,10,0.1)" : "rgba(66,191,186,0.1)",
-                    border: `1px solid ${item.severity === "high" ? "rgba(255,33,15,0.2)" : item.severity === "medium" ? "rgba(244,111,10,0.2)" : "rgba(66,191,186,0.2)"}`,
-                  }}>{item.severity}</span>
-                </div>
-                <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4, marginTop: 3 }}>{item.detail}</div>
-              </div>
-              <div style={{
-                fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                color: item.severity === "high" ? brand.pipelineRed : item.severity === "medium" ? brand.inboundOrange : brand.talentTeal,
-                minWidth: 36, textAlign: "right",
-              }}>{item.count}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
+
       <Card title="Recommendations" t={t}>
         <RecommendationList t={t} items={[
           "23 broken links are sending potential buyers to dead pages — every one is a lost conversation",
