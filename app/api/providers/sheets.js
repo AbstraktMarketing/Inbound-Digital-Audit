@@ -189,9 +189,10 @@ async function getAccessToken(email, privateKeyPem) {
 
   // Decode the private key — handle escaped newlines from env vars
   const cleanKey = privateKeyPem.replace(/\\n/g, "\n");
+  const keyObject = crypto.createPrivateKey(cleanKey);
   const sign = crypto.createSign("RSA-SHA256");
   sign.update(segments.join("."));
-  const signature = sign.sign(cleanKey, "base64url");
+  const signature = sign.sign(keyObject, "base64url");
 
   const jwt = `${segments.join(".")}.${signature}`;
 
