@@ -59,5 +59,5 @@ export default function ResultsPage({ params }) {
     );
   }
 
-  return <DigitalHealthAssessment auditData={auditData} />;
+  return <DigitalHealthAssessment auditData={auditData} auditId={id} />;
 }

@@ -228,7 +228,7 @@ function buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit, gt) {
       label: "Site Health",
       value: siteHealth !== null ? `${siteHealth}%` : "Not Connected",
       status: siteHealth !== null ? toStatus(siteHealth, 90, 70) : "warning",
-      detail: siteHealth !== null
+      detail: siteHealth !== null && siteAudit
         ? `SEMrush Site Audit: ${siteAudit.errors} errors, ${siteAudit.warnings} warnings across ${siteAudit.pagesCrawled} pages.`
         : "Requires SEMrush Project ID to pull live site health data.",
       weighted: true, impact: "high", findings: healthFindings,

@@ -749,9 +749,10 @@ export default function DigitalHealthAssessment({ auditData, auditId, onReset })
           <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Content & Topical Depth Score</div>
         </div>
         <Card title="Content Metrics" t={t}>
-          {contentPerf.metrics.map((m, i) => (
+          {contentPerf.metrics.filter(m => m.status !== "good").map((m, i) => (
             <MetricRow key={i} {...m} t={t} />
           ))}
+          <FoundationalCollapsible items={contentPerf.metrics.filter(m => m.status === "good")} t={t} />
         </Card>
         <Card title="Recommendations" t={t}>
           <RecommendationList t={t} items={buildRecommendations(contentPerf.metrics, "content")} />
