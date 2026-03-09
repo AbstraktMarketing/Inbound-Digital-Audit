@@ -682,9 +682,9 @@ function Dashboard() {
   const auditDealsNeeded = Math.ceil(gapToGoal / avgAuditDealSize);
   const transferDealsNeeded = Math.ceil(gapToGoal / avgTransferDealSize);
 
-  // Close Rate Calculation
+  // Close Rate Calculation - March MTD
   const totalPitches = 10; // March pitches
-  const totalWon = 8; // February deals won
+  const totalWon = 7; // March deals won
   const overallCloseRate = (totalWon / totalPitches * 100).toFixed(1);
 
   // Data
@@ -1021,49 +1021,43 @@ function Dashboard() {
     psm: 'Doug Yocco / Adam Weber'
   }];
   const januaryDeals = [{
-    name: 'Print Imaging - Website, SEO, Paid',
-    amount: 3500,
-    source: 'Revenue Transfer',
-    psm: 'OB: James Leisinger',
-    vp: 'Ian Suire'
+    name: 'UnCommon Farms',
+    amount: 5541,
+    source: 'Employee Referral',
+    psm: 'Doug Yocco / Zak Beible'
   }, {
-    name: 'Nashville Machine Co.',
-    amount: 2750,
-    source: 'OB: Sales Referral (Web Lead)',
+    name: 'Ace Paving & Maintenance',
+    amount: 3750,
+    source: 'Web Lead',
     psm: 'Doug Yocco'
   }, {
-    name: 'Semper Fi Construction',
-    amount: 2500,
-    source: 'Web Lead / Client Referral',
-    psm: 'Mariah Lindsay'
+    name: 'Embassy Landscape Group',
+    amount: 2250,
+    source: 'Upsell / Digital Audit',
+    psm: 'Kaitlyn Robertson',
+    vp: 'Eric Watkins'
   }, {
-    name: 'Uncommon Farms - Website, SEO, PPC',
-    amount: 2291,
-    source: 'IB: Employee Referral',
-    psm: 'Doug / Zak'
-  }, {
-    name: 'Campbell Security and Service Group',
+    name: 'Atlas Restoration',
     amount: 2000,
-    source: 'IB: Client Referral',
-    psm: 'Henry Pfeil',
-    vp: 'Aaron Graue'
+    source: 'Upsell / Digital Audit',
+    psm: 'Andrew Beck',
+    vp: 'Ian Suire'
   }, {
-    name: 'Fire Extinguisher Service Center',
+    name: 'Harris United',
     amount: 1500,
-    source: 'PSM Upsell - Month 12',
-    psm: 'OB: Jordan Berra',
-    vp: 'Andrew Wittmaier'
+    source: 'Upsell / Digital Audit',
+    psm: 'Justin Grab',
+    vp: 'Ian Suire'
   }, {
-    name: 'White Glove Exotic',
-    amount: 1200,
-    source: 'No commission - discount',
-    psm: 'Stephanie Wiley'
+    name: 'Sierra Technology',
+    amount: 1000,
+    source: 'OB Sales',
+    psm: 'Jacob Bliss'
   }, {
-    name: 'Caltron Security - Hosting, Local, Maintenance',
-    amount: 350,
-    source: 'Digital Audit',
-    psm: 'SAPPER: Brian Bitzer',
-    vp: 'Alex Guarano'
+    name: 'New Kent Coatings - Web + SEO',
+    amount: 0,
+    source: 'Inbound Upsell',
+    psm: 'Adam Weber'
   }];
   const historicalData = [{
     month: 'Sep',
@@ -1791,44 +1785,17 @@ function Dashboard() {
       }
     }, t.label);
   })), activeTab === 'so' && e('div', null,
-  // Executive Takeaway + Pace Row
+  // Executive Takeaway
   e('div', {
-    style: {
-      display: 'flex',
-      gap: '16px',
-      marginBottom: '20px',
-      alignItems: 'stretch'
-    }
-  }, e('div', {
     className: 'exec-takeaway',
     style: {
-      flex: 1,
-      marginBottom: 0
+      marginBottom: '20px'
     }
   }, e('div', {
     className: 'exec-takeaway-title'
   }, 'Executive Takeaway'), e('ul', {
     className: 'exec-takeaway-list'
   }, e('li', null, 'Revenue mix: March production is healthy, but the composition matters. Referral-driven opportunities are producing the strongest returns, while audit-based volume is creating activity without enough revenue yield.'), e('li', null, 'Pipeline efficiency: Show rates are healthy, but conversion performance is uneven by source. That suggests the issue is not top-of-funnel activity alone. It is lead quality and source mix.'), e('li', null, 'Near-term outlook: 2 deals left to hit goal with continued emphasis on higher-converting channels.'))),
-  // MRR Pace
-  e('div', {
-    className: 'pace-box',
-    style: {
-      width: '280px'
-    }
-  }, e('div', {
-    className: 'pace-row'
-  }, e('span', {
-    className: 'pace-label'
-  }, 'Current MRR Pace'), e('span', {
-    className: 'pace-value'
-  }, '$' + currentMrrPace.toLocaleString() + '/day')), e('div', {
-    className: 'pace-row'
-  }, e('span', {
-    className: 'pace-label'
-  }, 'Goal Pace Needed'), e('span', {
-    className: 'pace-value pace-goal'
-  }, '$' + dailyPaceNeeded.toLocaleString() + '/day')))),
   // Row 1: Primary KPIs (large) + Pitches Table
   e('div', {
     style: {
@@ -1959,9 +1926,9 @@ function Dashboard() {
     className: 'kpi-icon'
   }, ChartIcon), e('span', {
     className: 'kpi-label'
-  }, 'Total Revenue')), e('div', {
+  }, 'March New Revenue')), e('div', {
     className: 'kpi-hero'
-  }, '$27,650'), e('div', {
+  }, '$43,212'), e('div', {
     className: 'kpi-meta'
   }, 'MRR + Project'), e('div', {
     className: 'kpi-recap kpi-recap-dark'
@@ -1969,11 +1936,11 @@ function Dashboard() {
     className: 'kpi-recap-header'
   }, 'Recap'), e('div', {
     className: 'kpi-recap-value'
-  }, 'January Total: ', e('span', {
+  }, 'February Total: ', e('span', {
     style: {
       color: '#6ee7b7'
     }
-  }, '$38,716')))),
+  }, '$33,691')))),
   // Pitches Table
   e('div', {
     className: 'card pitches-card'
@@ -2005,11 +1972,11 @@ function Dashboard() {
   }, 'Avg'), e('span', {
     className: 'pitch-count'
   }, '70'), e('span', null, ''))))),
-  // Row 2: Secondary KPIs
+  // Row 2: Secondary KPIs + YTD Revenue by Source
   e('div', {
     style: {
       display: 'grid',
-      gridTemplateColumns: '1fr',
+      gridTemplateColumns: '280px 1fr',
       gap: '16px',
       marginBottom: '20px',
       alignItems: 'stretch'
@@ -2025,6 +1992,44 @@ function Dashboard() {
       height: '100%'
     }
   },
+  // Proposals
+  e('div', {
+    style: {
+      flex: 1
+    }
+  }, e('div', {
+    className: 'kpi-header-sm',
+    style: {
+      marginBottom: '4px'
+    }
+  }, e('span', {
+    className: 'kpi-icon-sm'
+  }, SendIcon), e('span', {
+    className: 'kpi-label-sm'
+  }, 'Proposals')), e('div', {
+    style: { display: 'flex', gap: '16px', alignItems: 'baseline', marginTop: '4px' }
+  },
+    e('div', { style: { textAlign: 'center' } },
+      e('div', { style: { fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' } }, '4'),
+      e('div', { style: { fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' } }, 'Mar')
+    ),
+    e('div', { style: { textAlign: 'center' } },
+      e('div', { style: { fontSize: '1.5rem', fontWeight: 800, color: '#64748b' } }, '17'),
+      e('div', { style: { fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' } }, 'Feb')
+    ),
+    e('div', { style: { textAlign: 'center' } },
+      e('div', { style: { fontSize: '1.5rem', fontWeight: 800, color: '#64748b' } }, '11'),
+      e('div', { style: { fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' } }, 'Jan')
+    )
+  ), e('div', {
+    className: 'kpi-meta-sm'
+  }, '')),
+  // Divider
+  e('div', {
+    style: {
+      borderTop: '1px solid #e2e8f0'
+    }
+  }),
   // Show Rate
   e('div', {
     style: {
@@ -2059,74 +2064,57 @@ function Dashboard() {
     }
   }, '↑ 7%')), e('div', {
     className: 'kpi-meta-sm'
-  }, 'vs 75% avg')),
-  // Divider
+  }, 'vs 75% avg'))),
   e('div', {
-    style: {
-      borderTop: '1px solid #e2e8f0'
-    }
-  }),
-  // Close Rate (Win Rate)
-  e('div', {
-    style: {
-      flex: 1
-    }
+    className: 'card',
+    style: {}
   }, e('div', {
-    className: 'kpi-header-sm',
-    style: {
-      marginBottom: '4px'
-    }
+    className: 'section-title'
   }, e('span', {
-    className: 'kpi-icon-sm'
-  }, ChartIcon), e('span', {
-    className: 'kpi-label-sm'
-  }, 'Close Rate')), e('div', {
-    style: {
-      display: 'flex',
-      alignItems: 'baseline',
-      gap: '8px'
-    }
-  }, e('span', {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#1e293b'
-    }
-  }, overallCloseRate + '%'), e('span', {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b'
-    }
-  }, totalWon + ' won / ' + totalPitches + ' pitches'))),
-  // Divider
-  e('div', {
-    style: {
-      borderTop: '1px solid #e2e8f0'
-    }
-  }),
-  // Proposals
-  e('div', {
-    style: {
-      flex: 1
-    }
-  }, e('div', {
-    className: 'kpi-header-sm',
-    style: {
-      marginBottom: '4px'
-    }
-  }, e('span', {
-    className: 'kpi-icon-sm'
-  }, SendIcon), e('span', {
-    className: 'kpi-label-sm'
-  }, 'Proposals')), e('span', {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#1e293b'
-    }
-  }, '4'), e('div', {
-    className: 'kpi-meta-sm'
-  }, '7 deals closed')))),
+    className: 'dot',
+    style: { backgroundColor: teal }
+  }), '2026 YTD New Revenue by Source'),
+  e('table', {
+    style: { width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }
+  }, e('thead', null, e('tr', null,
+    e('th', { style: { textAlign: 'left', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Source'),
+    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Pitches'),
+    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Deals'),
+    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Revenue'),
+    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Close Rate'),
+    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, '% of Total')
+  )),
+  e('tbody', null,
+    ...[
+      { source: 'Web Lead',          deals: 5, revenue: 24112, pitches: 14 },
+      { source: 'Employee Referral', deals: 4, revenue: 9382,  pitches: 11 },
+      { source: 'Upsell',            deals: 5, revenue: 8750,  pitches: 13 },
+      { source: 'Revenue Transfer',  deals: 2, revenue: 6750,  pitches: 4  },
+      { source: 'Digital Audit',     deals: 3, revenue: 4850,  pitches: 99 },
+      { source: 'Customer Referral', deals: 1, revenue: 2000,  pitches: 7  },
+      { source: 'OB Sales',          deals: 1, revenue: 1000,  pitches: 0  },
+    ].map((row, i) => {
+      const total = 56844;
+      const pct = (row.revenue / total * 100).toFixed(1);
+      const closeRate = row.pitches > 0 ? (row.deals / row.pitches * 100).toFixed(1) : '—';
+      return e('tr', { key: i, style: { background: i % 2 === 0 ? 'rgba(248,250,252,0.6)' : 'transparent' } },
+        e('td', { style: { padding: '9px 12px', fontWeight: 500, color: '#1e293b' } }, row.source),
+        e('td', { style: { padding: '9px 12px', textAlign: 'center', color: '#64748b', fontWeight: 500 } }, row.pitches),
+        e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, row.deals),
+        e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: teal } }, '$' + row.revenue.toLocaleString()),
+        e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: closeRate >= 20 ? '#16a34a' : closeRate >= 10 ? '#ca8a04' : '#dc2626' } }, closeRate + '%'),
+        e('td', { style: { padding: '9px 12px', textAlign: 'right', color: '#64748b', fontWeight: 500 } }, pct + '%')
+      );
+    })
+  ),
+  e('tfoot', null, e('tr', { style: { borderTop: '2px solid #e2e8f0' } },
+    e('td', { style: { padding: '9px 12px', fontWeight: 700, color: '#1e293b' } }, 'Total'),
+    e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b' } }, '149'),
+    e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, '21'),
+    e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 800, color: teal } }, '$56,844'),
+    e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#1e293b' } }, '14.1%'),
+    e('td', { style: { padding: '9px 12px', textAlign: 'right', color: '#64748b' } }, '100%')
+  ))))),
   // Row 4: Deal Detail Toggle + Deal Lists
   e('div', {
     style: {
@@ -2779,7 +2767,7 @@ function Dashboard() {
   }, 'Retention Trend'), e('div', {
     style: {
       position: 'relative',
-      height: '80px'
+      height: '140px'
     }
   }, e('svg', {
     viewBox: '0 0 300 80',
