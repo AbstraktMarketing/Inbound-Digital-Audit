@@ -1,5744 +1,2786 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inbound Dashboard - March 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: Barlow, sans-serif; }
+import { useState, useEffect, useRef } from "react";
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Barlow', sans-serif; background: #f8fafc; color: #1e293b; font-size: 14px; }
-    .container { min-height: 100vh; padding: 24px 32px; }
-    
-    /* Header */
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-    .header h1 { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
-    .date-badge { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 8px; padding: 8px 12px; border: 1px solid #e2e8f0; cursor: pointer; }
-    .date-badge svg { color: #8C082B; }
-    .date-badge span { font-weight: 600; color: #1e293b; }
-    .date-badge .arrow { margin-left: 4px; color: #64748b; }
-    
-    /* Tabs */
-    .tabs { display: flex; gap: 0; margin-bottom: 16px; align-items: center; }
-    .tab { padding: 10px 24px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: none; background: transparent; color: #64748b; transition: all 0.2s; }
-    .tab:hover { color: #1e293b; }
-    .tab.active { background: #8C082B; color: #fff; border-radius: 6px; }
-    
-    /* Insights Banner */
-    .insights-banner { background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.875rem; color: #475569; }
-    .insights-banner strong { color: #1e293b; }
-    
-    /* Cards - Standardized */
-    .card { 
-      background: #fff; 
-      border-radius: 12px; 
-      padding: 16px; 
-      border: 1px solid #cbd5e1; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); 
-    }
-    
-    /* Primary KPI Cards */
-    .kpi-primary { padding: 16px 20px !important; display: flex; flex-direction: column; height: 100%; }
-    .kpi-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .kpi-icon { display: flex; align-items: center; opacity: 0.8; color: #1e293b; }
-    .kpi-label { font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
-    .kpi-hero { font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 4px; letter-spacing: -0.02em; color: #1e293b; }
-    .kpi-meta { font-size: 0.8rem; color: #64748b; font-weight: 500; margin-bottom: 8px; }
-    .kpi-trend { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 600; padding-top: 8px; margin-top: auto; border-top: 1px solid #e2e8f0; }
-    .kpi-trend.up { color: #16a34a; }
-    .kpi-trend.down { color: #dc2626; }
-    .kpi-trend.neutral { color: #1e293b; }
-    .trend-icon { font-size: 0.85rem; }
-    
-    /* Stacked KPI Cards (for February/January columns) */
-    .kpi-stacked { padding: 14px 18px !important; display: flex; flex-direction: column; flex: 1; }
-    .kpi-stacked .kpi-header { margin-bottom: 2px; }
-    .kpi-stacked .kpi-meta { margin-bottom: 0; }
-    .kpi-hero-stacked { font-size: 2rem; font-weight: 800; line-height: 1; margin-bottom: 2px; letter-spacing: -0.02em; color: #1e293b; }
-    .kpi-muted { background: #f8fafc !important; border-color: #e2e8f0 !important; }
-    .kpi-muted .kpi-label { color: #94a3b8; }
-    .kpi-muted .kpi-meta { color: #94a3b8; }
-    
-    /* KPI Recap Section */
-    .kpi-recap { padding-top: 8px; margin-top: auto; border-top: 1px solid #e2e8f0; }
-    .kpi-recap-header { font-size: 0.6rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
-    .kpi-recap-value { font-size: 0.8rem; font-weight: 700; color: #1e293b; }
-    
-    /* Highlighted KPI (Total Revenue) - Premium Hero Card */
-    .kpi-highlight { 
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important; 
-      border: none !important; 
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
-      padding: 20px 24px !important;
-    }
-    .kpi-highlight .kpi-header { margin-bottom: 8px; }
-    .kpi-highlight .kpi-icon { color: rgba(255,255,255,0.6); }
-    .kpi-highlight .kpi-label { color: rgba(255,255,255,0.6); font-size: 0.7rem; letter-spacing: 0.1em; }
-    .kpi-highlight .kpi-hero { color: #fff !important; font-size: 2.5rem; margin-bottom: 4px; }
-    .kpi-highlight .kpi-meta { color: rgba(255,255,255,0.5); margin-bottom: 8px; }
-    .kpi-highlight .kpi-recap { border-top-color: rgba(255,255,255,0.15); }
-    .kpi-highlight .kpi-recap-header { color: rgba(255,255,255,0.5); }
-    .kpi-highlight .kpi-recap-value { color: #fff; }
-    .kpi-highlight .kpi-trend { border-top-color: rgba(255,255,255,0.15); padding-top: 8px; }
-    .kpi-highlight .kpi-trend.up { color: #6ee7b7; }
-    .kpi-highlight .kpi-trend.down { color: #fca5a5; }
-    
-    /* Secondary KPI Cards */
-    .kpi-secondary { padding: 14px 16px !important; display: flex; flex-direction: column; height: 100%; }
-    .kpi-header-sm { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-    .kpi-icon-sm { display: flex; align-items: center; opacity: 0.7; color: #1e293b; }
-    .kpi-icon-sm svg { width: 14px; height: 14px; }
-    .kpi-label-sm { font-size: 0.65rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; }
-    .kpi-value-sm { font-size: 1.75rem; font-weight: 800; line-height: 1.1; margin-bottom: 2px; color: #1e293b; }
-    .kpi-meta-sm { font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; }
-    .kpi-trend-sm { font-size: 0.7rem; font-weight: 600; padding-top: 6px; margin-top: auto; border-top: 1px solid #e2e8f0; }
-    .kpi-trend-sm.up { color: #16a34a; }
-    .kpi-trend-sm.down { color: #dc2626; }
-    
-    /* Pitches Card */
-    .pitches-card { padding: 14px 16px !important; display: flex; flex-direction: column; height: 100%; }
-    .pitches-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-    .pitches-title { font-size: 0.8rem; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
-    .pitches-subtitle { font-size: 0.65rem; color: #94a3b8; font-weight: 500; }
-    .pitches-table { flex: 1; }
-    
-    /* Pitch Rows - Clean product-like list */
-    .pitch-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; margin-bottom: 2px; }
-    .pitch-row:nth-child(odd) { background: rgba(248,250,252,0.8); }
-    .pitch-row:nth-child(even) { background: transparent; }
-    .pitch-row.current { background: linear-gradient(90deg, rgba(100,116,139,0.12) 0%, rgba(100,116,139,0.04) 100%); border-left: 3px solid #64748b; margin-left: -3px; padding-left: 13px; }
-    .pitch-row.current .pitch-month { color: #475569; font-weight: 700; }
-    .pitch-row.current .pitch-count { color: #475569; }
-    .pitch-row.avg { border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 10px; background: transparent !important; }
-    .pitch-row.avg .pitch-month { color: #64748b; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; }
-    .pitch-row.avg .pitch-count { color: #64748b; font-weight: 700; }
-    .pitch-month { font-weight: 600; color: #334155; font-size: 0.8rem; flex: 1; }
-    .pitch-count { font-weight: 800; color: #1e293b; font-size: 0.95rem; min-width: 32px; text-align: center; margin-right: 8px; }
-    
-    /* Pitch Badges - Pill style */
-    .pitch-badge { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; min-width: 56px; }
-    .pitch-badge.up { color: #16a34a; background: rgba(22,163,74,0.1); }
-    .pitch-badge.down { color: #dc2626; background: rgba(220,38,38,0.1); }
-    .pitch-badge.pending { color: #64748b; background: #f1f5f9; font-size: 0.6rem; }
-    .pitch-badge.neutral { color: #94a3b8; background: transparent; }
-    
-    /* Section Title */
-    .section-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .section-title .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    
-    /* Revenue Mix */
-    .revenue-legend { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .legend-label { color: #64748b; }
-    .legend-value { font-weight: 700; }
-    .legend-target { color: #94a3b8; font-weight: 400; }
-    .progress-label { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; }
-    .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
-    .progress-fill { height: 100%; border-radius: 4px; }
-    .progress-text { font-size: 0.875rem; }
-    .progress-text .value { font-weight: 700; }
-    .progress-text .target { color: #94a3b8; }
-    .progress-gap { font-size: 0.8rem; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
-    .progress-gap .gap-value { font-weight: 700; color: #ca8a04; }
-    .progress-gap .gap-separator { margin: 0 8px; color: #cbd5e1; }
-    .progress-gap .gap-note { color: #94a3b8; margin-left: 4px; }
-    
-    /* Close Rate by Source */
-    .close-rate-list { display: flex; flex-direction: column; gap: 14px; }
-    .close-rate-row { display: flex; align-items: center; gap: 12px; }
-    .close-rate-name { font-size: 0.85rem; font-weight: 500; color: #334155; }
-    .close-rate-bar-container { flex: 1; height: 20px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-    .close-rate-bar { height: 100%; background: #8C082B; border-radius: 4px; transition: width 0.5s; }
-    .close-rate-value { width: 50px; font-size: 0.85rem; font-weight: 700; color: #334155; text-align: right; flex-shrink: 0; }
-    
-    /* Deal List */
-    .deal-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 12px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; }
-    .deal-item:last-child { margin-bottom: 0; }
-    .deal-num { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; margin-right: 12px; flex-shrink: 0; }
-    .deal-info { flex: 1; }
-    .deal-name { font-weight: 600; color: #1e293b; font-size: 0.875rem; margin-bottom: 2px; }
-    .deal-source { font-size: 0.75rem; color: #64748b; }
-    .deal-meta { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
-    .deal-amount { font-weight: 700; font-size: 0.95rem; flex-shrink: 0; }
-    
-    /* Grid layouts */
-    .row { display: grid; gap: 16px; margin-bottom: 20px; align-items: stretch; }
-    .row-4-1 { grid-template-columns: 1fr 1fr 1fr 280px; }
-    .row-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .row-2 { grid-template-columns: 1fr 1fr; }
-    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 32px; align-items: stretch; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; align-items: stretch; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: stretch; }
-    .space-y-8 > * + * { margin-top: 32px; }
-    .col-span-2 { grid-column: span 2; }
-    
-    /* Horizontal Bars */
-    .h-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .h-bar-label { width: 128px; font-size: 0.875rem; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .h-bar-track { flex: 1; height: 24px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-    .h-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-    .h-bar-value { width: 48px; text-align: right; font-size: 0.875rem; font-weight: 700; }
-    
-    /* Vertical Chart */
-    .v-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 256px; padding: 0 16px; }
-    .v-bar-container { display: flex; flex-direction: column; align-items: center; flex: 1; }
-    .v-bar-value { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; }
-    .v-bar-track { width: 100%; height: 200px; background: #f1f5f9; border-radius: 4px 4px 0 0; position: relative; }
-    .v-bar-fill { position: absolute; bottom: 0; width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s; }
-    .v-bar-label { font-size: 0.75rem; color: #64748b; margin-top: 8px; }
-    
-    /* Tables */
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 16px; font-size: 0.875rem; font-weight: 500; color: #64748b; border-bottom: 1px solid #e2e8f0; }
-    th.center { text-align: center; }
-    th.right { text-align: right; }
-    td { padding: 16px; font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
-    td.center { text-align: center; }
-    td.right { text-align: right; }
-    tr:hover { background: #f8fafc; }
-    tr.alt { background: rgba(248,250,252,0.5); }
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; }
-    
-    /* Insights */
-    .insight-card { padding: 12px; border-radius: 10px; margin-bottom: 12px; }
-    .insight-card:last-child { margin-bottom: 0; }
-    .insight-title { font-weight: 600; color: #1e293b; margin-bottom: 4px; font-size: 0.85rem; }
-    .insight-text { font-size: 0.8rem; color: #64748b; line-height: 1.4; }
-    .insight-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-    .insight-metric { font-weight: 700; font-size: 0.85rem; }
-    
-    /* Initiatives */
-    .initiative { padding: 14px; border-radius: 10px; border: 1px solid; display: flex; flex-direction: column; }
-    .initiative-num { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-bottom: 8px; font-size: 0.85rem; }
-    .initiative h4 { font-size: 0.8rem; font-weight: 600; color: #1e293b; margin-bottom: 6px; line-height: 1.3; }
-    .initiative p { font-size: 0.7rem; color: #64748b; line-height: 1.4; margin-bottom: 8px; }
-    .initiative .outcome { font-size: 0.65rem; font-weight: 600; color: #475569; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); margin-top: auto; }
-    .initiative .outcome span { color: #1e293b; }
-    .initiative .kpi-target { font-size: 0.75rem; font-weight: 600; color: #1e293b; margin-top: auto; }
-    .initiative .kpi-target span { color: #64748b; font-weight: 500; }
-    .exec-subtitle { font-size: 0.8rem; color: #64748b; margin-bottom: 12px; line-height: 1.4; }
-    .deals-needed-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.8rem; color: #475569; background: #f8fafc; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
-    .deals-needed-label { font-weight: 600; color: #64748b; }
-    .deals-needed-item { background: #fff; padding: 4px 10px; border-radius: 4px; border: 1px solid #e2e8f0; }
-    .deals-needed-item strong { color: #0d9488; font-weight: 800; }
-    .deals-needed-warn strong { color: #dc2626; }
-    .deals-needed-sep { color: #94a3b8; font-size: 0.75rem; }
-    .exec-takeaway { background: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, rgba(140,8,43,0.08) 100%); border: 1px solid rgba(13,148,136,0.25); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; }
-    .exec-takeaway-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #0d9488; margin-bottom: 8px; }
-    .exec-takeaway-list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; padding: 0; }
-    .exec-takeaway-list li { font-size: 0.85rem; color: #334155; font-weight: 500; position: relative; padding-left: 16px; }
-    .exec-takeaway-list li::before { content: '•'; position: absolute; left: 0; color: #0d9488; font-weight: 700; }
-    .pace-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
-    .pace-row { display: flex; justify-content: space-between; align-items: center; }
-    .pace-label { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-    .pace-value { font-size: 1.1rem; font-weight: 800; color: #1e293b; }
-    .pace-goal { color: #dc2626; }
-    .toggle-btn { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 12px; font-size: 0.75rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; }
-    .toggle-btn:hover { background: #e2e8f0; color: #1e293b; }
-    .toggle-btn.active { background: #0d9488; color: #fff; border-color: #0d9488; }
-    .trend-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 120px; padding: 10px 0; gap: 16px; }
-    .trend-bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; }
-    .trend-bar { background: linear-gradient(180deg, #f97316 0%, #fb923c 100%); border-radius: 4px 4px 0 0; width: 100%; max-width: 60px; display: flex; align-items: flex-start; justify-content: center; padding-top: 6px; transition: height 0.3s ease; }
-    .trend-bar-current { background: linear-gradient(180deg, #0d9488 0%, #14b8a6 100%); }
-    .trend-bar-value { font-size: 0.8rem; font-weight: 700; color: #fff; }
-    .trend-bar-label { font-size: 0.75rem; font-weight: 600; color: #64748b; margin-top: 6px; }
-    .trend-note { font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 8px; font-style: italic; }
-    .outlook-section { margin-bottom: 20px; }
-    .outlook-header { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #1e293b; margin-bottom: 12px; }
-    .outlook-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
-    .outlook-block { border-radius: 8px; padding: 16px; height: 100%; box-sizing: border-box; }
-    .outlook-blue { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25); }
-    .outlook-orange { background: rgba(244,111,10,0.06); border: 1px solid rgba(244,111,10,0.25); }
-    .outlook-red { background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.25); }
-    .outlook-teal { background: rgba(13,148,136,0.06); border: 1px solid rgba(13,148,136,0.25); }
-    .outlook-teal .outlook-block-title { color: #0d9488; }
-    .outlook-block-split { border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
-    .outlook-split-section { padding: 12px 16px; flex: 1; }
-    .outlook-split-section.outlook-teal { background: rgba(13,148,136,0.06); border: 1px solid rgba(13,148,136,0.25); border-bottom: none; border-radius: 8px 8px 0 0; }
-    .outlook-split-section.outlook-gray { background: #f1f5f9; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
-    .outlook-split-section.outlook-gray .outlook-block-title { color: #64748b; }
-    .outlook-split-divider { height: 1px; background: linear-gradient(to right, rgba(13,148,136,0.3), #e2e8f0); }
-    .outlook-block-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .final-badge { font-size: 0.65rem; font-weight: 600; background: #16a34a; color: white; padding: 2px 8px; border-radius: 10px; text-transform: none; letter-spacing: 0; }
-    .outlook-blue .outlook-block-title { color: #3b82f6; }
-    .outlook-orange .outlook-block-title { color: #f46f0a; }
-    .outlook-red .outlook-block-title { color: #dc2626; }
-    .outlook-maroon { background: rgba(140,8,43,0.06); border: 1px solid rgba(140,8,43,0.25); }
-    .outlook-maroon .outlook-block-title { color: #8c082b; }
-    .outlook-note.strategic { font-style: normal; font-weight: 600; color: #1e293b; background: rgba(13,148,136,0.1); padding: 8px 10px; border-radius: 4px; margin-top: 10px; border-top: none; }
-    .outlook-metrics { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-    .outlook-metric { display: flex; align-items: baseline; gap: 8px; }
-    .outlook-label { font-size: 0.8rem; color: #64748b; min-width: 100px; }
-    .outlook-value { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
-    .outlook-value.negative { color: #dc2626; }
-    .outlook-value.positive { color: #16a34a; }
-    .outlook-value.bold { font-weight: 800; }
-    .outlook-change { font-size: 0.7rem; font-weight: 600; }
-    .outlook-change.positive { color: #16a34a; }
-    .outlook-subtext { font-size: 0.7rem; color: #94a3b8; }
-    .outlook-gap-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin: 8px 0 6px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.08); }
-    .outlook-note { font-size: 0.75rem; color: #64748b; font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.08); line-height: 1.4; }
-    .outlook-forecast { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.08); }
-    .outlook-forecast-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 4px 0; }
-    .outlook-forecast-row.alert { background: rgba(220,38,38,0.08); margin: 4px -8px; padding: 6px 8px; border-radius: 4px; }
-    .outlook-forecast-value { font-weight: 700; color: #1e293b; }
-    .pace-tracker-section { margin-bottom: 20px; }
-    .pace-tracker-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .pace-tracker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
-    .pace-tracker-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #1e293b; }
-    .risk-badge { font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
-    .risk-badge.risk-low { background: rgba(22,163,74,0.12); color: #16a34a; }
-    .risk-badge.risk-moderate { background: rgba(202,138,4,0.12); color: #ca8a04; }
-    .risk-badge.risk-high { background: rgba(220,38,38,0.12); color: #dc2626; }
-    .pace-tracker-rows { display: flex; flex-direction: column; gap: 12px; }
-    .pace-tracker-row { display: flex; align-items: center; gap: 16px; padding: 10px 12px; background: #f8fafc; border-radius: 6px; }
-    .pace-tracker-month { font-size: 0.8rem; font-weight: 700; color: #1e293b; min-width: 90px; }
-    .pace-tracker-data { display: flex; gap: 20px; font-size: 0.8rem; color: #64748b; }
-    .pace-tracker-data strong { color: #1e293b; }
-    .pace-gap { color: #dc2626; }
-    .pace-gap strong { color: #dc2626; }
-    .pace-tracker-row.risk-lever { background: linear-gradient(135deg, rgba(13,148,136,0.1), rgba(13,148,136,0.05)); border: 1px solid rgba(13,148,136,0.2); }
-    .pace-tracker-lever-text { font-size: 0.85rem; font-weight: 600; color: #0d9488; }
-    .pace-tracker-complete { background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2); }
-    .pace-tracker-mixed { background: rgba(202,138,4,0.08); border: 1px solid rgba(202,138,4,0.2); flex-wrap: wrap; }
-    .pace-tracker-note { font-size: 0.75rem; color: #64748b; font-style: italic; width: 100%; margin-top: 6px; }
-    .churn-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
-    .churn-month { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
-    .churn-value { font-size: 1.25rem; font-weight: 800; }
-    .churn-value.negative { color: #dc2626; }
-    .retention-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
-    .retention-team-avg { font-size: 0.9rem; color: #64748b; }
-    .retention-team-avg strong { color: #1e293b; font-size: 1.1rem; }
-    .retention-list { display: flex; flex-direction: column; gap: 8px; }
-    .retention-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 6px; flex-wrap: wrap; }
-    .retention-row.inactive { opacity: 0.6; }
-    .retention-name { font-weight: 600; color: #1e293b; min-width: 140px; }
-    .retention-rate { font-weight: 700; font-size: 1.1rem; min-width: 70px; }
-    .retention-rate.excellent { color: #16a34a; }
-    .retention-rate.good { color: #65a30d; }
-    .retention-rate.warning { color: #ca8a04; }
-    .retention-rate.alert { color: #dc2626; }
-    .retention-rate.na { color: #94a3b8; }
-    .retention-note { font-size: 0.75rem; color: #94a3b8; font-style: italic; }
-    .retention-breakdown { font-size: 0.8rem; color: #64748b; }
-    .mrm-completion { display: flex; align-items: center; gap: 16px; }
-    .mrm-label { font-size: 1rem; font-weight: 600; color: #1e293b; }
-    .mrm-value { font-size: 1.5rem; font-weight: 800; color: #F97316; }
-    .pace-positive { color: #16a34a; font-weight: 600; }
-    .pace-positive strong { color: #16a34a; }
-    .exec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
-    .exec-item { display: flex; gap: 12px; padding: 14px; background: #f8fafc; border-radius: 10px; }
-    .exec-num { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
-    .exec-content { flex: 1; }
-    .exec-content h4 { font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 6px; }
-    .exec-content ul { margin: 0 0 8px 0; padding-left: 16px; }
-    .exec-content li { font-size: 0.75rem; color: #64748b; line-height: 1.5; margin-bottom: 2px; }
-    .exec-kpi { font-size: 0.75rem; font-weight: 600; color: #1e293b; padding-top: 6px; border-top: 1px solid #e2e8f0; }
-    .exec-kpi span { color: #64748b; font-weight: 500; }
-    .exec-outcomes { background: linear-gradient(135deg, rgba(13,148,136,0.08), rgba(140,8,43,0.08)); border-radius: 8px; padding: 20px 28px; text-align: center; border: 1px solid rgba(13,148,136,0.2); }
-    .exec-outcomes h4 { font-size: 1rem; font-weight: 700; color: #0d9488; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .exec-outcomes ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 12px; }
-    .exec-outcomes li { font-size: 0.95rem; color: #1e293b; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-    .plan-table { width: 100%; border-collapse: collapse; }
-    .plan-table th { text-align: left; padding: 12px 16px; font-size: 0.8rem; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0; }
-    .plan-table th:last-child { padding-left: 48px; }
-    .plan-table td { padding: 14px 16px; font-size: 0.85rem; color: #475569; border-bottom: 1px solid #f1f5f9; }
-    .plan-table td:first-child { font-weight: 500; color: #1e293b; }
-    .plan-table td:last-child { padding-left: 48px; }
-    .plan-table tr:last-child td { border-bottom: none; }
-    
-    /* Deal List (History tab) */
-    .deal-list { display: flex; flex-direction: column; gap: 12px; }
-    .deal-info { display: flex; align-items: center; gap: 12px; }
-    .deal-details p { margin: 0; }
-    .total-row { padding-top: 12px; border-top: 1px solid #e2e8f0; margin-top: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .total-label { font-weight: 500; color: #64748b; }
-    .total-value { font-size: 1.25rem; font-weight: 700; }
-    
-    /* Colors */
-    .text-teal { color: #0d9488; }
-    .text-maroon { color: #8C082B; }
-    .text-green { color: #16a34a; }
-    .text-red { color: #dc2626; }
-    .text-yellow { color: #ca8a04; }
-    .kpi-days-left { font-size: 0.7rem; font-weight: 600; color: #ca8a04; background: rgba(202,138,4,0.12); padding: 4px 8px; border-radius: 4px; margin-top: 6px; display: inline-block; }
-    .bg-teal { background-color: #0d9488; }
-    .bg-maroon { background-color: #8C082B; }
-    .bg-teal-light { background-color: rgba(13, 148, 136, 0.15); }
-    .bg-maroon-light { background-color: rgba(140, 8, 43, 0.15); }
-    
-    /* Footer */
-    .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; }
-  
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script>
-const {
-  useState
-} = React;
-const maroon = '#8C082B';
-const teal = '#0d9488';
-const orange = '#F97316';
-const green = '#16a34a';
-const red = '#dc2626';
+/* ── Brand Palette ── */
+const brand = {
+  growthGray: "#333333",
+  pipelineRed: "#FF210F",
+  creativePink: "#F725A2",
+  inboundOrange: "#F46F0A",
+  cloudBlue: "#0481A3",
+  talentTeal: "#42BFBA",
+  lightGray: "#EFEFEF",
+  enterpriseMaroon: "#8C082B",
+};
 
-// ── DATA ──────────────────────────────────────────────
+const accent = brand.talentTeal;
+const accentAlt = brand.cloudBlue;
 
-const serviceSummary = [{
-  service: 'Website & SEO Content',
-  total: 441048.75
-}, {
-  service: 'PPC Management',
-  total: 35677.00
-}, {
-  service: 'Social Media Management',
-  total: 16175.00
-}, {
-  service: 'Website Hosting',
-  total: 7980.00
-}, {
-  service: 'SEO - Local Lift',
-  total: 4700.00
-}];
-const grandTotal = 509756;
-const dsmSummary = [{
-  name: 'Jacob Yarbrough',
-  revenue: 92688
-}, {
-  name: 'Brian Hoffman',
-  revenue: 88518
-}, {
-  name: 'John Halcomb',
-  revenue: 85852
-}, {
-  name: 'Henry Pfeil',
-  revenue: 62825
-}, {
-  name: 'Matt Gilmore',
-  revenue: 39750
-}, {
-  name: 'Aaron Graue',
-  revenue: 38250
-}, {
-  name: 'Unassigned',
-  revenue: 27100
-}, {
-  name: 'Shelby Edsell',
-  revenue: 4550
-}, {
-  name: 'James Nash',
-  revenue: 2875
-}];
-const implementingPipeline = [{
-  client: 'Ozara',
-  value: 13500,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Canadian Global (E3)',
-  value: 6750,
-  dsm: 'Mariah Lindsey',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Access Elevator',
-  value: 5500,
-  dsm: 'Henry Pfeil',
-  cancel: null,
-  kickoff: '01/19/26'
-}, {
-  client: 'Dupree Security Group',
-  value: 3250,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'UnCommon Farms',
-  value: 3000,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: '01/26/26'
-}, {
-  client: 'HatLaunch',
-  value: 3000,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Area Access',
-  value: 2900,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: '10/27/25'
-}, {
-  client: 'National Delivery Solutions',
-  value: 2750,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'LionHeart Critical Power',
-  value: 2500,
-  dsm: 'Mariah Lindsey',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Semper Fi Construction',
-  value: 2500,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Elevator Service Co',
-  value: 2500,
-  dsm: 'Henry Pfeil',
-  cancel: null,
-  kickoff: '01/15/26'
-}, {
-  client: 'American Elevator',
-  value: 2500,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: '01/05/26'
-}, {
-  client: 'Embassy Landscape Group',
-  value: 2250,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: '01/19/26'
-}, {
-  client: 'Cibes Symmetry',
-  value: 2000,
-  dsm: 'Henry Pfeil',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Atlas Restoration',
-  value: 2000,
-  dsm: 'Mariah Lindsey',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Tower Digital',
-  value: 2000,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: '03/09/26'
-}, {
-  client: 'Campbell Security',
-  value: 2000,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: '02/26/26'
-}, {
-  client: 'Orange Energizing',
-  value: 1500,
-  dsm: 'Mariah Lindsey',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'GreenGuard Cleaning',
-  value: 1000,
-  dsm: 'Mariah Lindsey',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Poseidon Sales',
-  value: 1000,
-  dsm: 'Kellianne Elliott',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Caltron Security',
-  value: 350,
-  dsm: 'Nicholas Chrismer',
-  cancel: null,
-  kickoff: null
-}, {
-  client: 'Waste Consultants',
-  value: 1000,
-  dsm: 'Kellianne Elliott',
-  cancel: '3/31/2026',
-  kickoff: null
-}];
-const pipelineTotal = implementingPipeline.reduce((s, r) => s + r.value, 0);
-const pipelineAtRisk = implementingPipeline.filter(r => r.cancel);
-const recentLaunches = [{
-  client: 'SkyView Partners',
-  owner: 'Merideth Neff',
-  kickoff: '10/08/25',
-  launch: '02/23/26',
-  days: 138,
-  target: 60,
-  hrsS: 113.1,
-  hrsC: 70.7
-}, {
-  client: 'Invidasys',
-  owner: 'Nicholas Chrismer',
-  kickoff: '01/08/24',
-  launch: '02/23/26',
-  days: 777,
-  target: 90,
-  hrsS: 146.8,
-  hrsC: 0
-}, {
-  client: 'Pflug Packaging',
-  owner: 'Nicholas Chrismer',
-  kickoff: '11/24/25',
-  launch: '02/18/26',
-  days: 86,
-  target: 90,
-  hrsS: 173.9,
-  hrsC: 149.0
-}, {
-  client: 'Altourage',
-  owner: 'Nicholas Chrismer',
-  kickoff: '11/10/25',
-  launch: '02/02/26',
-  days: 84,
-  target: 60,
-  hrsS: 161.3,
-  hrsC: 144.4
-}, {
-  client: 'Morning Star Elevator',
-  owner: 'Nicholas Chrismer',
-  kickoff: '10/24/25',
-  launch: '01/21/26',
-  days: 89,
-  target: 90,
-  hrsS: 202.2,
-  hrsC: 195.5
-}, {
-  client: '4C Cabinets',
-  owner: 'Nicholas Chrismer',
-  kickoff: '11/06/25',
-  launch: '01/20/26',
-  days: 75,
-  target: 75,
-  hrsS: 149.9,
-  hrsC: 122.7
-}, {
-  client: 'Skyline Express',
-  owner: 'Nicholas Chrismer',
-  kickoff: '09/12/25',
-  launch: '01/14/26',
-  days: 124,
-  target: 90,
-  hrsS: 179.3,
-  hrsC: 141.4
-}, {
-  client: 'Black Wolf Solar',
-  owner: 'Nicholas Chrismer',
-  kickoff: '10/20/25',
-  launch: '01/07/26',
-  days: 79,
-  target: 90,
-  hrsS: 194.1,
-  hrsC: 164.2
-}];
-// ── HELPERS ──────────────────────────────────────────
-
-const fmt = n => '$' + n.toLocaleString('en-US', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-});
-const fmtDec = n => '$' + n.toLocaleString('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-});
-const fmtNum = n => n.toLocaleString('en-US');
-const fmtPct = n => n.toFixed(2) + '%';
-function Dashboard() {
-  const [activeTab, setActiveTab] = useState('fulfill');
-  const e = React.createElement;
-  const [showDealDetail, setShowDealDetail] = useState(false);
-
-  // ── Sales & Retention Data (from index_6.html) ──
-
-  // MRR Goal Calculations
-  const mrrGoal = 30000;
-  const currentMrr = 22091;
-  const sellingDaysLeft = 4;
-  const gapToGoal = mrrGoal - currentMrr;
-  const dailyPaceNeeded = Math.ceil(gapToGoal / sellingDaysLeft);
-  const sellingDaysElapsed = 15; // days sold so far in February
-  const currentMrrPace = Math.round(currentMrr / sellingDaysElapsed);
-
-  // Deal Size Averages & Deals Needed
-  const avgReferralDealSize = 2500;
-  const avgAuditDealSize = 2500;
-  const avgTransferDealSize = 3500;
-  const referralDealsNeeded = Math.ceil(gapToGoal / avgReferralDealSize);
-  const auditDealsNeeded = Math.ceil(gapToGoal / avgAuditDealSize);
-  const transferDealsNeeded = Math.ceil(gapToGoal / avgTransferDealSize);
-
-  // Close Rate Calculation - March MTD
-  const totalPitches = 10; // March pitches
-  const totalWon = 7; // March deals won
-  const overallCloseRate = (totalWon / totalPitches * 100).toFixed(1);
-
-  // Data
-  const sourceData = [{
-    name: 'Digital Audit',
-    pitches: 53,
-    won: 1,
-    amount: 350,
-    closeRate: 1.9
-  }, {
-    name: 'Employee Referral',
-    pitches: 9,
-    won: 3,
-    amount: 8500,
-    closeRate: 33.3
-  }, {
-    name: 'Client Referral',
-    pitches: 3,
-    won: 2,
-    amount: 4500,
-    closeRate: 66.7
-  }, {
-    name: 'Web Lead',
-    pitches: 5,
-    won: 1,
-    amount: 0,
-    closeRate: 20
-  }, {
-    name: 'Upsell',
-    pitches: 4,
-    won: 1,
-    amount: 1500,
-    closeRate: 25.0
-  }, {
-    name: 'Self-Sourced',
-    pitches: 6,
-    won: 1,
-    amount: 1200,
-    closeRate: 16.7
-  }, {
-    name: 'Email',
-    pitches: 1,
-    won: 0,
-    amount: 0,
-    closeRate: 0
-  }, {
-    name: 'LinkedIn',
-    pitches: 1,
-    won: 0,
-    amount: 0,
-    closeRate: 0
-  }];
-  const pitchData = [{
-    month: 'Mar',
-    count: 10,
-    change: null,
-    current: true
-  }, {
-    month: 'Feb',
-    count: 63,
-    change: -23
-  }, {
-    month: 'Jan',
-    count: 82,
-    change: 11
-  }, {
-    month: 'Dec',
-    count: 74,
-    change: 28
-  }, {
-    month: 'Nov',
-    count: 58,
-    change: 26
-  }, {
-    month: 'Oct',
-    count: 46,
-    change: null
-  }];
-
-  // Pitches Trend Data (last 120 days)
-  const pitchesTrendData = [{
-    month: 'Oct',
-    pitches: 46
-  }, {
-    month: 'Nov',
-    pitches: 58
-  }, {
-    month: 'Dec',
-    pitches: 74
-  }, {
-    month: 'Jan',
-    pitches: 82
-  }, {
-    month: 'Feb',
-    pitches: 63
-  }, {
-    month: 'Mar',
-    pitches: 10
-  }];
-
-  // Close Rate by Source - 2026 YTD
-  const closeRate120Days = [{
-    name: 'Revenue Transfer',
-    rate: 50.0,
-    pitches: 4,
-    won: 2
-  }, {
-    name: 'Customer Referral',
-    rate: 28.6,
-    pitches: 7,
-    won: 2
-  }, {
-    name: 'Employee Referral',
-    rate: 18.2,
-    pitches: 11,
-    won: 2
-  }, {
-    name: 'Self-Sourced',
-    rate: 16.7,
-    pitches: 6,
-    won: 1
-  }, {
-    name: 'Upsell',
-    rate: 23.1,
-    pitches: 13,
-    won: 3
-  }, {
-    name: 'Web Lead',
-    rate: 21.4,
-    pitches: 14,
-    won: 3
-  }, {
-    name: 'AMG 90 Day Client',
-    rate: 3.0,
-    pitches: 99,
-    won: 3
-  }, {
-    name: 'Cold Calling',
-    rate: 0,
-    pitches: 1,
-    won: 0
-  }, {
-    name: 'Email',
-    rate: 0,
-    pitches: 1,
-    won: 0
-  }, {
-    name: 'LinkedIn',
-    rate: 0,
-    pitches: 1,
-    won: 0
-  }];
-
-  // KPI Icons (Lucide-style line icons)
-  const DollarIcon = e('svg', {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round'
-  }, e('line', {
-    x1: 12,
-    y1: 1,
-    x2: 12,
-    y2: 23
-  }), e('path', {
-    d: 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'
-  }));
-  const ReceiptIcon = e('svg', {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round'
-  }, e('path', {
-    d: 'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z'
-  }), e('path', {
-    d: 'M14 8H8'
-  }), e('path', {
-    d: 'M16 12H8'
-  }), e('path', {
-    d: 'M13 16H8'
-  }));
-  const ChartIcon = e('svg', {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round'
-  }, e('path', {
-    d: 'M3 3v18h18'
-  }), e('path', {
-    d: 'M18 17V9'
-  }), e('path', {
-    d: 'M13 17V5'
-  }), e('path', {
-    d: 'M8 17v-3'
-  }));
-  const TargetIconSm = e('svg', {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round'
-  }, e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 10
-  }), e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 6
-  }), e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 2
-  }));
-  const SendIcon = e('svg', {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 2,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round'
-  }, e('path', {
-    d: 'M22 2L11 13'
-  }), e('path', {
-    d: 'M22 2L15 22l-4-9-9-4 20-7Z'
-  }));
-
-  // Close Rate by Source - February Sales
-  const closeRateData = [{
-    name: 'Customer Referral',
-    rate: 100,
-    pitches: 2,
-    won: 2
-  }, {
-    name: 'Employee Referral',
-    rate: 40,
-    pitches: 5,
-    won: 2
-  }, {
-    name: 'Upsell',
-    rate: 12.5,
-    pitches: 8,
-    won: 1
-  }, {
-    name: 'Web Lead',
-    rate: 20,
-    pitches: 5,
-    won: 1
-  }, {
-    name: 'Self-Sourced',
-    rate: 33.3,
-    pitches: 3,
-    won: 1
-  }, {
-    name: 'Revenue Transfer',
-    rate: 33.3,
-    pitches: 3,
-    won: 1
-  }, {
-    name: 'Cold Calling',
-    rate: 0,
-    pitches: 1,
-    won: 0
-  }, {
-    name: 'AMG 90 Day Client',
-    rate: 0,
-    pitches: 31,
-    won: 0
-  }];
-  const mrrDeals = [{
-    name: 'HatLaunch',
-    amount: 12000,
-    source: 'Web Lead',
-    psm: 'Doug Yocco / Adam Weber',
-    category: 'web'
-  }, {
-    name: 'Dupree Security',
-    amount: 3250,
-    source: 'Revenue Transfer',
-    psm: 'Doug Yocco / Kayla Musante',
-    category: 'transfer'
-  }, {
-    name: 'Breaching Technologies',
-    amount: 3112,
-    source: 'Web Lead',
-    psm: 'Doug Yocco',
-    category: 'web'
-  }, {
-    name: "Hamm's Construction",
-    amount: 2500,
-    source: 'Digital Audit',
-    psm: 'Doug Yocco',
-    category: 'audit'
-  }, {
-    name: 'Tower Digital',
-    amount: 2000,
-    source: 'Digital Audit',
-    psm: 'Doug Yocco',
-    category: 'audit'
-  }, {
-    name: 'Allied Construction',
-    amount: 1500,
-    source: 'Upsell',
-    psm: 'Doug Yocco / Adam Weber',
-    category: 'upsell'
-  }, {
-    name: 'Perfectly Placed',
-    amount: 350,
-    source: 'Employee Referral (Stephanie Bodine)',
-    psm: 'Doug Yocco',
-    category: 'referral'
-  }];
-  const projectDeals = [{
-    name: 'VanRan Communications',
-    amount: 10000,
-    source: 'Digital Audit',
-    psm: 'Doug Yocco'
-  }, {
-    name: 'Exude HC',
-    amount: 4000,
-    source: 'Revenue Transfer',
-    psm: 'Doug Yocco'
-  }];
-  const januaryDeals = [{
-    name: 'UnCommon Farms',
-    amount: 5541,
-    source: 'Employee Referral',
-    psm: 'Doug Yocco / Zak Beible'
-  }, {
-    name: 'Ace Paving & Maintenance',
-    amount: 3750,
-    source: 'Web Lead',
-    psm: 'Doug Yocco'
-  }, {
-    name: 'Embassy Landscape Group',
-    amount: 2250,
-    source: 'Upsell / Digital Audit',
-    psm: 'Kaitlyn Robertson',
-    vp: 'Eric Watkins'
-  }, {
-    name: 'Atlas Restoration',
-    amount: 2000,
-    source: 'Upsell / Digital Audit',
-    psm: 'Andrew Beck',
-    vp: 'Ian Suire'
-  }, {
-    name: 'Harris United',
-    amount: 1500,
-    source: 'Upsell / Digital Audit',
-    psm: 'Justin Grab',
-    vp: 'Ian Suire'
-  }, {
-    name: 'Sierra Technology',
-    amount: 1000,
-    source: 'OB Sales',
-    psm: 'Jacob Bliss'
-  }, {
-    name: 'New Kent Coatings - Web + SEO',
-    amount: 0,
-    source: 'Inbound Upsell',
-    psm: 'Adam Weber'
-  }];
-  const historicalData = [{
-    month: 'Sep',
-    fullMonth: 'September 2025',
-    mrr: 18250,
-    deals: 5,
-    pitches: 64
-  }, {
-    month: 'Oct',
-    fullMonth: 'October 2025',
-    mrr: 19100,
-    deals: 6,
-    pitches: 73
-  }, {
-    month: 'Nov',
-    fullMonth: 'November 2025',
-    mrr: 20500,
-    deals: 9,
-    pitches: 58
-  }, {
-    month: 'Dec',
-    fullMonth: 'December 2025',
-    mrr: 21400,
-    deals: 10,
-    pitches: 74
-  }, {
-    month: 'Jan',
-    fullMonth: 'January 2026',
-    mrr: 17291,
-    deals: 7,
-    pitches: 82
-  }, {
-    month: 'Feb',
-    fullMonth: 'February 2026',
-    mrr: 25300,
-    deals: 8,
-    pitches: 17
-  }];
-  const pitchHistory = [{
-    month: 'Jan',
-    year: '2025',
-    pitches: 41
-  }, {
-    month: 'Feb',
-    year: '2025',
-    pitches: 49
-  }, {
-    month: 'Mar',
-    year: '2025',
-    pitches: 42
-  }, {
-    month: 'Apr',
-    year: '2025',
-    pitches: 51
-  }, {
-    month: 'May',
-    year: '2025',
-    pitches: 72
-  }, {
-    month: 'Jun',
-    year: '2025',
-    pitches: 63
-  }, {
-    month: 'Jul',
-    year: '2025',
-    pitches: 77
-  }, {
-    month: 'Aug',
-    year: '2025',
-    pitches: 63
-  }, {
-    month: 'Sep',
-    year: '2025',
-    pitches: 64
-  }, {
-    month: 'Oct',
-    year: '2025',
-    pitches: 73
-  }, {
-    month: 'Nov',
-    year: '2025',
-    pitches: 58
-  }, {
-    month: 'Dec',
-    year: '2025',
-    pitches: 74
-  }, {
-    month: 'Jan',
-    year: '2026',
-    pitches: 82
-  }, {
-    month: 'Feb',
-    year: '2026',
-    pitches: 17
-  }];
-  const dsmPortfolioData = [{
-    name: 'John Halcomb',
-    clients: 33,
-    avgYears: 3.0
-  }, {
-    name: 'Henry Pfeil',
-    clients: 33,
-    avgYears: 2.16
-  }, {
-    name: 'Jacob Yarbrough',
-    clients: 35,
-    avgYears: 2.15
-  }, {
-    name: 'Brian Hoffman',
-    clients: 37,
-    avgYears: 1.67
-  }, {
-    name: 'Aaron Graue',
-    clients: 18,
-    avgYears: 4.34
-  }, {
-    name: 'Matt Gilmore',
-    clients: 19,
-    avgYears: 1.06
-  }, {
-    name: 'Nicholas Chrismer',
-    clients: 14,
-    avgYears: 0.23
-  }, {
-    name: 'Mariah Lindsey',
-    clients: 6,
-    avgYears: 0.30
-  }];
-  const dpmData = [{
-    name: 'Nicholas Chrismer',
-    activeBuilds: 14,
-    avgLaunchDays: 62,
-    onTimeRate: 92
-  }, {
-    name: 'Mariah Lindsey',
-    activeBuilds: 6,
-    avgLaunchDays: 55,
-    onTimeRate: 95
-  }];
-  const cancelByDsmData = [{
-    name: 'John Halcomb',
-    clients: 33,
-    avgYears: 3.0,
-    cancels: 4,
-    avgMonths: 40.8,
-    medianMonths: 36.5,
-    ytd2026: 95.89
-  }, {
-    name: 'Jacob Yarbrough',
-    clients: 35,
-    avgYears: 2.15,
-    cancels: 8,
-    avgMonths: 17.0,
-    medianMonths: 18.9,
-    ytd2026: 95.96
-  }, {
-    name: 'Brian Hoffman',
-    clients: 37,
-    avgYears: 1.67,
-    cancels: 1,
-    avgMonths: 13.0,
-    medianMonths: 13.0,
-    ytd2026: 94.05
-  }, {
-    name: 'Henry Pfeil',
-    clients: 33,
-    avgYears: 2.16,
-    cancels: 0,
-    avgMonths: null,
-    medianMonths: null,
-    ytd2026: 102.3
-  }, {
-    name: 'Aaron Graue',
-    clients: 18,
-    avgYears: 4.34,
-    cancels: 0,
-    avgMonths: null,
-    medianMonths: null,
-    ytd2026: null
-  }, {
-    name: 'Matt Gilmore',
-    clients: 19,
-    avgYears: 1.06,
-    cancels: 2,
-    avgMonths: 11.0,
-    medianMonths: 11.0,
-    ytd2026: null
-  }, {
-    name: 'Anna Walschleger',
-    clients: null,
-    avgYears: null,
-    cancels: 1,
-    avgMonths: 14.8,
-    medianMonths: 14.8,
-    ytd2026: null
-  }, {
-    name: 'Dajah Ray',
-    clients: null,
-    avgYears: null,
-    cancels: 1,
-    avgMonths: 15.0,
-    medianMonths: 15.0,
-    ytd2026: null
-  }];
-  const launchVelocityData = [{
-    month: 'Mar 2025',
-    sites: 6,
-    avgDays: 85.2
-  }, {
-    month: 'Apr 2025',
-    sites: 5,
-    avgDays: 85.2
-  }, {
-    month: 'May 2025',
-    sites: 6,
-    avgDays: 82.0
-  }, {
-    month: 'Jun 2025',
-    sites: 5,
-    avgDays: 128.2,
-    flag: 'worst'
-  }, {
-    month: 'Jul 2025',
-    sites: 3,
-    avgDays: 109.0
-  }, {
-    month: 'Aug 2025',
-    sites: 7,
-    avgDays: 65.0,
-    flag: 'best'
-  }, {
-    month: 'Sep 2025',
-    sites: 4,
-    avgDays: 87.0
-  }, {
-    month: 'Oct 2025',
-    sites: 9,
-    avgDays: 79.6
-  }, {
-    month: 'Nov 2025',
-    sites: 2,
-    avgDays: 78.5
-  }, {
-    month: 'Dec 2025',
-    sites: 4,
-    avgDays: 85.0
-  }, {
-    month: 'Jan 2026',
-    sites: 6,
-    avgDays: 85.3
-  }, {
-    month: 'Feb 2026',
-    sites: 6,
-    avgDays: 91.0
-  }];
-
-  // Icons
-  const CalendarIcon = e('svg', {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: maroon,
-    strokeWidth: 2
-  }, e('rect', {
-    x: 3,
-    y: 4,
-    width: 18,
-    height: 18,
-    rx: 2
-  }), e('line', {
-    x1: 16,
-    y1: 2,
-    x2: 16,
-    y2: 6
-  }), e('line', {
-    x1: 8,
-    y1: 2,
-    x2: 8,
-    y2: 6
-  }), e('line', {
-    x1: 3,
-    y1: 10,
-    x2: 21,
-    y2: 10
-  }));
-  const ArrowUp = e('svg', {
-    width: 12,
-    height: 12,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 3
-  }, e('polyline', {
-    points: '18 15 12 9 6 15'
-  }));
-  const ArrowDown = e('svg', {
-    width: 12,
-    height: 12,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 3
-  }, e('polyline', {
-    points: '6 9 12 15 18 9'
-  }));
-  const TrendUp = color => e('svg', {
-    width: 16,
-    height: 16,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: color,
-    strokeWidth: 2
-  }, e('polyline', {
-    points: '22 7 13.5 15.5 8.5 10.5 2 17'
-  }), e('polyline', {
-    points: '16 7 22 7 22 13'
-  }));
-  const TrendDown = color => e('svg', {
-    width: 16,
-    height: 16,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: color,
-    strokeWidth: 2
-  }, e('polyline', {
-    points: '22 17 13.5 8.5 8.5 13.5 2 7'
-  }), e('polyline', {
-    points: '16 17 22 17 22 11'
-  }));
-  const CheckIcon = e('svg', {
-    width: 20,
-    height: 20,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: teal,
-    strokeWidth: 2
-  }, e('path', {
-    d: 'M22 11.08V12a10 10 0 1 1-5.93-9.14'
-  }), e('polyline', {
-    points: '22 4 12 14.01 9 11.01'
-  }));
-  const AlertIcon = e('svg', {
-    width: 20,
-    height: 20,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: orange,
-    strokeWidth: 2
-  }, e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 10
-  }), e('line', {
-    x1: 12,
-    y1: 8,
-    x2: 12,
-    y2: 12
-  }), e('line', {
-    x1: 12,
-    y1: 16,
-    x2: 12.01,
-    y2: 16
-  }));
-  const TargetIcon = color => e('svg', {
-    width: 20,
-    height: 20,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: color,
-    strokeWidth: 2
-  }, e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 10
-  }), e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 6
-  }), e('circle', {
-    cx: 12,
-    cy: 12,
-    r: 2
-  }));
-
-  // Components
-  function HorizontalBar({
-    data,
-    dataKey,
-    maxValue,
-    color,
-    showPercent,
-    showDollar
-  }) {
-    return e('div', null, data.map((item, idx) => e('div', {
-      key: idx,
-      className: 'h-bar'
-    }, e('div', {
-      className: 'h-bar-label'
-    }, item.name), e('div', {
-      className: 'h-bar-track'
-    }, e('div', {
-      className: 'h-bar-fill',
-      style: {
-        width: item[dataKey] / maxValue * 100 + '%',
-        backgroundColor: color
-      }
-    })), e('div', {
-      className: 'h-bar-value',
-      style: {
-        color
-      }
-    }, showPercent ? item[dataKey] + '%' : showDollar ? '$' + item[dataKey].toLocaleString() : item[dataKey]))));
-  }
-  function VerticalChart({
-    data,
-    color
-  }) {
-    const max = Math.max(...data.map(d => d.mrr));
-    return e('div', {
-      className: 'v-chart'
-    }, data.map((item, idx) => e('div', {
-      key: idx,
-      className: 'v-bar-container'
-    }, e('div', {
-      className: 'v-bar-value',
-      style: {
-        color
-      }
-    }, '$' + (item.mrr / 1000).toFixed(1) + 'k'), e('div', {
-      className: 'v-bar-track'
-    }, e('div', {
-      className: 'v-bar-fill',
-      style: {
-        height: item.mrr / max * 100 + '%',
-        backgroundColor: color
-      }
-    })), e('div', {
-      className: 'v-bar-label'
-    }, item.month))));
-  }
-  function PitchChart({
-    data,
-    color
-  }) {
-    const max = Math.max(...data.map(d => d.pitches));
-    return e('div', {
-      className: 'v-chart'
-    }, data.map((item, idx) => e('div', {
-      key: idx,
-      className: 'v-bar-container',
-      style: {
-        flex: '1',
-        minWidth: '40px'
-      }
-    }, e('div', {
-      className: 'v-bar-value',
-      style: {
-        color,
-        fontSize: '10px'
-      }
-    }, item.pitches), e('div', {
-      className: 'v-bar-track'
-    }, e('div', {
-      className: 'v-bar-fill',
-      style: {
-        height: item.pitches / max * 100 + '%',
-        backgroundColor: color
-      }
-    })), e('div', {
-      className: 'v-bar-label',
-      style: {
-        fontSize: '9px'
-      }
-    }, item.month), e('div', {
-      style: {
-        fontSize: '8px',
-        color: '#94a3b8'
-      }
-    }, item.year.slice(2)))));
-  }
-  const [foSub, setFoSub] = useState('overview');
-  const cs = {
-    background: '#fff',
-    borderRadius: '12px',
-    padding: '16px',
-    border: '1px solid #cbd5e1',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'
+/* ── Theme Tokens ── */
+function getTheme(mode) {
+  if (mode === "dark") return {
+    bg: "#111114", bgGrad: "linear-gradient(180deg, #111114 0%, #0d0d12 50%, #0f1015 100%)",
+    cardBg: "rgba(255,255,255,0.035)", cardBorder: "rgba(255,255,255,0.07)",
+    subtle: "rgba(239,239,239,0.45)", body: "rgba(239,239,239,0.72)",
+    text: "#EFEFEF", inputBg: "rgba(255,255,255,0.025)",
+    scrollThumb: "rgba(66,191,186,0.2)", scrollHover: "rgba(66,191,186,0.35)",
+    hoverRow: "rgba(66,191,186,0.03)", logoFill: "#EFEFEF",
+    toggleBg: "rgba(255,255,255,0.06)", toggleBorder: "rgba(255,255,255,0.1)",
+    badgeBg: "rgba(66,191,186,0.08)", badgeBorder: "rgba(66,191,186,0.15)",
+    ctaBtnColor: "#fff", statusDot: "#0a0a0a", badgeText: "#EFEFEF", badgeDot: "#EFEFEF",
   };
-  const kpiCard = (label, value, sub, trend, trendDir) => /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      padding: '16px 20px',
-      display: 'flex',
-      flexDirection: 'column'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '4px'
-    }
-  }, label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '2rem',
-      fontWeight: 800,
-      lineHeight: 1,
-      marginBottom: '4px',
-      letterSpacing: '-0.02em',
-      color: '#1e293b'
-    }
-  }, value), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.8rem',
-      color: '#64748b',
-      fontWeight: 500,
-      marginBottom: '8px'
-    }
-  }, sub), trend && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '4px',
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      paddingTop: '8px',
-      marginTop: 'auto',
-      borderTop: '1px solid #e2e8f0',
-      color: trendDir === 'up' ? '#16a34a' : trendDir === 'down' ? '#dc2626' : '#1e293b'
-    }
-  }, trendDir === 'up' ? '\u25B2' : trendDir === 'down' ? '\u25BC' : '\u25CF', " ", trend));
-  const heroKpi = (label, value, sub) => /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
-      borderRadius: '12px',
-      padding: '20px 24px',
-      display: 'flex',
-      flexDirection: 'column'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: 'rgba(255,255,255,0.6)',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '8px'
-    }
-  }, label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '2.5rem',
-      fontWeight: 800,
-      lineHeight: 1,
-      marginBottom: '4px',
-      color: '#fff'
-    }
-  }, value), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.8rem',
-      color: 'rgba(255,255,255,0.5)'
-    }
-  }, sub));
-  const SB = ({
-    name
-  }) => {
-    const colors = {
-      'Google Ads': '#3b82f6',
-      'Meta Ads': '#6366f1',
-      'LI Ads': '#0ea5e9',
-      'PMB Ads': '#a855f7',
-      'TikTok': '#ec4899',
-      'Mantis': '#ea580c'
-    };
-    const c = colors[name] || '#64748b';
-    return /*#__PURE__*/React.createElement("span", {
-      style: {
-        padding: '2px 8px',
-        borderRadius: '4px',
-        fontSize: '0.7rem',
-        fontWeight: 600,
-        background: c + '1a',
-        color: c,
-        marginRight: '4px'
-      }
-    }, name);
+  return {
+    bg: "#f5f5f7", bgGrad: "linear-gradient(180deg, #f5f5f7 0%, #eeeef0 50%, #e8e8ec 100%)",
+    cardBg: "rgba(255,255,255,0.85)", cardBorder: "rgba(0,0,0,0.08)",
+    subtle: "rgba(51,51,51,0.5)", body: "rgba(51,51,51,0.75)",
+    text: "#1a1a1a", inputBg: "rgba(0,0,0,0.03)",
+    scrollThumb: "rgba(66,191,186,0.3)", scrollHover: "rgba(66,191,186,0.5)",
+    hoverRow: "rgba(66,191,186,0.05)", logoFill: "#333333",
+    toggleBg: "rgba(0,0,0,0.04)", toggleBorder: "rgba(0,0,0,0.1)",
+    badgeBg: "rgba(255,33,15,0.06)", badgeBorder: "rgba(255,33,15,0.12)",
+    ctaBtnColor: "#fff", statusDot: "#fff", badgeText: brand.enterpriseMaroon, badgeDot: brand.enterpriseMaroon,
   };
-  const thS = align => ({
-    textAlign: align || 'left',
-    padding: '12px 14px',
-    fontSize: '0.7rem',
-    fontWeight: 600,
-    color: '#64748b',
-    borderBottom: '1px solid #e2e8f0',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em'
-  });
-  const tdS = {
-    padding: '12px 14px',
-    borderBottom: '1px solid #f1f5f9'
-  };
-  const rowBg = i => ({
-    background: i % 2 === 0 ? 'rgba(248,250,252,0.5)' : 'transparent'
-  });
-  const SubNav = ({
-    items,
-    active,
-    onSelect
-  }) => /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: '8px',
-      marginBottom: '20px',
-      flexWrap: 'wrap'
-    }
-  }, items.map(s => /*#__PURE__*/React.createElement("button", {
-    key: s.key,
-    onClick: () => onSelect(s.key),
-    style: {
-      padding: '6px 14px',
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      cursor: 'pointer',
-      border: active === s.key ? '1px solid ' + teal : '1px solid #e2e8f0',
-      borderRadius: '6px',
-      background: active === s.key ? teal : '#f1f5f9',
-      color: active === s.key ? '#fff' : '#64748b'
-    }
-  }, s.label)));
-  const topTabs = [{
-    key: 'so',
-    label: 'Sales Overview'
-  }, {
-    key: 'ss',
-    label: 'Sales Summary'
-  }, {
-    key: 'rr',
-    label: 'Revenue & Retention'
-  }, {
-    key: 'ra',
-    label: 'Retention by AM'
-  }, {
-    key: 'fulfill',
-    label: 'Fulfillment Overview'
-  }];
-  const foNav = [{
-    key: 'overview',
-    label: 'Overview'
-  }, {
-    key: 'websites',
-    label: 'Website Creation'
-  }, {
-    key: 'seo',
-    label: 'SEO Content'
-  }, {
-    key: 'ppc',
-    label: 'PPC Management'
-  }, {
-    key: 'social',
-    label: 'Social Media'
-  }, {
-    key: 'other',
-    label: 'Other Services'
-  }, {
-    key: 'insights',
-    label: 'Insights'
-  }];
-
-  // ── RENDER ──────────────────────────────────────────
-
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontFamily: "'Barlow', 'Inter', sans-serif",
-      background: '#f8fafc',
-      minHeight: '100vh',
-      padding: '24px 32px',
-      color: '#1e293b',
-      fontSize: '14px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("h1", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 700,
-      margin: 0
-    }
-  }, "Inbound Dashboard"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#fff',
-      borderRadius: '8px',
-      padding: '8px 12px',
-      border: '1px solid #e2e8f0',
-      fontWeight: 600
-    }
-  }, "March 2026")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: 0,
-      marginBottom: '20px',
-      flexWrap: 'wrap'
-    }
-  }, topTabs.map(t => {
-    const active = activeTab === t.key;
-    const clickable = true;
-    return /*#__PURE__*/React.createElement("button", {
-      key: t.key,
-      onClick: () => setActiveTab(t.key),
-      style: {
-        padding: '10px 24px',
-        fontSize: '0.875rem',
-        fontWeight: 500,
-        cursor: 'pointer',
-        border: 'none',
-        background: active ? maroon : 'transparent',
-        color: active ? '#fff' : '#64748b',
-        borderRadius: active ? '6px' : 0
-      }
-    }, t.label);
-  })), activeTab === 'so' && e('div', null,
-  // Executive Takeaway
-  e('div', {
-    className: 'exec-takeaway',
-    style: {
-      marginBottom: '20px'
-    }
-  }, e('div', {
-    className: 'exec-takeaway-title'
-  }, 'Executive Takeaway'), e('ul', {
-    className: 'exec-takeaway-list'
-  }, e('li', null, 'Revenue mix: March production is healthy, but the composition matters. Referral-driven opportunities are producing the strongest returns, while audit-based volume is creating activity without enough revenue yield.'), e('li', null, 'Pipeline efficiency: Show rates are healthy, but conversion performance is uneven by source. That suggests the issue is not top-of-funnel activity alone. It is lead quality and source mix.'), e('li', null, 'Near-term outlook: 2 deals left to hit goal with continued emphasis on higher-converting channels.'))),
-  // Row 1: Primary KPIs (large) + Pitches Table
-  e('div', {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr 280px',
-      gap: '16px',
-      marginBottom: '16px',
-      alignItems: 'stretch'
-    }
-  },
-  // March Column - MRR + Project stacked (current month)
-  e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px'
-    }
-  },
-  // March MRR
-  e('div', {
-    className: 'card kpi-stacked'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, DollarIcon), e('span', {
-    className: 'kpi-label'
-  }, 'March MRR')), e('div', {
-    className: 'kpi-hero-stacked text-teal'
-  }, '$24,712'), e('div', {
-    className: 'kpi-meta'
-  }, 'MTD'), e('div', {
-    className: 'kpi-days-left'
-  }, sellingDaysLeft + ' selling days left')),
-  // March Project
-  e('div', {
-    className: 'card kpi-stacked'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, ReceiptIcon), e('span', {
-    className: 'kpi-label'
-  }, 'March Project')), e('div', {
-    className: 'kpi-hero-stacked'
-  }, '$14,000'), e('div', {
-    className: 'kpi-meta'
-  }, ''))),
-  // February Column - MRR + Project stacked
-  e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px'
-    }
-  },
-  // February MRR
-  e('div', {
-    className: 'card kpi-stacked kpi-muted'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, DollarIcon), e('span', {
-    className: 'kpi-label'
-  }, 'February MRR')), e('div', {
-    className: 'kpi-hero-stacked',
-    style: { color: '#eab308' }
-  }, '$' + currentMrr.toLocaleString()), e('div', {
-    className: 'kpi-meta'
-  }, '8 accounts')),
-  // February Project
-  e('div', {
-    className: 'card kpi-stacked kpi-muted'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, ReceiptIcon), e('span', {
-    className: 'kpi-label'
-  }, 'February Project')), e('div', {
-    className: 'kpi-hero-stacked'
-  }, '$11,600'), e('div', {
-    className: 'kpi-meta'
-  }, '8 projects'))),
-  // January Column - MRR + Project stacked
-  e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '12px'
-    }
-  },
-  // January MRR
-  e('div', {
-    className: 'card kpi-stacked kpi-muted'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, DollarIcon), e('span', {
-    className: 'kpi-label'
-  }, 'January MRR')), e('div', {
-    className: 'kpi-hero-stacked text-red'
-  }, '$16,041'), e('div', {
-    className: 'kpi-meta'
-  }, '7 accounts')),
-  // January Project
-  e('div', {
-    className: 'card kpi-stacked kpi-muted'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, ReceiptIcon), e('span', {
-    className: 'kpi-label'
-  }, 'January Project')), e('div', {
-    className: 'kpi-hero-stacked'
-  }, '$22,675'), e('div', {
-    className: 'kpi-meta'
-  }, '9 projects'))),
-  // Total Revenue Card - Primary (highlighted)
-  e('div', {
-    className: 'card kpi-primary kpi-highlight'
-  }, e('div', {
-    className: 'kpi-header'
-  }, e('span', {
-    className: 'kpi-icon'
-  }, ChartIcon), e('span', {
-    className: 'kpi-label'
-  }, 'March New Revenue')), e('div', {
-    className: 'kpi-hero'
-  }, '$38,712'), e('div', {
-    className: 'kpi-meta'
-  }, 'MRR + Project'), e('div', {
-    className: 'kpi-recap kpi-recap-dark'
-  }, e('div', {
-    className: 'kpi-recap-header'
-  }, 'Recap'), e('div', {
-    className: 'kpi-recap-value'
-  }, 'February Total: ', e('span', {
-    style: {
-      color: '#6ee7b7'
-    }
-  }, '$33,691')))),
-  // Pitches Table
-  e('div', {
-    className: 'card pitches-card'
-  }, e('div', {
-    className: 'pitches-header'
-  }, e('div', null, e('div', {
-    className: 'pitches-title'
-  }, 'Pitches by Month'), e('div', {
-    className: 'pitches-subtitle'
-  }, 'Last 6 months'))), e('div', {
-    className: 'pitches-table'
-  }, pitchData.map((p, i) => e('div', {
-    key: i,
-    className: 'pitch-row' + (p.current ? ' current' : '')
-  }, e('span', {
-    className: 'pitch-month'
-  }, p.month), e('span', {
-    className: 'pitch-count'
-  }, p.count), p.change !== null ? e('span', {
-    className: 'pitch-badge ' + (p.change >= 0 ? 'up' : 'down')
-  }, (p.change >= 0 ? '+' : '') + p.change + '%') : e('span', {
-    className: 'pitch-badge neutral'
-  }, '—'))),
-  // Average row
-  e('div', {
-    className: 'pitch-row avg'
-  }, e('span', {
-    className: 'pitch-month'
-  }, 'Avg'), e('span', {
-    className: 'pitch-count'
-  }, '70'), e('span', null, ''))))),
-  // Row 2: Secondary KPIs + YTD Revenue by Source
-  e('div', {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginBottom: '20px',
-      alignItems: 'stretch'
-    }
-  },
-  // February Source Breakdown
-  e('div', {
-    className: 'card',
-    style: {}
-  }, e('div', {
-    className: 'section-title'
-  }, e('span', {
-    className: 'dot',
-    style: { backgroundColor: '#eab308' }
-  }), 'February 2026 Pitches by Source'),
-  e('table', {
-    style: { width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }
-  }, e('thead', null, e('tr', null,
-    e('th', { style: { textAlign: 'left', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Source'),
-    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Pitches'),
-    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Props'),
-    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Won'),
-    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Close Rate')
-  )),
-  e('tbody', null,
-    ...[
-      { source: 'Web Lead',          pitches: 5,  props: 2, won: 2 },
-      { source: 'Employee Referral', pitches: 5,  props: 1, won: 0 },
-      { source: 'Upsell',            pitches: 8,  props: 4, won: 1 },
-      { source: 'Revenue Transfer',  pitches: 3,  props: 3, won: 3 },
-      { source: 'Digital Audit',     pitches: 31, props: 6, won: 3 },
-      { source: 'Customer Referral', pitches: 2,  props: 0, won: 0 },
-      { source: 'OB Sales',          pitches: 0,  props: 0, won: 0 },
-    ].map((row, i) => {
-      const closeRate = row.pitches > 0 ? (row.won / row.pitches * 100).toFixed(1) : null;
-      const crColor = closeRate >= 20 ? '#16a34a' : closeRate >= 10 ? '#ca8a04' : '#dc2626';
-      return e('tr', { key: i, style: { background: i % 2 === 0 ? 'rgba(248,250,252,0.6)' : 'transparent' } },
-        e('td', { style: { padding: '9px 12px', fontWeight: 500, color: '#1e293b' } }, row.source),
-        e('td', { style: { padding: '9px 12px', textAlign: 'center', color: '#64748b', fontWeight: 500 } }, row.pitches || '—'),
-        e('td', { style: { padding: '9px 12px', textAlign: 'center', color: '#64748b', fontWeight: 500 } }, row.props || '—'),
-        e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, row.won || '—'),
-        e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: closeRate ? crColor : '#94a3b8' } }, closeRate ? closeRate + '%' : '—')
-      );
-    }),
-    e('tr', { style: { borderTop: '2px solid #e2e8f0', background: 'rgba(15,118,110,0.04)' } },
-      e('td', { style: { padding: '9px 12px', fontWeight: 700, color: '#1e293b' } }, 'Total'),
-      e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, '63'),
-      e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, '17'),
-      e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, '9'),
-      e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ca8a04' } }, '14.3%')
-    )
-  ))),
-  e('div', {
-    className: 'card',
-    style: {}
-  }, e('div', {
-    className: 'section-title'
-  }, e('span', {
-    className: 'dot',
-    style: { backgroundColor: teal }
-  }), '2026 YTD New Revenue by Source'),
-  e('table', {
-    style: { width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }
-  }, e('thead', null, e('tr', null,
-    e('th', { style: { textAlign: 'left', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Source'),
-    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Pitches'),
-    e('th', { style: { textAlign: 'center', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Deals'),
-    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Revenue'),
-    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, 'Close Rate'),
-    e('th', { style: { textAlign: 'right', padding: '8px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#64748b', borderBottom: '2px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.06em' } }, '% of Total')
-  )),
-  e('tbody', null,
-    ...[
-      { source: 'Web Lead',          deals: 5, revenue: 24112, pitches: 14 },
-      { source: 'Employee Referral', deals: 4, revenue: 9382,  pitches: 11 },
-      { source: 'Upsell',            deals: 5, revenue: 8750,  pitches: 13 },
-      { source: 'Revenue Transfer',  deals: 2, revenue: 6750,  pitches: 4  },
-      { source: 'Digital Audit',     deals: 3, revenue: 4850,  pitches: 99 },
-      { source: 'Customer Referral', deals: 1, revenue: 2000,  pitches: 7  },
-      { source: 'OB Sales',          deals: 1, revenue: 1000,  pitches: 0  },
-    ].map((row, i) => {
-      const total = 56844;
-      const pct = (row.revenue / total * 100).toFixed(1);
-      const closeRate = row.pitches > 0 ? (row.deals / row.pitches * 100).toFixed(1) : '—';
-      return e('tr', { key: i, style: { background: i % 2 === 0 ? 'rgba(248,250,252,0.6)' : 'transparent' } },
-        e('td', { style: { padding: '9px 12px', fontWeight: 500, color: '#1e293b' } }, row.source),
-        e('td', { style: { padding: '9px 12px', textAlign: 'center', color: '#64748b', fontWeight: 500 } }, row.pitches),
-        e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, row.deals),
-        e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: teal } }, '$' + row.revenue.toLocaleString()),
-        e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: closeRate >= 20 ? '#16a34a' : closeRate >= 10 ? '#ca8a04' : '#dc2626' } }, closeRate + '%'),
-        e('td', { style: { padding: '9px 12px', textAlign: 'right', color: '#64748b', fontWeight: 500 } }, pct + '%')
-      );
-    })
-  ),
-  e('tfoot', null, e('tr', { style: { borderTop: '2px solid #e2e8f0' } },
-    e('td', { style: { padding: '9px 12px', fontWeight: 700, color: '#1e293b' } }, 'Total'),
-    e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b' } }, '149'),
-    e('td', { style: { padding: '9px 12px', textAlign: 'center', fontWeight: 700, color: '#1e293b' } }, '21'),
-    e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 800, color: teal } }, '$56,844'),
-    e('td', { style: { padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#1e293b' } }, '14.1%'),
-    e('td', { style: { padding: '9px 12px', textAlign: 'right', color: '#64748b' } }, '100%')
-  ))))),
-  // Row 4: Deal Detail Toggle + Deal Lists
-  e('div', {
-    style: {
-      marginBottom: '16px'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '12px'
-    }
-  }, e('span', {
-    style: {
-      fontSize: '0.9rem',
-      fontWeight: 600,
-      color: '#1e293b'
-    }
-  }, 'Deal Detail'), e('button', {
-    className: 'toggle-btn' + (showDealDetail ? ' active' : ''),
-    onClick: () => setShowDealDetail(!showDealDetail)
-  }, showDealDetail ? 'Hide Deal Detail' : 'Show Deal Detail')), showDealDetail && e('div', {
-    className: 'row row-2'
-  },
-  // MRR Sales
-  e('div', {
-    className: 'card'
-  }, e('div', {
-    className: 'section-title'
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: teal
-    }
-  }), 'March MRR Sales'), mrrDeals.map((deal, i) => e('div', {
-    key: i,
-    className: 'deal-item'
-  }, e('div', {
-    style: {
-      display: 'flex',
-      alignItems: 'flex-start'
-    }
-  }, e('div', {
-    className: 'deal-num bg-teal-light text-teal'
-  }, i + 1), e('div', {
-    className: 'deal-info'
-  }, e('div', {
-    className: 'deal-name'
-  }, deal.name), e('div', {
-    className: 'deal-source'
-  }, deal.source), deal.psm && e('div', {
-    className: 'deal-meta'
-  }, '📋 ', deal.psm))), e('div', {
-    className: 'deal-amount text-teal'
-  }, '$' + deal.amount.toLocaleString()))),
-  // Total row
-  e('div', {
-    className: 'total-row'
-  }, e('span', {
-    className: 'total-label'
-  }, 'Total MRR'), e('span', {
-    className: 'total-value text-teal'
-  }, '$24,712'))),
-  // Project Sales
-  e('div', {
-    className: 'card'
-  }, e('div', {
-    className: 'section-title'
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: maroon
-    }
-  }), 'March Project Sales'), projectDeals.map((deal, i) => e('div', {
-    key: i,
-    className: 'deal-item'
-  }, e('div', {
-    style: {
-      display: 'flex',
-      alignItems: 'flex-start'
-    }
-  }, e('div', {
-    className: 'deal-num bg-maroon-light text-maroon'
-  }, i + 1), e('div', {
-    className: 'deal-info'
-  }, e('div', {
-    className: 'deal-name'
-  }, deal.name), e('div', {
-    className: 'deal-source'
-  }, deal.source), deal.psm && e('div', {
-    className: 'deal-meta'
-  }, '📋 ', deal.psm, deal.vp ? '  ' + deal.vp : ''))), e('div', {
-    className: 'deal-amount text-maroon'
-  }, '$' + deal.amount.toLocaleString()))),
-  // Total row
-  e('div', {
-    className: 'total-row'
-  }, e('span', {
-    className: 'total-label'
-  }, 'Total Project'), e('span', {
-    className: 'total-value text-maroon'
-  }, '$14,000')))))), activeTab === 'ss' && e('div', null,
-  e('div', { className: 'grid-2', style: { marginBottom: '16px' } },
-    e('div', { className: 'card' },
-      e('h3', { className: 'section-title' },
-        e('span', { className: 'dot', style: { backgroundColor: teal } }),
-        'What Went Right'
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(13,148,136,0.05)', border: '1px solid rgba(13,148,136,0.15)', marginBottom: '10px' } },
-        e('h4', { className: 'insight-title' }, '14.3% Close Rate on Pitches (9 Won / 63 Held)'),
-        e('p', { className: 'insight-text' }, 'Closed 9 of 63 pitches. The correct measure of close rate is Won divided by Total Pitches Held. Strong deal quality across a diversified source mix.')
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(13,148,136,0.05)', border: '1px solid rgba(13,148,136,0.15)', marginBottom: '10px' } },
-        e('h4', { className: 'insight-title' }, 'MRR Jumped 54% MoM'),
-        e('p', { className: 'insight-text' }, '$24,712 in new MRR is our strongest month in 4 months, with the selling week still open through EOD March 13.')
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(13,148,136,0.05)', border: '1px solid rgba(13,148,136,0.15)', marginBottom: '10px' } },
-        e('h4', { className: 'insight-title' }, 'Adam Now Focused on Selling Support'),
-        e('p', { className: 'insight-text' }, 'With a Sr. Paid resource now in place, Adam can dedicate more time to selling support -- a structural upgrade that should directly increase deal velocity and revenue.')
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(13,148,136,0.05)', border: '1px solid rgba(13,148,136,0.15)', marginBottom: '10px' } },
-        e('h4', { className: 'insight-title' }, 'IPMs Identified the Right Digital Audit Opps'),
-        e('p', { className: 'insight-text' }, 'Overall Digital Audit volume was down, but the IPMs did a great job identifying key opportunities and allowing Doug to be effective on those calls -- 3 closed deals came directly from Digital Audits.')
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(13,148,136,0.05)', border: '1px solid rgba(13,148,136,0.15)', marginBottom: '10px' } },
-        e('h4', { className: 'insight-title' }, 'Diversified Source Mix'),
-        e('p', { className: 'insight-text' }, 'Closed revenue came from Web Leads, Employee Referrals, Digital Audits, and Upsell -- no single source dependency.')
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(13,148,136,0.05)', border: '1px solid rgba(13,148,136,0.15)' } },
-        e('h4', { className: 'insight-title' }, 'HatLaunch -- $12,000 MRR via Web Lead'),
-        e('p', { className: 'insight-text' }, "Our largest single deal this month came through an inbound web lead, proving high-value opps don't require outbound-only sourcing.")
-      )
-    ),
-    e('div', { className: 'card' },
-      e('h3', { className: 'section-title' },
-        e('span', { className: 'dot', style: { backgroundColor: orange } }),
-        'What Went Wrong'
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(244,111,10,0.05)', border: '1px solid rgba(244,111,10,0.15)', marginBottom: '10px' } },
-        e('h4', { className: 'insight-title' }, 'Digital Audit Pitch Volume Down'),
-        e('p', { className: 'insight-text', style: { fontWeight: 600, marginBottom: '4px' } }, 'RealClean / Software Advice / Stratus'),
-        e('p', { className: 'insight-text' }, 'These three account types are driving the most declines and exemptions. ~30 YTD accounts marked "Declined" -- early read is some may be duplicate pages incorrectly flagged. Tyler is investigating. This ties directly to the IPM comp plan and SDR initiative -- fixing classification and pipeline quality here is a priority.')
-      ),
-      e('div', { className: 'insight-card', style: { backgroundColor: 'rgba(244,111,10,0.05)', border: '1px solid rgba(244,111,10,0.15)' } },
-        e('h4', { className: 'insight-title' }, 'Upsell Opportunities Undertapped'),
-        e('p', { className: 'insight-text', style: { fontWeight: 600, marginBottom: '4px' } }, 'OB Team / Sapper'),
-        e('p', { className: 'insight-text' }, 'As a division, we need a more systematic approach to identifying upsell-eligible accounts. Currently working with the OB team to surface opps and continuing to work through the pipeline with Sapper.')
-      )
-    )
-  ),
-  e('div', { className: 'card' },
-    e('h3', { className: 'section-title' },
-      e('span', { className: 'dot', style: { backgroundColor: maroon } }),
-      'Execution Plan to Hit $30k MRR Consistently'
-    ),
-    e('p', { style: { fontSize: '0.8rem', color: '#64748b', marginBottom: '16px' } }, 'Strategic initiatives to sustain and grow monthly recurring revenue'),
-    e('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' } },
-      e('div', { style: { background: '#f8fafc', borderRadius: '8px', padding: '14px', border: '1px solid #e2e8f0' } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' } },
-          e('span', { style: { width: '24px', height: '24px', borderRadius: '50%', background: teal, color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, '1'),
-          e('span', { style: { fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' } }, 'Adam -- Selling Support Focus')
-        ),
-        e('p', { style: { fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.5 } }, "With a Sr. Paid resource now in place, Adam shifts focus toward selling support. This directly increases Doug's capacity to close and expands the team's ability to move deals through the pipeline faster.")
-      ),
-      e('div', { style: { background: '#f8fafc', borderRadius: '8px', padding: '14px', border: '1px solid #e2e8f0' } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' } },
-          e('span', { style: { width: '24px', height: '24px', borderRadius: '50%', background: teal, color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, '2'),
-          e('span', { style: { fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' } }, 'IPM Comp Plan -- Build the SDR Engine')
-        ),
-        e('p', { style: { fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.5 } }, 'The new comp plan Tyler is rolling out positions IPMs as inbound SDRs targeting our current client base. The potential here is MAJOR -- a properly incentivized IPM team is the highest-leverage move we have for sustained $30k+ months.')
-      ),
-      e('div', { style: { background: '#f8fafc', borderRadius: '8px', padding: '14px', border: '1px solid #e2e8f0' } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' } },
-          e('span', { style: { width: '24px', height: '24px', borderRadius: '50%', background: teal, color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, '3'),
-          e('span', { style: { fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' } }, 'Fix the Digital Audit Decline')
-        ),
-        e('p', { style: { fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.5 } }, 'Goes hand-in-hand with the IPM initiative. Diagnose why RealClean, Software Advice, and Stratus are declining at a high rate, clean up the "Declined" classification issue, and restore audit pipeline volume.')
-      ),
-      e('div', { style: { background: '#f8fafc', borderRadius: '8px', padding: '14px', border: '1px solid #e2e8f0' } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' } },
-          e('span', { style: { width: '24px', height: '24px', borderRadius: '50%', background: teal, color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, '4'),
-          e('span', { style: { fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' } }, 'Close the Final Week Strong')
-        ),
-        e('p', { style: { fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.5 } }, 'Push the 8 open proposals through by EOD March 13. Prioritize any deal that can be structured before week-end to hit or exceed $30k MRR for March.')
-      ),
-      e('div', { style: { background: '#f8fafc', borderRadius: '8px', padding: '14px', border: '1px solid #e2e8f0' } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' } },
-          e('span', { style: { width: '24px', height: '24px', borderRadius: '50%', background: teal, color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, '5'),
-          e('span', { style: { fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' } }, 'Activate the Upsell Channel')
-        ),
-        e('p', { style: { fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.5 } }, 'Partner with the OB team and Sapper to systematically identify upsell-eligible accounts. Build a recurring process -- not a one-off effort -- so Upsell becomes a reliable MRR source every month.')
-      ),
-      e('div', { style: { background: '#f8fafc', borderRadius: '8px', padding: '14px', border: '1px solid #e2e8f0' } },
-        e('div', { style: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' } },
-          e('span', { style: { width: '24px', height: '24px', borderRadius: '50%', background: teal, color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, '6'),
-          e('span', { style: { fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' } }, 'Protect the Web Lead Channel')
-        ),
-        e('p', { style: { fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.5 } }, 'HatLaunch proved that web leads can produce high-value, diversified deals. Continue investing in and responding quickly to inbound web leads as a high-ROI source that complements outbound efforts.')
-      )
-    )
-  )), activeTab === 'rr' && e('div', null,
-  // Executive Retention Header
-  function () {
-    var rollingAvg = 97.7;
-    var target = 97.5;
-    var variance = rollingAvg - target;
-    var aboveTarget = '#0d9488';
-    var atRisk = '#d97706';
-    var belowTarget = '#dc2626';
-    var statusLabel = rollingAvg >= target ? 'Above Target \u2013 Stable' : rollingAvg >= target - 0.5 ? 'At Risk \u2013 Monitor' : 'Below Target \u2013 Action Required';
-    var statusColor = rollingAvg >= target ? aboveTarget : rollingAvg >= target - 0.5 ? atRisk : belowTarget;
-    var varianceLabel = (variance >= 0 ? '+' : '') + variance.toFixed(1) + '% ' + (variance >= 0 ? 'above' : 'below') + ' target';
-    var varianceColor = variance >= 0 ? aboveTarget : variance >= -0.5 ? atRisk : belowTarget;
-    return e('div', {
-      style: {
-        background: '#0f172a',
-        borderRadius: '12px',
-        overflow: 'hidden',
-        marginBottom: '24px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.15)'
-      }
-    },
-    // Top accent line
-    e('div', {
-      style: {
-        height: '3px',
-        background: 'linear-gradient(90deg, ' + statusColor + ', ' + statusColor + '88, transparent)'
-      }
-    }),
-    // Content
-    e('div', {
-      style: {
-        padding: '22px 28px'
-      }
-    },
-    // Row 1: Title + verdict badge
-    e('div', {
-      style: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '6px',
-        flexWrap: 'wrap',
-        gap: '8px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.65rem',
-        fontWeight: 600,
-        color: '#64748b',
-        textTransform: 'uppercase',
-        letterSpacing: '0.18em'
-      }
-    }, 'Retention Status \u2013 February 2026'), e('div', {
-      style: {
-        fontSize: '0.7rem',
-        fontWeight: 600,
-        color: statusColor,
-        backgroundColor: statusColor + '18',
-        padding: '5px 16px',
-        borderRadius: '4px',
-        letterSpacing: '0.04em'
-      }
-    }, statusLabel)),
-    // Row 2: Overall Position
-    e('div', {
-      style: {
-        fontSize: '1.05rem',
-        fontWeight: 500,
-        color: '#cbd5e1',
-        marginBottom: '20px'
-      }
-    }, 'Overall Position: ', e('span', {
-      style: {
-        color: '#e2e8f0',
-        fontWeight: 700
-      }
-    }, 'Stable'), e('span', {
-      style: {
-        color: '#94a3b8',
-        fontWeight: 400
-      }
-    }, ' with '), e('span', {
-      style: {
-        color: atRisk,
-        fontWeight: 600
-      }
-    }, 'moderate volatility')),
-    // Divider
-    e('div', {
-      style: {
-        height: '1px',
-        backgroundColor: '#1e293b',
-        marginBottom: '18px'
-      }
-    }),
-    // Metrics row
-    e('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '0',
-        flexWrap: 'wrap'
-      }
-    },
-    // Rolling Avg
-    e('div', {
-      style: {
-        flex: '1 1 auto',
-        minWidth: '100px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.58rem',
-        fontWeight: 600,
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginBottom: '6px'
-      }
-    }, 'Rolling 3-Mo Avg'), e('div', {
-      style: {
-        fontSize: '1.5rem',
-        fontWeight: 800,
-        color: statusColor,
-        letterSpacing: '-0.02em'
-      }
-    }, rollingAvg.toFixed(1) + '%')),
-    // Target
-    e('div', {
-      style: {
-        flex: '1 1 auto',
-        minWidth: '80px',
-        borderLeft: '1px solid #1e293b',
-        paddingLeft: '20px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.58rem',
-        fontWeight: 600,
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginBottom: '6px'
-      }
-    }, 'Target'), e('div', {
-      style: {
-        fontSize: '1.5rem',
-        fontWeight: 800,
-        color: '#cbd5e1',
-        letterSpacing: '-0.02em'
-      }
-    }, target.toFixed(1) + '%')),
-    // Variance
-    e('div', {
-      style: {
-        flex: '1.5 1 auto',
-        minWidth: '140px',
-        borderLeft: '1px solid #1e293b',
-        paddingLeft: '20px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.58rem',
-        fontWeight: 600,
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginBottom: '6px'
-      }
-    }, 'Variance'), e('div', {
-      style: {
-        fontSize: '1.5rem',
-        fontWeight: 800,
-        color: varianceColor,
-        letterSpacing: '-0.02em'
-      }
-    }, varianceLabel)),
-    // Churn Pressure
-    e('div', {
-      style: {
-        flex: '1 1 auto',
-        minWidth: '100px',
-        borderLeft: '1px solid #1e293b',
-        paddingLeft: '20px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.58rem',
-        fontWeight: 600,
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginBottom: '6px'
-      }
-    }, 'Churn Pressure'), e('div', {
-      style: {
-        fontSize: '1rem',
-        fontWeight: 700,
-        color: atRisk
-      }
-    }, 'Moderate')),
-    // Peak Churn Window
-    e('div', {
-      style: {
-        flex: '1 1 auto',
-        minWidth: '110px',
-        borderLeft: '1px solid #1e293b',
-        paddingLeft: '20px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.58rem',
-        fontWeight: 600,
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginBottom: '6px'
-      }
-    }, 'Peak Churn Window'), e('div', {
-      style: {
-        fontSize: '1rem',
-        fontWeight: 700,
-        color: '#94a3b8'
-      }
-    }, '12\u201318 Months')),
-    // Early Churn
-    e('div', {
-      style: {
-        flex: '1 1 auto',
-        minWidth: '80px',
-        borderLeft: '1px solid #1e293b',
-        paddingLeft: '20px'
-      }
-    }, e('div', {
-      style: {
-        fontSize: '0.58rem',
-        fontWeight: 600,
-        color: '#475569',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginBottom: '6px'
-      }
-    }, 'Early Churn (<6mo)'), e('div', {
-      style: {
-        fontSize: '1rem',
-        fontWeight: 700,
-        color: aboveTarget
-      }
-    }, '1 Case')))));
-  }(), e('div', null,
-  // Row 1: Churn Pressure + Trend Sparkline
-  e('div', {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 2fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, e('div', {
-    className: 'card',
-    style: {
-      padding: '20px'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '12px'
-    }
-  }, 'Churn Pressure Index'), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '10px'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }
-  }, e('span', {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, 'Retention Health'), e('span', {
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: 700,
-      color: '#16a34a',
-      backgroundColor: 'rgba(22,163,74,0.1)',
-      padding: '2px 10px',
-      borderRadius: '10px'
-    }
-  }, '\u{1F7E2} Stable')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }
-  }, e('span', {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, 'Churn Pressure'), e('span', {
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: 700,
-      color: '#ca8a04',
-      backgroundColor: 'rgba(202,138,4,0.1)',
-      padding: '2px 10px',
-      borderRadius: '10px'
-    }
-  }, '\u{1F7E1} Moderate')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }
-  }, e('span', {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, 'Lifecycle Risk'), e('span', {
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: 700,
-      color: '#ca8a04',
-      backgroundColor: 'rgba(202,138,4,0.1)',
-      padding: '2px 10px',
-      borderRadius: '10px'
-    }
-  }, '12\u201318 mo cohort')))), e('div', {
-    className: 'card',
-    style: {
-      padding: '20px'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '12px'
-    }
-  }, 'Retention Trend'), e('div', {
-    style: {
-      position: 'relative',
-      height: '140px'
-    }
-  }, e('svg', {
-    viewBox: '0 0 300 80',
-    style: {
-      width: '100%',
-      height: '100%'
-    }
-  }, e('line', {
-    x1: 0,
-    y1: 23,
-    x2: 300,
-    y2: 23,
-    stroke: '#e2e8f0',
-    strokeWidth: 1,
-    strokeDasharray: '4,4'
-  }), e('defs', null, e('linearGradient', {
-    id: 'retGrad',
-    x1: 0,
-    y1: 0,
-    x2: 0,
-    y2: 1
-  }, e('stop', {
-    offset: '0%',
-    stopColor: '#ca8a04',
-    stopOpacity: 0.15
-  }), e('stop', {
-    offset: '100%',
-    stopColor: '#ca8a04',
-    stopOpacity: 0.02
-  }))), e('path', {
-    d: 'M 37 36.8 L 112 54.4 L 187 17.6 L 262 43.2 L 262 80 L 37 80 Z',
-    fill: 'url(#retGrad)'
-  }), e('polyline', {
-    points: '37,36.8 112,54.4 187,17.6 262,43.2',
-    fill: 'none',
-    stroke: '#ca8a04',
-    strokeWidth: 2.5,
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round'
-  }), e('circle', {
-    cx: 37,
-    cy: 36.8,
-    r: 4,
-    fill: '#fff',
-    stroke: '#ca8a04',
-    strokeWidth: 2
-  }), e('circle', {
-    cx: 112,
-    cy: 54.4,
-    r: 4,
-    fill: '#fff',
-    stroke: '#dc2626',
-    strokeWidth: 2
-  }), e('circle', {
-    cx: 187,
-    cy: 17.6,
-    r: 4,
-    fill: '#fff',
-    stroke: '#16a34a',
-    strokeWidth: 2
-  }), e('circle', {
-    cx: 262,
-    cy: 43.2,
-    r: 4,
-    fill: '#fff',
-    stroke: '#ca8a04',
-    strokeWidth: 2
-  }), e('text', {
-    x: 37,
-    y: 75,
-    fill: '#94a3b8',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 500
-  }, 'Jan'), e('text', {
-    x: 112,
-    y: 75,
-    fill: '#94a3b8',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 500
-  }, 'Feb'), e('text', {
-    x: 187,
-    y: 75,
-    fill: '#94a3b8',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 500
-  }, 'Mar'), e('text', {
-    x: 262,
-    y: 75,
-    fill: '#94a3b8',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 500
-  }, 'Apr'), e('text', {
-    x: 37,
-    y: 28,
-    fill: '#475569',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 700
-  }, '97.7%'), e('text', {
-    x: 112,
-    y: 48,
-    fill: '#dc2626',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 700
-  }, '96.6%'), e('text', {
-    x: 187,
-    y: 11,
-    fill: '#16a34a',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 700
-  }, '98.9%'), e('text', {
-    x: 262,
-    y: 37,
-    fill: '#475569',
-    fontSize: '9',
-    textAnchor: 'middle',
-    fontWeight: 700
-  }, '97.3%'))), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginTop: '4px'
-    }
-  }, e('span', {
-    style: {
-      fontSize: '0.65rem',
-      color: '#94a3b8'
-    }
-  }, 'Dashed line = 97.7% target'), e('span', {
-    style: {
-      fontSize: '0.65rem',
-      color: '#ca8a04',
-      fontWeight: 600
-    }
-  }, '\u{1F7E1} Volatile \u2014 no clear direction')))),
-  // Monthly Retention Cards (Retention-first hierarchy)
-  e('div', {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      borderTop: '3px solid ' + teal
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      color: '#64748b',
-      marginBottom: '4px'
-    }
-  }, 'January 2026'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#1e293b',
-      marginBottom: '8px'
-    }
-  }, '97.7%'), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-      fontSize: '0.75rem'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Net Impact'), e('span', {
-    style: {
-      color: '#dc2626',
-      fontWeight: 600
-    }
-  }, '-$12,321')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Starting MRR'), e('span', {
-    style: {
-      color: '#475569',
-      fontWeight: 600
-    }
-  }, '$496,180')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'New Sales'), e('span', {
-    style: {
-      color: '#16a34a',
-      fontWeight: 600
-    }
-  }, '+$16,041')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Ending MRR'), e('span', {
-    style: {
-      color: '#475569',
-      fontWeight: 600
-    }
-  }, '$499,800')))), e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      borderTop: '3px solid #dc2626'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      color: '#64748b',
-      marginBottom: '4px'
-    }
-  }, 'February 2026'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#dc2626',
-      marginBottom: '8px'
-    }
-  }, '96.6%'), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-      fontSize: '0.75rem'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Net Impact'), e('span', {
-    style: {
-      color: '#dc2626',
-      fontWeight: 600
-    }
-  }, '-$18,694')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Starting MRR'), e('span', {
-    style: {
-      color: '#475569',
-      fontWeight: 600
-    }
-  }, '$499,800')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'New Sales'), e('span', {
-    style: {
-      color: '#16a34a',
-      fontWeight: 600
-    }
-  }, '+$22,091')), e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Ending MRR'), e('span', {
-    style: {
-      color: '#475569',
-      fontWeight: 600
-    }
-  }, '$490,881')))), e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      borderTop: '3px solid #16a34a'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      color: '#64748b',
-      marginBottom: '4px'
-    }
-  }, 'March 2026'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#16a34a',
-      marginBottom: '8px'
-    }
-  }, '98.9%'), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-      fontSize: '0.75rem'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Net Impact'), e('span', {
-    style: {
-      color: '#dc2626',
-      fontWeight: 600
-    }
-  }, '-$5,975')))), e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      borderTop: '3px solid #ca8a04'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      color: '#64748b',
-      marginBottom: '4px'
-    }
-  }, 'April 2026'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#ca8a04',
-      marginBottom: '8px'
-    }
-  }, '97.3%'), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '4px',
-      fontSize: '0.75rem'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between'
-    }
-  }, e('span', {
-    style: {
-      color: '#94a3b8'
-    }
-  }, 'Net Impact'), e('span', {
-    style: {
-      color: '#dc2626',
-      fontWeight: 600
-    }
-  }, '-$14,025'))))),
-  // Lifecycle Context - Row 1
-  e('div', {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '12px'
-    }
-  }, e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      textAlign: 'center',
-      borderTop: '3px solid ' + maroon
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '4px'
-    }
-  }, 'Active Accounts'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#1e293b'
-    }
-  }, '211'), e('div', {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b'
-    }
-  }, 'Total inbound portfolio')), e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      textAlign: 'center',
-      borderTop: '3px solid ' + teal
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '4px'
-    }
-  }, 'Avg Client Tenure'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#1e293b'
-    }
-  }, '2.1 yrs'), e('div', {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b'
-    }
-  }, 'Weighted avg across all DSMs')), e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      textAlign: 'center',
-      borderTop: '3px solid ' + teal
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '4px'
-    }
-  }, 'Avg Months to Cancel'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#1e293b'
-    }
-  }, '21.8'), e('div', {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b'
-    }
-  }, 'Across all churned accounts'))),
-  // Lifecycle Context - Row 2
-  e('div', {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginBottom: '20px'
-    }
-  }, e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      textAlign: 'center',
-      borderTop: '3px solid #ca8a04'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '4px'
-    }
-  }, 'Peak Churn Window'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#ca8a04'
-    }
-  }, '12\u201318 mo'), e('div', {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b'
-    }
-  }, 'Highest cancellation concentration')), e('div', {
-    className: 'card',
-    style: {
-      padding: '16px',
-      textAlign: 'center',
-      borderTop: '3px solid #0d9488'
-    }
-  }, e('div', {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.1em',
-      marginBottom: '4px'
-    }
-  }, 'Early Churn Rate (<6mo)'), e('div', {
-    style: {
-      fontSize: '1.8rem',
-      fontWeight: 800,
-      color: '#0d9488'
-    }
-  }, '1 case'), e('div', {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b'
-    }
-  }, 'Isolated \u2014 not systemic'))),
-  // Executive-Level Churn Analysis
-  e('div', {
-    className: 'card'
-  }, e('div', {
-    className: 'retention-header',
-    style: {
-      marginBottom: '16px'
-    }
-  }, e('h3', {
-    className: 'section-title',
-    style: {
-      marginBottom: 0
-    }
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: maroon
-    }
-  }), 'Executive Summary: Churn & Retention Analysis')), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '14px'
-    }
-  }, e('div', {
-    style: {
-      padding: '14px 16px',
-      backgroundColor: '#f8fafc',
-      borderRadius: '8px',
-      borderLeft: '3px solid ' + teal
-    }
-  }, e('div', {
-    style: {
-      fontWeight: 700,
-      color: '#1e293b',
-      fontSize: '0.85rem',
-      marginBottom: '4px'
-    }
-  }, 'Churn Timing'), e('div', {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569',
-      lineHeight: '1.5'
-    }
-  }, 'Inbound churn is not driven by early onboarding breakdowns. The majority of churn occurs between 12\u201318 months, suggesting lifecycle value perception and renewal positioning are the primary friction points.')), e('div', {
-    style: {
-      padding: '14px 16px',
-      backgroundColor: '#f8fafc',
-      borderRadius: '8px',
-      borderLeft: '3px solid ' + orange
-    }
-  }, e('div', {
-    style: {
-      fontWeight: 700,
-      color: '#1e293b',
-      fontSize: '0.85rem',
-      marginBottom: '4px'
-    }
-  }, 'Revenue Lifespan'), e('div', {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569',
-      lineHeight: '1.5'
-    }
-  }, 'Average revenue lifespan across churned accounts is approximately 2 years. One early-stage churn case (Nicholas) represents isolated onboarding exposure, not systemic failure.')), e('div', {
-    style: {
-      padding: '14px 16px',
-      backgroundColor: '#f8fafc',
-      borderRadius: '8px',
-      borderLeft: '3px solid ' + maroon
-    }
-  }, e('div', {
-    style: {
-      fontWeight: 700,
-      color: '#1e293b',
-      fontSize: '0.85rem',
-      marginBottom: '4px'
-    }
-  }, 'Portfolio Risk Profile'), e('div', {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569',
-      lineHeight: '1.5'
-    }
-  }, "The largest exposure risk sits within Jacob\u2019s portfolio due to volume concentration, while John demonstrates the strongest long-term durability profile.")), e('div', {
-    style: {
-      padding: '14px 16px',
-      backgroundColor: 'rgba(20,184,166,0.05)',
-      borderRadius: '8px',
-      border: '1px solid rgba(20,184,166,0.2)'
-    }
-  }, e('div', {
-    style: {
-      fontWeight: 700,
-      color: '#1e293b',
-      fontSize: '0.85rem',
-      marginBottom: '8px'
-    }
-  }, '2026 Retention Strategy Focus'), e('div', {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '6px'
-    }
-  }, e('div', {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, e('span', {
-    style: {
-      width: '6px',
-      height: '6px',
-      borderRadius: '50%',
-      backgroundColor: teal,
-      flexShrink: 0
-    }
-  }), 'Renewal reinforcement at 10\u201314 months'), e('div', {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, e('span', {
-    style: {
-      width: '6px',
-      height: '6px',
-      borderRadius: '50%',
-      backgroundColor: teal,
-      flexShrink: 0
-    }
-  }), 'Proactive lifecycle value audits'), e('div', {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, e('span', {
-    style: {
-      width: '6px',
-      height: '6px',
-      borderRadius: '50%',
-      backgroundColor: teal,
-      flexShrink: 0
-    }
-  }), 'Targeted stabilization of mid-tenure accounts'))))))), activeTab === 'ra' && e('div', null,
-  // DSM Performance Overview - moved to top
-  e('div', {
-    className: 'card',
-    style: {
-      marginBottom: '20px'
-    }
-  }, e('div', {
-    className: 'retention-header'
-  }, e('h3', {
-    className: 'section-title',
-    style: {
-      marginBottom: 0
-    }
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: maroon
-    }
-  }), 'DSM Performance Overview'), e('div', {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b',
-      fontStyle: 'italic'
-    }
-  }, 'Portfolio, tenure, churn history, and 2026 YTD retention')), e('div', {
-    style: {
-      overflowX: 'auto'
-    }
-  }, e('table', {
-    style: {
-      width: '100%',
-      minWidth: '700px'
-    }
-  }, e('thead', null, e('tr', {
-    style: {
-      borderBottom: '2px solid #e2e8f0'
-    }
-  }, e('th', {
-    style: {
-      textAlign: 'left',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'DSM'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Clients'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Avg Tenure'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Cancels'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Avg Mo to Cancel'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Median Mo'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em',
-      borderLeft: '2px solid #e2e8f0'
-    }
-  }, '2026 YTD Avg'))), e('tbody', null, cancelByDsmData.map(function (row, idx) {
-    var tenureColor = row.avgYears === null ? '#94a3b8' : row.avgYears >= 3 ? '#0d9488' : row.avgYears >= 1 ? '#475569' : '#d97706';
-    var cancelColor = row.avgMonths === null ? '#94a3b8' : row.avgMonths >= 18 ? '#0d9488' : row.avgMonths >= 12 ? '#475569' : '#d97706';
-    var medianColor = row.medianMonths === null ? '#94a3b8' : row.medianMonths >= 18 ? '#0d9488' : row.medianMonths >= 12 ? '#475569' : '#d97706';
-    var ytdColor = row.ytd2026 === null ? '#94a3b8' : row.ytd2026 >= 100 ? '#0d9488' : row.ytd2026 >= 97 ? '#475569' : row.ytd2026 >= 95 ? '#d97706' : '#dc2626';
-    return e('tr', {
-      key: idx,
-      style: {
-        borderBottom: '1px solid #f1f5f9',
-        backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#fff'
-      }
-    }, e('td', {
-      style: {
-        padding: '10px 12px',
-        fontWeight: 600,
-        color: '#1e293b',
-        fontSize: '0.85rem'
-      }
-    }, row.name), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 12px',
-        fontWeight: 600,
-        color: row.clients ? '#1e293b' : '#94a3b8'
-      }
-    }, row.clients || '\u2014'), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 12px',
-        fontWeight: 700,
-        color: tenureColor
-      }
-    }, row.avgYears ? row.avgYears.toFixed(2) + ' yrs' : '\u2014'), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 12px',
-        fontWeight: 700,
-        color: row.cancels > 0 ? '#1e293b' : '#94a3b8'
-      }
-    }, row.cancels || '\u2014'), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 12px',
-        fontWeight: 700,
-        color: cancelColor
-      }
-    }, row.avgMonths ? row.avgMonths.toFixed(1) + ' mo' : '\u2014'), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 12px',
-        fontWeight: 700,
-        color: medianColor
-      }
-    }, row.medianMonths ? row.medianMonths.toFixed(1) + ' mo' : '\u2014'), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 12px',
-        fontWeight: 800,
-        color: ytdColor,
-        borderLeft: '2px solid #f1f5f9',
-        fontSize: '0.9rem'
-      }
-    }, row.ytd2026 ? row.ytd2026.toFixed(1) + '%' : '\u2014'));
-  })), e('tfoot', null, e('tr', {
-    style: {
-      borderTop: '2px solid #cbd5e1',
-      backgroundColor: '#f1f5f9'
-    }
-  }, e('td', {
-    style: {
-      padding: '10px 12px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, 'Portfolio Avg'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '211'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '2.1 yrs'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '17'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '21.8 mo'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '18.9 mo'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 12px',
-      fontWeight: 800,
-      color: '#0d9488',
-      borderLeft: '2px solid #e2e8f0',
-      fontSize: '0.9rem'
-    }
-  }, '96.8%')))))), e('div', {
-    className: 'grid-2',
-    style: {
-      gap: '24px'
-    }
-  },
-  // 2026 Card (Priority)
-  e('div', {
-    className: 'card'
-  }, e('div', {
-    className: 'retention-header'
-  }, e('h3', {
-    className: 'section-title',
-    style: {
-      marginBottom: 0
-    }
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: orange
-    }
-  }), '2026 Retention by Account Manager'), e('div', {
-    className: 'retention-team-avg'
-  }, 'Team Average: ', e('strong', null, '97.6%'))), e('div', {
-    className: 'retention-list'
-  }, e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Henry Pfeil'), e('span', {
-    className: 'retention-rate excellent'
-  }, '102.3%'), e('span', {
-    className: 'retention-breakdown'
-  }, 'Jan: 101.3%, Feb: 103.4%')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Jacob Yarbrough'), e('span', {
-    className: 'retention-rate alert'
-  }, '95.96%'), e('span', {
-    className: 'retention-breakdown'
-  }, 'Jan: 100.4%, Feb: 90.9%, Mar: 95.02%, Apr: 97.5%')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'John Halcomb'), e('span', {
-    className: 'retention-rate alert'
-  }, '95.89%'), e('span', {
-    className: 'retention-breakdown'
-  }, 'Jan: 100.1%, Feb: 90%, Mar: 100%, Apr: 93.45%')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Brian Hoffman'), e('span', {
-    className: 'retention-rate alert'
-  }, '94.05%'), e('span', {
-    className: 'retention-breakdown'
-  }, 'Jan: 88.3%, Feb: 99.8%')))),
-  // 2025 Card (Reference)
-  e('div', {
-    className: 'card'
-  }, e('div', {
-    className: 'retention-header'
-  }, e('h3', {
-    className: 'section-title',
-    style: {
-      marginBottom: 0
-    }
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: teal
-    }
-  }), '2025 Retention by Account Manager'), e('div', {
-    className: 'retention-team-avg'
-  }, 'Team Average: ', e('strong', null, '97.9%'))), e('div', {
-    className: 'retention-list'
-  }, e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Jacob Yarbrough'), e('span', {
-    className: 'retention-rate excellent'
-  }, '98.75%')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Aaron Graue'), e('span', {
-    className: 'retention-rate excellent'
-  }, '98.3%')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Brian Hoffman'), e('span', {
-    className: 'retention-rate good'
-  }, '97.9%')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'John Halcomb'), e('span', {
-    className: 'retention-rate warning'
-  }, '96.8%')), e('div', {
-    className: 'retention-row inactive'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Dajah Ray'), e('span', {
-    className: 'retention-rate warning'
-  }, '96.7%'), e('span', {
-    className: 'retention-note'
-  }, 'no longer in role')), e('div', {
-    className: 'retention-row inactive'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Bryan Dykes'), e('span', {
-    className: 'retention-rate alert'
-  }, '95.5%'), e('span', {
-    className: 'retention-note'
-  }, 'no longer in role')), e('div', {
-    className: 'retention-row'
-  }, e('span', {
-    className: 'retention-name'
-  }, 'Henry Pfeil'), e('span', {
-    className: 'retention-rate na'
-  }, 'N/A'), e('span', {
-    className: 'retention-note'
-  }, 'Started in November'))))),
-  // Cancel Risk by Account Manager
-  e('div', {
-    className: 'card',
-    style: {
-      marginTop: '20px'
-    }
-  }, e('div', {
-    className: 'retention-header'
-  }, e('h3', {
-    className: 'section-title',
-    style: {
-      marginBottom: 0
-    }
-  }, e('span', {
-    className: 'dot',
-    style: {
-      backgroundColor: orange
-    }
-  }), 'Cancel Risk by Account Manager')), e('table', {
-    style: {
-      width: '100%'
-    }
-  }, e('thead', null, e('tr', {
-    style: {
-      borderBottom: '2px solid #e2e8f0'
-    }
-  }, e('th', {
-    style: {
-      textAlign: 'left',
-      padding: '10px 16px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Account Manager'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 16px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Accounts at Risk'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 16px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Total MRR at Risk'), e('th', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 16px',
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#64748b',
-      textTransform: 'uppercase',
-      letterSpacing: '0.05em'
-    }
-  }, 'Avg Chance of Cancel'))), e('tbody', null, [{
-    name: 'Matt Gilmore',
-    accounts: 18,
-    mrr: 34750,
-    chance: 20
-  }, {
-    name: 'Brian Hoffman',
-    accounts: 11,
-    mrr: 32259,
-    chance: 33
-  }, {
-    name: 'Henry Pfeil',
-    accounts: 10,
-    mrr: 30971,
-    chance: 38
-  }, {
-    name: 'John Halcomb',
-    accounts: 7,
-    mrr: 18130,
-    chance: 20
-  }, {
-    name: 'Aaron Graue',
-    accounts: 7,
-    mrr: 12727,
-    chance: 18
-  }, {
-    name: 'Jacob Yarbrough',
-    accounts: 4,
-    mrr: 11275,
-    chance: 44
-  }, {
-    name: 'Anna Walschleger',
-    accounts: 1,
-    mrr: 1545,
-    chance: 25
-  }].map(function (row, idx) {
-    var chanceColor = row.chance >= 40 ? '#dc2626' : row.chance >= 30 ? '#d97706' : '#475569';
-    return e('tr', {
-      key: idx,
-      style: {
-        borderBottom: '1px solid #f1f5f9',
-        backgroundColor: idx % 2 === 0 ? '#f8fafc' : '#fff'
-      }
-    }, e('td', {
-      style: {
-        padding: '10px 16px',
-        fontWeight: 600,
-        color: '#1e293b',
-        fontSize: '0.85rem'
-      }
-    }, row.name), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 16px',
-        fontWeight: 700,
-        color: '#1e293b'
-      }
-    }, row.accounts), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 16px',
-        fontWeight: 700,
-        color: '#1e293b'
-      }
-    }, '$' + row.mrr.toLocaleString()), e('td', {
-      style: {
-        textAlign: 'center',
-        padding: '10px 16px',
-        fontWeight: 700,
-        color: chanceColor
-      }
-    }, row.chance + '%'));
-  })), e('tfoot', null, e('tr', {
-    style: {
-      borderTop: '2px solid #cbd5e1',
-      backgroundColor: '#f1f5f9'
-    }
-  }, e('td', {
-    style: {
-      padding: '10px 16px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, 'Total'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 16px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '58'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 16px',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, '$141,657'), e('td', {
-    style: {
-      textAlign: 'center',
-      padding: '10px 16px',
-      fontWeight: 700,
-      color: '#475569'
-    }
-  }, '28% avg'))))),
-  // January MRM Completion
-  e('div', {
-    className: 'card',
-    style: {
-      marginTop: '20px'
-    }
-  }, e('div', {
-    className: 'mrm-completion'
-  }, e('span', {
-    className: 'mrm-label'
-  }, 'January MRM Completion'), e('span', {
-    className: 'mrm-value'
-  }, '91.2%')))), activeTab === 'fulfill' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(SubNav, {
-    items: foNav,
-    active: foSub,
-    onSelect: setFoSub
-  }), foSub === 'overview' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, heroKpi('MARCH TOTAL BILLING', fmt(grandTotal), '215 clients \u2014 182 active + 22 implementing'), kpiCard('WEBSITE & SEO CONTENT', fmt(441049), '86.4% of total revenue', 'Core product \u2014 Website + Ongoing SEO', 'neutral'), kpiCard('PPC MANAGEMENT', fmt(35677), '7.0% of total revenue', '35 active Google Ads accounts', 'neutral'), kpiCard('OTHER SERVICES', fmt(33030), '6.5% of total revenue', 'Social, Hosting, Backlinking, etc.', 'neutral')), /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: teal
-    }
-  }), "Revenue Breakdown by Service"), serviceSummary.map((s, i) => {
-    const pct = s.total / grandTotal * 100;
-    return /*#__PURE__*/React.createElement("div", {
-      key: i,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '10px 0',
-        borderBottom: i < serviceSummary.length - 1 ? '1px solid #f1f5f9' : 'none'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        width: '200px',
-        fontSize: '0.85rem',
-        fontWeight: 500,
-        color: '#334155'
-      }
-    }, s.service), /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1,
-        height: '20px',
-        background: '#f1f5f9',
-        borderRadius: '4px',
-        overflow: 'hidden'
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        height: '100%',
-        width: Math.max(pct, 0.5) + '%',
-        background: i === 0 ? teal : i === 1 ? maroon : '#94a3b8',
-        borderRadius: '4px'
-      }
-    })), /*#__PURE__*/React.createElement("span", {
-      style: {
-        width: '90px',
-        textAlign: 'right',
-        fontWeight: 700,
-        fontSize: '0.85rem'
-      }
-    }, fmt(s.total)), /*#__PURE__*/React.createElement("span", {
-      style: {
-        width: '48px',
-        textAlign: 'right',
-        fontSize: '0.75rem',
-        color: '#94a3b8'
-      }
-    }, pct.toFixed(1), "%"));
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '12px 0',
-      borderTop: '2px solid #e2e8f0',
-      marginTop: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '200px',
-      fontSize: '0.85rem',
-      fontWeight: 800
-    }
-  }, "Total"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '90px',
-      textAlign: 'right',
-      fontWeight: 800,
-      fontSize: '1rem'
-    }
-  }, fmt(grandTotal)), /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '48px',
-      textAlign: 'right',
-      fontSize: '0.75rem',
-      fontWeight: 700
-    }
-  }, "100%")))), foSub === 'seo' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, heroKpi('WEBSITE & SEO CONTENT REVENUE', fmt(441049), '86.4% of total \u2014 Core product'), kpiCard('WEBSITE + SEO', '161', '78% of SEO clients', 'We built the site + manage SEO', 'neutral'), kpiCard('SEO ONLY', '38', '19% of SEO clients', 'No website build contracted', 'neutral')), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: maroon
-    }
-  }), "Revenue by Digital Success Manager"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      color: '#64748b',
-      marginBottom: '12px'
-    }
-  }, "215 total clients across 8 DSMs"), dsmSummary.map((d, i) => {
-    const pct = d.revenue / dsmSummary[0].revenue * 100;
-    return /*#__PURE__*/React.createElement("div", {
-      key: i,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '8px 0',
-        borderBottom: i < dsmSummary.length - 1 ? '1px solid #f1f5f9' : 'none'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        width: '130px',
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        color: '#334155',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis'
-      }
-    }, d.name), /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1,
-        height: '16px',
-        background: '#f1f5f9',
-        borderRadius: '4px',
-        overflow: 'hidden'
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        height: '100%',
-        width: pct + '%',
-        background: i < 3 ? maroon : i < 6 ? teal : '#94a3b8',
-        borderRadius: '4px',
-        opacity: 1 - i * 0.06
-      }
-    })), /*#__PURE__*/React.createElement("span", {
-      style: {
-        width: '75px',
-        textAlign: 'right',
-        fontWeight: 700,
-        fontSize: '0.8rem'
-      }
-    }, fmt(d.revenue)));
-  }))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: maroon
-    }
-  }), "Content Production"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: '16px',
-      background: 'rgba(13,148,136,0.04)',
-      borderRadius: '8px',
-      border: '1px solid rgba(13,148,136,0.12)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: teal,
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '12px'
-    }
-  }, "February Results"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800
-    }
-  }, "1,745"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Total Records")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#16a34a'
-    }
-  }, "1,737"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Completed")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#16a34a'
-    }
-  }, "99.5%"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Completion"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px',
-      marginTop: '12px',
-      paddingTop: '12px',
-      borderTop: '1px solid rgba(13,148,136,0.12)'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.1rem',
-      fontWeight: 700
-    }
-  }, "1,578.1"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Hours Scheduled")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.1rem',
-      fontWeight: 700
-    }
-  }, "1,398.8"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Hours Completed")))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: '16px',
-      background: 'rgba(140,8,43,0.04)',
-      borderRadius: '8px',
-      border: '1px solid rgba(140,8,43,0.12)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: maroon,
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '12px'
-    }
-  }, "March Scheduled"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800
-    }
-  }, "2,768"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Total Records")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#f59e0b'
-    }
-  }, "103"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Completed")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#f59e0b'
-    }
-  }, "3.7%"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Completion"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px',
-      marginTop: '12px',
-      paddingTop: '12px',
-      borderTop: '1px solid rgba(140,8,43,0.12)'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.1rem',
-      fontWeight: 700
-    }
-  }, "1,914.8"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Hours Scheduled")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.1rem',
-      fontWeight: 700
-    }
-  }, "97.8"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#64748b'
-    }
-  }, "Hours Completed"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: '10px',
-      display: 'flex',
-      gap: '8px',
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      padding: '2px 10px',
-      borderRadius: '10px',
-      fontSize: '0.7rem',
-      fontWeight: 600,
-      background: 'rgba(245,158,11,0.1)',
-      color: '#d97706'
-    }
-  }, "+1,023 records vs Feb"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      padding: '2px 10px',
-      borderRadius: '10px',
-      fontSize: '0.7rem',
-      fontWeight: 600,
-      background: 'rgba(245,158,11,0.1)',
-      color: '#d97706'
-    }
-  }, "+336.7 hrs scheduled"))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: teal
-    }
-  }), "GA4 Performance \u2014 Last 30 Days"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-      gap: '12px',
-      marginBottom: '16px'
-    }
-  }, [{
-    label: 'TOTAL SESSIONS',
-    value: '477,506',
-    sub: '80 clients with GA4 connected'
-  }, {
-    label: 'ORGANIC SESSIONS',
-    value: '150,337',
-    sub: '31% of total traffic'
-  }, {
-    label: 'TOTAL CONVERSIONS',
-    value: '354,740',
-    sub: 'Forms + calls + sitewide'
-  }, {
-    label: 'FORM SUBMISSIONS',
-    value: '62,458',
-    sub: '29,319 click-to-call'
-  }].map((k, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '14px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.6rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '6px'
-    }
-  }, k.label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.4rem',
-      fontWeight: 800,
-      color: '#1e293b'
-    }
-  }, k.value), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      color: '#94a3b8',
-      marginTop: '4px'
-    }
-  }, k.sub)))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '8px'
-    }
-  }, "Top Performers by Traffic"), /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: '100%',
-      borderCollapse: 'collapse'
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Client"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Sessions"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Organic"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Org %"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Conversions"))), /*#__PURE__*/React.createElement("tbody", null, [{
-    client: 'Santa Cruz Toyota',
-    sess: 35692,
-    org: 11223,
-    orgPct: 31,
-    conv: 522
-  }, {
-    client: 'Suntrup Direct',
-    sess: 35586,
-    org: 8245,
-    orgPct: 23,
-    conv: 1121
-  }, {
-    client: 'Sunset Ford St. Louis',
-    sess: 34358,
-    org: 8134,
-    orgPct: 24,
-    conv: 370
-  }, {
-    client: 'BMW of West St. Louis',
-    sess: 33740,
-    org: 7381,
-    orgPct: 22,
-    conv: 667
-  }, {
-    client: 'Suntrup Hyundai South',
-    sess: 33565,
-    org: 11208,
-    orgPct: 33,
-    conv: 544
-  }, {
-    client: 'SkyView Atlanta',
-    sess: 25326,
-    org: 10169,
-    orgPct: 40,
-    conv: 269654
-  }, {
-    client: 'Belkin Burden Goldman',
-    sess: 15159,
-    org: 9826,
-    orgPct: 65,
-    conv: 1295
-  }, {
-    client: 'Ron Bouchard Honda',
-    sess: 16729,
-    org: 6269,
-    orgPct: 37,
-    conv: 399
-  }, {
-    client: 'Datawave Marine',
-    sess: 2052,
-    org: 1511,
-    orgPct: 74,
-    conv: 20017
-  }].map((r, i) => /*#__PURE__*/React.createElement("tr", {
-    key: i,
-    style: rowBg(i)
-  }, /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      fontSize: '0.85rem',
-      fontWeight: 600
-    }
-  }, r.client), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      textAlign: 'right',
-      fontWeight: 700
-    }
-  }, r.sess.toLocaleString()), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      textAlign: 'right',
-      fontSize: '0.8rem'
-    }
-  }, r.org.toLocaleString()), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      textAlign: 'right',
-      fontSize: '0.8rem',
-      color: r.orgPct >= 40 ? '#16a34a' : '#64748b'
-    }
-  }, r.orgPct, "%"), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      textAlign: 'right',
-      fontWeight: 600
-    }
-  }, r.conv.toLocaleString()))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: '12px',
-      padding: '10px 14px',
-      background: '#fffbeb',
-      borderRadius: '6px',
-      border: '1px solid #fef3c7',
-      fontSize: '0.75rem',
-      color: '#92400e'
-    }
-  }, /*#__PURE__*/React.createElement("strong", null, "Coverage gap:"), " Only 80 of 206 accounts (39%) have GA4 connected via Windsor. 130 clients still need setup."))), foSub === 'ppc' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, heroKpi('PAID MANAGEMENT REVENUE', '$47,427', '55% growth since Aug 2025'), kpiCard('IN-HOUSE', '$34,927', '78% kept in-house', 'Vendor share down from 57% to 22%', 'up'), kpiCard('VEA COST', '$10,500', '22% of paid revenue', '16 VEA-managed accounts', 'neutral'), kpiCard('FEB PAID LEADS', '1,508', '11% MoM increase', '1,355 \u2192 1,508 in WhatConverts', 'up')), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '12px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#16a34a'
-    }
-  }), "In-House Fulfillment"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em'
-    }
-  }, "Clients"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800
-    }
-  }, "17")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em'
-    }
-  }, "Revenue"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800
-    }
-  }, "$34,927"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b',
-      marginTop: '8px'
-    }
-  }, "100% margin on management fees")), /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '12px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#3b82f6'
-    }
-  }), "Vendor Fulfillment (VEA)"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em'
-    }
-  }, "Clients"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800
-    }
-  }, "16")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em'
-    }
-  }, "Billed"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800
-    }
-  }, "$21,227")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '12px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em'
-    }
-  }, "VEA Cost"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.5rem',
-      fontWeight: 800,
-      color: '#dc2626'
-    }
-  }, "$10,500"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b',
-      marginTop: '8px'
-    }
-  }, "Vendor share: ", /*#__PURE__*/React.createElement("strong", {
-    style: {
-      color: '#dc2626'
-    }
-  }, "22%"), " \\u2014 down from 57% in Aug"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: teal
-    }
-  }), "Paid Revenue Growth Since August 2025"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '24px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: 'center',
-      padding: '16px',
-      background: '#f8fafc',
-      borderRadius: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '4px'
-    }
-  }, "Aug 2025"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.75rem',
-      fontWeight: 800,
-      color: '#94a3b8'
-    }
-  }, "$21,477"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      color: '#94a3b8',
-      marginTop: '4px'
-    }
-  }, "57% to vendor")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '2rem',
-      fontWeight: 800,
-      color: '#16a34a'
-    }
-  }, "+55%"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b'
-    }
-  }, "revenue growth"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: 'center',
-      padding: '16px',
-      background: 'rgba(13,148,136,0.06)',
-      borderRadius: '8px',
-      border: '1px solid rgba(13,148,136,0.15)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: teal,
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '4px'
-    }
-  }, "Mar 2026"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.75rem',
-      fontWeight: 800
-    }
-  }, "$47,427"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      color: teal,
-      marginTop: '4px'
-    }
-  }, "Only 22% to vendor"))))), foSub === 'social' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, heroKpi('SOCIAL MEDIA REVENUE', fmt(16175), '3.2% of total revenue'), kpiCard('SOCIAL CONTENT', '~20', 'Clients with social services', 'Content creation + posting', 'neutral'), kpiCard('SOCIAL BOOST', '~8', 'Clients with paid social', 'Facebook + LinkedIn boosts', 'neutral')), /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '12px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#6366f1'
-    }
-  }), "Social Media Services"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.8rem',
-      color: '#64748b',
-      lineHeight: 1.6
-    }
-  }, "Social media management includes organic content creation, scheduling, and paid social boosts across Facebook and LinkedIn. Approximately 28 clients have some form of social service bundled with their SEO contract."), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '8px'
-    }
-  }, "Service Types"), ['Social Content Only', 'Social Boost \u2014 Facebook', 'Social Boost \u2014 LinkedIn'].map((s, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      padding: '6px 0',
-      fontSize: '0.8rem',
-      fontWeight: 500,
-      borderBottom: i < 3 ? '1px solid #f1f5f9' : 'none'
-    }
-  }, s))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: '#f8fafc',
-      borderRadius: '8px',
-      padding: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '8px'
-    }
-  }, "Monthly Billing"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.75rem',
-      fontWeight: 800,
-      marginBottom: '4px'
-    }
-  }, fmt(16175)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b'
-    }
-  }, "Standalone social management fees"))))), foSub === 'other' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, kpiCard('WEBSITE HOSTING', fmt(7980), '1.6% of total', 'Managed hosting services', 'neutral'), kpiCard('SEO - LOCAL LIFT', fmt(4700), '0.9% of total', 'Local SEO packages', 'neutral'), kpiCard('BACKLINKING', fmt(4175), '0.8% of total', 'Link building campaigns', 'neutral')), /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#94a3b8'
-    }
-  }), "Other Services Summary"), [{
-    service: 'Website Hosting',
-    total: 7980,
-    desc: 'Managed WordPress hosting for client sites'
-  }, {
-    service: 'SEO - Local Lift',
-    total: 4700,
-    desc: 'Local SEO citation building + GBP optimization'
-  }, {
-    service: 'Backlinking',
-    total: 4175,
-    desc: 'Off-site link building campaigns'
-  }].map((s, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      padding: '12px 0',
-      borderBottom: i < 2 ? '1px solid #f1f5f9' : 'none'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 600
-    }
-  }, s.service), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      color: '#94a3b8',
-      marginTop: '2px'
-    }
-  }, s.desc)), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontWeight: 800,
-      fontSize: '1rem'
-    }
-  }, fmt(s.total)), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#94a3b8',
-      width: '40px',
-      textAlign: 'right'
-    }
-  }, (s.total / grandTotal * 100).toFixed(1), "%"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      padding: '12px 0',
-      borderTop: '2px solid #e2e8f0',
-      marginTop: '4px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      fontWeight: 800
-    }
-  }, "Total Other Services"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontWeight: 800,
-      fontSize: '1rem'
-    }
-  }, fmt(16855)), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 700,
-      width: '40px',
-      textAlign: 'right'
-    }
-  }, "3.3%")))), foSub === 'websites' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, heroKpi('WEBSITES LAUNCHED (2 YR)', '62', 'March 2024 – present'), kpiCard('2026 LAUNCHES', '8', 'Sites launched this year', '3 in Jan, 3 in Feb, 2 pending', 'neutral'), kpiCard('IMPLEMENTING', String(implementingPipeline.length), fmt(pipelineTotal) + '/mo pipeline value', pipelineAtRisk.length + ' at risk of cancellation', pipelineAtRisk.length > 0 ? 'down' : 'neutral'), kpiCard('AVG SITE HEALTH', '92%', '104 we-built sites (Semrush)', '81% excellent or good | AI: 82%', 'up')), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: teal
-    }
-  }), "SEMrush Site Health"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b'
-    }
-  }, "104 we-built sites audited"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 700
-    }
-  }, "Avg: 92%"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      color: teal
-    }
-  }, "AI: 82%"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '10px'
-    }
-  }, "Health Distribution"), [{
-    label: 'Excellent (95-100%)',
-    count: 41,
-    color: '#16a34a',
-    pct: 39
-  }, {
-    label: 'Good (90-94%)',
-    count: 43,
-    color: teal,
-    pct: 41
-  }, {
-    label: 'Fair (80-89%)',
-    count: 15,
-    color: '#f59e0b',
-    pct: 14
-  }, {
-    label: 'Needs Work (70-79%)',
-    count: 4,
-    color: '#f97316',
-    pct: 4
-  }, {
-    label: 'Critical (<70%)',
-    count: 1,
-    color: '#dc2626',
-    pct: 1
-  }].map((b, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-      marginBottom: '6px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      width: '140px',
-      color: '#475569'
-    }
-  }, b.label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      height: '14px',
-      background: '#f1f5f9',
-      borderRadius: '4px',
-      overflow: 'hidden'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: '100%',
-      width: b.pct + '%',
-      background: b.color,
-      borderRadius: '4px'
-    }
-  })), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontWeight: 700,
-      fontSize: '0.8rem',
-      width: '24px',
-      textAlign: 'right'
-    }
-  }, b.count)))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 700,
-      color: '#94a3b8',
-      textTransform: 'uppercase',
-      letterSpacing: '0.08em',
-      marginBottom: '10px'
-    }
-  }, "Subcategory Averages"), [{
-    label: 'Crawlability',
-    value: '94%',
-    color: teal
-  }, {
-    label: 'Site Performance',
-    value: '95%',
-    color: '#16a34a'
-  }, {
-    label: 'Internal Linking',
-    value: '91%',
-    color: teal
-  }, {
-    label: 'AI Search Health',
-    value: '82%',
-    color: '#f59e0b'
-  }].map((m, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '8px 0',
-      borderBottom: i < 3 ? '1px solid #f1f5f9' : 'none'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.8rem',
-      color: '#475569'
-    }
-  }, m.label), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontWeight: 700,
-      fontSize: '0.85rem',
-      color: m.color
-    }
-  }, m.value)))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#f59e0b'
-    }
-  }), "Implementing Pipeline"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      gap: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b'
-    }
-  }, implementingPipeline.length, " clients"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      fontWeight: 700
-    }
-  }, fmt(pipelineTotal), "/mo"), pipelineAtRisk.length > 0 && /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#dc2626',
-      fontWeight: 600
-    }
-  }, pipelineAtRisk.length, " at risk"))), /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: '100%',
-      borderCollapse: 'collapse'
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Client"), /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "DSM"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Monthly Value"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Days"), /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Status"))), /*#__PURE__*/React.createElement("tbody", null, implementingPipeline.map((r, i) => /*#__PURE__*/React.createElement("tr", {
-    key: i,
-    style: rowBg(i)
-  }, /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      fontSize: '0.85rem',
-      fontWeight: 600,
-      color: r.cancel ? '#dc2626' : '#334155'
-    }
-  }, r.client), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      fontSize: '0.8rem',
-      color: '#64748b'
-    }
-  }, r.dsm), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      textAlign: 'right',
-      fontWeight: 700
-    }
-  }, r.value > 0 ? fmt(r.value) : '\u2014'), /*#__PURE__*/React.createElement("td", {
-    style: {
-      ...tdS,
-      textAlign: 'right',
-      fontSize: '0.8rem',
-      fontWeight: 600,
-      color: (() => {
-        if (!r.kickoff) return '#94a3b8';
-        const p = r.kickoff.split('/');
-        const kd = new Date(2000 + parseInt(p[2]), parseInt(p[0]) - 1, parseInt(p[1]));
-        const d = Math.floor((new Date('2026-03-03') - kd) / 86400000);
-        return d > 90 ? '#dc2626' : d > 60 ? '#d97706' : '#334155';
-      })()
-    }
-  }, (() => {
-    if (!r.kickoff) return '\u2014';
-    const p = r.kickoff.split('/');
-    const kd = new Date(2000 + parseInt(p[2]), parseInt(p[0]) - 1, parseInt(p[1]));
-    const d = Math.floor((new Date('2026-03-03') - kd) / 86400000);
-    return d >= 0 ? d + 'd' : 'Soon';
-  })()), /*#__PURE__*/React.createElement("td", {
-    style: tdS
-  }, r.cancel ? /*#__PURE__*/React.createElement("span", {
-    style: {
-      padding: '2px 10px',
-      borderRadius: '10px',
-      fontSize: '0.7rem',
-      fontWeight: 600,
-      background: 'rgba(220,38,38,0.1)',
-      color: '#dc2626'
-    }
-  }, "Cancel ", r.cancel) : /*#__PURE__*/React.createElement("span", {
-    style: {
-      padding: '2px 10px',
-      borderRadius: '10px',
-      fontSize: '0.7rem',
-      fontWeight: 600,
-      background: 'rgba(245,158,11,0.1)',
-      color: '#d97706'
-    }
-  }, "Implementing")))), /*#__PURE__*/React.createElement("tr", {
-    style: {
-      background: '#f1f5f9'
-    }
-  }, /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: '12px 14px',
-      fontWeight: 700,
-      borderTop: '2px solid #e2e8f0'
-    },
-    colSpan: 3
-  }, "Total Pipeline"), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: '12px 14px',
-      textAlign: 'right',
-      fontWeight: 800,
-      borderTop: '2px solid #e2e8f0'
-    }
-  }, fmt(pipelineTotal)), /*#__PURE__*/React.createElement("td", {
-    style: {
-      padding: '12px 14px',
-      borderTop: '2px solid #e2e8f0',
-      fontSize: '0.75rem',
-      color: '#64748b'
-    }
-  }, implementingPipeline.length, " clients"))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#16a34a'
-    }
-  }), "2026 Launches"), /*#__PURE__*/React.createElement("table", {
-    style: {
-      width: '100%',
-      borderCollapse: 'collapse'
-    }
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Client"), /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Owner"), /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Kickoff"), /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "Launched"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Days"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Target"), /*#__PURE__*/React.createElement("th", {
-    style: thS()
-  }, "On Time"), /*#__PURE__*/React.createElement("th", {
-    style: thS('right')
-  }, "Hours"))), /*#__PURE__*/React.createElement("tbody", null, recentLaunches.map((r, i) => {
-    const onTime = r.days <= r.target;
-    return /*#__PURE__*/React.createElement("tr", {
-      key: i,
-      style: rowBg(i)
-    }, /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        fontSize: '0.85rem',
-        fontWeight: 600
-      }
-    }, r.client), /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        fontSize: '0.8rem',
-        color: '#64748b'
-      }
-    }, r.owner), /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        fontSize: '0.8rem'
-      }
-    }, r.kickoff), /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        fontSize: '0.8rem',
-        fontWeight: 600
-      }
-    }, r.launch), /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        textAlign: 'right',
-        fontWeight: 700,
-        color: onTime ? '#16a34a' : '#dc2626'
-      }
-    }, r.days), /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        textAlign: 'right',
-        fontSize: '0.8rem',
-        color: '#94a3b8'
-      }
-    }, r.target, "d"), /*#__PURE__*/React.createElement("td", {
-      style: tdS
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        padding: '2px 10px',
-        borderRadius: '10px',
-        fontSize: '0.7rem',
-        fontWeight: 600,
-        background: onTime ? 'rgba(22,163,74,0.1)' : 'rgba(220,38,38,0.1)',
-        color: onTime ? '#16a34a' : '#dc2626'
-      }
-    }, onTime ? 'Yes' : 'Over')), /*#__PURE__*/React.createElement("td", {
-      style: {
-        ...tdS,
-        textAlign: 'right',
-        fontSize: '0.8rem'
-      }
-    }, r.hrsC > 0 ? r.hrsC.toFixed(0) + '/' + r.hrsS.toFixed(0) : '\u2014'));
-  })))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginTop: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: maroon
-    }
-  }), "By Project Owner"), [{
-    name: 'Nicholas Chrismer',
-    projects: 53,
-    pct: 85
-  }, {
-    name: 'Merideth Neff',
-    projects: 9,
-    pct: 15
-  }].map((o, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '10px 0',
-      borderBottom: i === 0 ? '1px solid #f1f5f9' : 'none'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 600,
-      width: '160px'
-    }
-  }, o.name), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1,
-      height: '16px',
-      background: '#f1f5f9',
-      borderRadius: '4px',
-      overflow: 'hidden'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      height: '100%',
-      width: o.pct + '%',
-      background: i === 0 ? maroon : teal,
-      borderRadius: '4px'
-    }
-  })), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontWeight: 700,
-      fontSize: '0.85rem',
-      width: '30px',
-      textAlign: 'right'
-    }
-  }, o.projects)))), /*#__PURE__*/React.createElement("div", {
-    style: cs
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      marginBottom: '16px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: teal
-    }
-  }), "Launch Time Distribution"), [{
-    range: 'Under 60 days',
-    count: 4,
-    color: '#16a34a'
-  }, {
-    range: '60-90 days (on target)',
-    count: 39,
-    color: teal
-  }, {
-    range: '91-120 days',
-    count: 8,
-    color: '#f59e0b'
-  }, {
-    range: '120+ days',
-    count: 11,
-    color: '#dc2626'
-  }].map((b, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '8px 0',
-      borderBottom: i < 3 ? '1px solid #f1f5f9' : 'none'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '10px',
-      height: '10px',
-      borderRadius: '50%',
-      background: b.color,
-      flexShrink: 0
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: 500,
-      flex: 1
-    }
-  }, b.range), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontWeight: 700,
-      fontSize: '0.85rem'
-    }
-  }, b.count), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.7rem',
-      color: '#94a3b8',
-      width: '35px',
-      textAlign: 'right'
-    }
-  }, (b.count / 62 * 100).toFixed(0), "%")))))), foSub === 'insights' && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      marginBottom: '16px',
-      padding: '28px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      marginBottom: '20px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: '40px',
-      height: '40px',
-      borderRadius: '10px',
-      background: 'linear-gradient(135deg, ' + maroon + ', #9A3A4D)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#fff',
-      fontSize: '1rem',
-      fontWeight: 700
-    }
-  }, "F")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.05rem',
-      fontWeight: 700,
-      color: '#1e293b'
-    }
-  }, "Fulfillment Snapshot"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      color: '#94a3b8',
-      fontWeight: 500
-    }
-  }, "March 2026"))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr 1fr',
-      gap: '16px'
-    }
-  }, [{
-    value: '215',
-    label: 'Total Clients',
-    sub: '182 active + 22 implementing',
-    color: maroon
-  }, {
-    value: '62',
-    label: 'Sites Launched (2 Yr)',
-    sub: 'Median 84 days to launch',
-    color: teal
-  }, {
-    value: fmt(pipelineTotal),
-    label: 'Pipeline MRR',
-    sub: '22 clients implementing',
-    color: maroon
-  }, {
-    value: '477K',
-    label: 'Sessions (30 Days)',
-    sub: '150K organic (31%)',
-    color: teal
-  }].map((k, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      textAlign: 'center',
-      padding: '16px',
-      borderRadius: '10px',
-      background: i % 2 === 0 ? 'rgba(124,45,62,0.04)' : 'rgba(20,184,166,0.04)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '1.75rem',
-      fontWeight: 800,
-      color: k.color,
-      lineHeight: 1
-    }
-  }, k.value), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.7rem',
-      fontWeight: 600,
-      color: '#475569',
-      marginTop: '6px'
-    }
-  }, k.label), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.65rem',
-      color: '#94a3b8',
-      marginTop: '2px'
-    }
-  }, k.sub))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      borderTop: '3px solid #16a34a'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      color: '#16a34a',
-      marginBottom: '14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#16a34a'
-    }
-  }), "Wins"), ['8 websites launched in 2026 — 5 of 8 on time or under target', 'February content completion at 99.5% — near-perfect delivery with March scheduled content up substantially', 'Site health avg 92% across 104 audited sites (81% excellent/good)', '62K form submissions + 29K click-to-call in last 30 days'].map((w, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      gap: '10px',
-      padding: '10px 12px',
-      marginBottom: '8px',
-      borderRadius: '8px',
-      background: 'rgba(22,163,74,0.04)',
-      border: '1px solid rgba(22,163,74,0.1)'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: '#16a34a',
-      fontWeight: 700,
-      fontSize: '0.85rem',
-      flexShrink: 0
-    }
-  }, "+"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: '0.8rem',
-      color: '#334155',
-      lineHeight: 1.5
-    }
-  }, w)))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...cs,
-      borderTop: '3px solid #f59e0b'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.85rem',
-      fontWeight: 700,
-      color: '#d97706',
-      marginBottom: '14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      width: '8px',
-      height: '8px',
-      borderRadius: '50%',
-      background: '#f59e0b'
-    }
-  }), "Risks & Watch Items"), [{
-    title: '3 of 8 recent launches over target days',
-    desc: 'Median 84 days is within 60-90 target but 3 recent launches were significantly over. Focus on early-stage blockers.'
-  }, {
-    title: 'Average AI Search Health is 82%',
-    desc: 'New metric with room for improvement — 10-point gap vs 92% overall site health.'
-  }, {
-    title: 'March content volume up 59%',
-    desc: '2,768 records scheduled vs 1,745 in Feb. Capacity pressure to monitor for quality maintenance.'
-  }, {
-    title: 'Only 39% of active clients have GA4 connected',
-    desc: 'Prioritize connecting the remaining 102 clients to demonstrate organic value and conversion tracking.'
-  }].map((r, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      padding: '10px 12px',
-      marginBottom: '8px',
-      borderRadius: '8px',
-      background: 'rgba(245,158,11,0.04)',
-      border: '1px solid rgba(245,158,11,0.12)'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.8rem',
-      fontWeight: 700,
-      color: '#1e293b',
-      marginBottom: '3px'
-    }
-  }, r.title), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: '0.75rem',
-      color: '#64748b',
-      lineHeight: 1.5
-    }
-  }, r.desc))))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: '32px',
-      paddingTop: '16px',
-      borderTop: '1px solid #e2e8f0',
-      display: 'flex',
-      justifyContent: 'space-between',
-      fontSize: '0.8rem',
-      color: '#94a3b8'
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "Abstrakt Marketing Group"), /*#__PURE__*/React.createElement("span", null, "Powered by ", /*#__PURE__*/React.createElement("strong", {
-    style: {
-      color: '#475569'
-    }
-  }, "INBOUND"), " ", /*#__PURE__*/React.createElement("strong", {
-    style: {
-      color: maroon
-    }
-  }, "SDR"))));
 }
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Dashboard));
-</script>
-</body>
-</html>
+
+/* ── Growth-Narrative Tabs ── */
+const tabs = [
+  "Technical Foundation",
+  "Authority & Search",
+  "Competitors",
+  "Content & Topical Depth",
+  "Entity & Brand Authority",
+  "Revenue & Attribution",
+];
+
+/* ── Canonical Scoring Engine ── */
+function calculateModuleScore(metrics) {
+  const sv = { good: 100, warning: 50, poor: 0 };
+  let totalWeight = 0, totalScore = 0;
+  metrics.forEach(m => {
+    const w = m.impact === "high" ? 1.25 : m.impact === "low" ? 0.75 : 1.0;
+    totalWeight += w;
+    totalScore += w * (sv[m.status] ?? 0);
+  });
+  return Math.round(totalScore / (totalWeight || 1));
+}
+
+/* ── Revenue Scenarios Config ── */
+const revenueScenarios = {
+  conservative: {
+    label: "Conservative",
+    color: brand.cloudBlue,
+    monthlyVisitors: 1200,
+    conversionRate: 0.015,
+    closeRate: 0.15,
+    avgDealSize: 2800,
+  },
+  expected: {
+    label: "Expected",
+    color: brand.inboundOrange,
+    monthlyVisitors: 1200,
+    conversionRate: 0.028,
+    closeRate: 0.22,
+    avgDealSize: 3200,
+  },
+  aggressive: {
+    label: "Aggressive",
+    color: brand.talentTeal,
+    monthlyVisitors: 1200,
+    conversionRate: 0.045,
+    closeRate: 0.32,
+    avgDealSize: 4100,
+  },
+};
+
+function calcScenario(s) {
+  const leads = Math.round(s.monthlyVisitors * s.conversionRate);
+  const closedDeals = Math.round(leads * s.closeRate);
+  const monthlyRevenue = closedDeals * s.avgDealSize;
+  return { leads, closedDeals, monthlyRevenue };
+}
+
+/* ── Revenue Visibility Index Weights (B2B) ── */
+const rviWeights = {
+  searchAuthority: 0.30,
+  content: 0.20,
+  infrastructure: 0.20,
+  technical: 0.15,
+  entity: 0.15,
+};
+
+/* ── Mock Data: Technical Foundation ── */
+const techMetrics = [
+  { label: "SEMrush Site Health", value: "68%", status: "poor", impact: "high", source: "measured", detail: "Overall site health from SEMrush audit — aim for 90%+" },
+  { label: "Core Web Vitals — LCP", value: "3.8s", status: "poor", impact: "high", source: "measured", detail: "Largest Contentful Paint — target under 2.5s" },
+  { label: "Core Web Vitals — CLS", value: "0.12", status: "warning", impact: "high", source: "measured", detail: "Cumulative Layout Shift — target under 0.1" },
+  { label: "Core Web Vitals — FID", value: "68ms", status: "good", impact: "medium", source: "measured", detail: "First Input Delay — target under 100ms" },
+  { label: "Mobile Friendly", value: "Yes", status: "good", impact: "high", source: "measured", detail: "Passes Google mobile-friendly test" },
+  { label: "SSL Certificate", value: "Valid", status: "good", impact: "medium", source: "measured", detail: "Expires in 243 days" },
+  { label: "HTTP/2 Protocol", value: "Enabled", status: "good", impact: "low", source: "measured", detail: "Modern protocol active — improves load parallelization" },
+  { label: "Image Optimization", value: "34% unoptimized", status: "poor", impact: "medium", source: "measured", detail: "17 of 50 images need compression or WebP conversion" },
+  { label: "Alt Tags", value: "58% missing", status: "poor", impact: "medium", source: "measured", detail: "31 of 53 images lack descriptive alt text — hurts accessibility and SEO" },
+];
+
+/* ── Mock Data: Authority & Search ── */
+const searchMetrics = [
+  { label: "Domain Authority", value: "32/100", status: "warning", impact: "high", source: "measured", detail: "Moz DA — competitive baseline is 40+ for B2B" },
+  { label: "Organic Keywords Ranking", value: "312", status: "warning", impact: "high", source: "measured", detail: "Keywords with a SERP position — aim for 500+" },
+  { label: "Top 3 Keyword Rankings", value: "14", status: "poor", impact: "high", source: "measured", detail: "Only 14 keywords rank in positions 1–3" },
+  { label: "Indexed Pages", value: "156", status: "good", impact: "medium", source: "measured", detail: "Google index coverage looks healthy" },
+  { label: "Backlinks (Total)", value: "423", status: "warning", impact: "high", source: "measured", detail: "Low for domain age — active link building needed" },
+  { label: "Referring Domains", value: "87", status: "warning", impact: "high", source: "measured", detail: "Unique linking domains — diversity matters more than volume" },
+  { label: "Page Speed (Mobile PSI)", value: "54/100", status: "poor", impact: "medium", source: "measured", detail: "Google PageSpeed Insights mobile score — target 80+" },
+  { label: "Meta Descriptions", value: "68% optimized", status: "warning", impact: "medium", source: "measured", detail: "32% of pages missing or using duplicate meta descriptions" },
+  { label: "Sitemap", value: "Found", status: "good", impact: "low", source: "measured", detail: "XML sitemap submitted and accessible" },
+  { label: "Robots.txt", value: "Configured", status: "good", impact: "low", source: "measured", detail: "No critical crawl blocks detected" },
+];
+
+const competitiveVelocity = [
+  { month: "Mar", you: 28, comp: 41 },
+  { month: "Apr", you: 31, comp: 44 },
+  { month: "May", you: 30, comp: 48 },
+  { month: "Jun", you: 33, comp: 51 },
+  { month: "Jul", you: 32, comp: 55 },
+  { month: "Aug", you: 35, comp: 58 },
+  { month: "Sep", you: 34, comp: 62 },
+  { month: "Oct", you: 36, comp: 65 },
+  { month: "Nov", you: 37, comp: 68 },
+  { month: "Dec", you: 38, comp: 71 },
+  { month: "Jan", you: 36, comp: 73 },
+  { month: "Feb", you: 32, comp: 75 },
+];
+
+/* ── Mock Data: Content & Topical Depth ── */
+const contentMetrics = [
+  { label: "Blog / Content Hub Exists", value: "Yes", status: "good", impact: "high", source: "measured", detail: "A dedicated blog page was detected" },
+  { label: "Content Published (Last 30 Days)", value: "None", status: "poor", impact: "high", source: "measured", detail: "No new content detected in the last 30 days" },
+  { label: "Avg. Word Count (Top Pages)", value: "~620 avg", status: "poor", impact: "high", source: "estimated", detail: "Competitors average 1,400+ words on key pages" },
+  { label: "Topical Coverage Depth", value: "Below Average", status: "poor", impact: "high", source: "estimated", detail: "Missing content clusters for core service topics" },
+  { label: "Content Freshness", value: "38 days avg", status: "warning", impact: "medium", source: "measured", detail: "Last blog post: 52 days ago" },
+  { label: "Internal Links / Page", value: "2.1 avg", status: "poor", impact: "medium", source: "measured", detail: "Best practice is 5–10 per page" },
+  { label: "Readability Score", value: "Grade 11", status: "warning", impact: "medium", source: "estimated", detail: "Aim for Grade 8 for broader reach" },
+  { label: "Content-to-Code Ratio", value: "18%", status: "warning", impact: "low", source: "measured", detail: "Aim for 25%+" },
+  { label: "Duplicate Content", value: "3 pages flagged", status: "poor", impact: "medium", source: "measured", detail: "Near-duplicate meta descriptions detected" },
+  { label: "FAQ / Schema Content", value: "Not Found", status: "poor", impact: "medium", source: "measured", detail: "FAQ schema helps capture featured snippet real estate" },
+];
+
+/* ── Mock Data: Entity & Brand Authority ── */
+const entityMetrics = [
+  { label: "Schema Markup", value: "Organization only", status: "warning", impact: "high", source: "measured", detail: "Missing LocalBusiness, Service, and FAQ schema types" },
+  { label: "NAP Consistency", value: "4 mismatches", status: "poor", impact: "high", source: "measured", detail: "Name/Address/Phone inconsistencies across 4 directories" },
+  { label: "Google Business Profile", value: "Claimed & Verified", status: "good", impact: "high", source: "measured", detail: "GBP listing active with photos and hours" },
+  { label: "GBP Reviews", value: "4.2★ (89 reviews)", status: "good", impact: "high", source: "measured", detail: "Strong rating — response rate below average" },
+  { label: "Knowledge Graph", value: "Not Present", status: "poor", impact: "high", source: "measured", detail: "No Knowledge Panel detected for brand searches" },
+  { label: "Brand SERP Control", value: "Partial", status: "warning", impact: "medium", source: "estimated", detail: "3rd-party review sites ranking above owned content" },
+  { label: "Entity Associations", value: "Weak", status: "poor", impact: "medium", source: "estimated", detail: "Limited co-citation with relevant industry entities" },
+  { label: "Same-As Links", value: "2 found", status: "warning", impact: "medium", source: "measured", detail: "LinkedIn and Facebook — missing Wikidata, Crunchbase" },
+  { label: "Local Citation Count", value: "34 found", status: "warning", impact: "medium", source: "measured", detail: "Target 50+ consistent citations across directories" },
+  { label: "Bing Places", value: "Not Claimed", status: "poor", impact: "low", source: "measured", detail: "Missing Bing local presence" },
+];
+
+/* ── Mock Data: Revenue Infrastructure (8 pass/fail) ── */
+const attributionChecks = [
+  { label: "Google Analytics 4 Installed", pass: true,  source: "measured",  impact: "high",   detail: "GA4 property detected and firing on key pages" },
+  { label: "Conversion Goals Configured",  pass: false, source: "measured",  impact: "high",   detail: "No conversion events detected in GA4" },
+  { label: "Google Search Console Connected", pass: true, source: "measured", impact: "medium", detail: "GSC verified and data flowing" },
+  { label: "Call Tracking Active",         pass: false, source: "measured",  impact: "high",   detail: "No dynamic number insertion detected" },
+  { label: "CRM / Form Lead Capture",      pass: true,  source: "measured",  impact: "high",   detail: "Contact form detected — CRM sync unconfirmed" },
+  { label: "UTM Parameter Usage",          pass: false, source: "estimated", impact: "medium", detail: "Paid and email links not consistently tagged" },
+  { label: "Remarketing Pixel Active",     pass: false, source: "measured",  impact: "medium", detail: "No Meta or Google remarketing pixel found" },
+  { label: "Thank-You Page Tracking",      pass: false, source: "measured",  impact: "high",   detail: "Form submissions not tracked as conversions" },
+];
+
+/* ── Status Helpers ── */
+function statusColor(s) {
+  if (s === "good") return brand.talentTeal;
+  if (s === "warning") return brand.inboundOrange;
+  return brand.pipelineRed;
+}
+function statusIcon(s) {
+  if (s === "good") return "✓";
+  if (s === "warning") return "!";
+  return "✗";
+}
+
+/* ── Source Badge ── */
+function SourceBadge({ source }) {
+  const config = {
+    measured: { label: "Measured", color: brand.talentTeal },
+    estimated: { label: "Estimated", color: brand.inboundOrange },
+    assumed: { label: "Assumed", color: brand.cloudBlue },
+  };
+  const c = config[source] || config.assumed;
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 600, color: c.color,
+      background: `${c.color}18`, border: `1px solid ${c.color}33`,
+      padding: "2px 6px", borderRadius: 4,
+      textTransform: "uppercase", letterSpacing: 0.8, flexShrink: 0,
+    }}>{c.label}</span>
+  );
+}
+
+/* ── Weight Badge ── */
+function WeightBadge({ impact }) {
+  if (!impact || impact === "medium") return null;
+  const isHigh = impact === "high";
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 700,
+      color: isHigh ? brand.cloudBlue : brand.growthGray,
+      background: isHigh ? "rgba(4,129,163,0.1)" : "rgba(51,51,51,0.08)",
+      border: `1px solid ${isHigh ? "rgba(4,129,163,0.2)" : "rgba(51,51,51,0.15)"}`,
+      padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", letterSpacing: 1,
+    }}>{isHigh ? "High Impact" : "Low Impact"}</span>
+  );
+}
+
+/* ── Abstrakt Logo SVG ── */
+function AbstraktLogo({ fill = "#EFEFEF", height = 28 }) {
+  const aspect = 190.42 / 60.65;
+  const w = height * aspect;
+  return (
+    <svg viewBox="0 0 190.42 60.65" width={w} height={height} xmlns="http://www.w3.org/2000/svg">
+      <g fill={fill}>
+        <path d="M44.96,37.65c-.64-1.09-1.55-1.95-2.72-2.59-1.17-.64-2.5-.96-3.97-.96-1.81,0-3.43.47-4.85,1.4-1.42.93-2.53,2.25-3.32,3.95-.79,1.7-1.19,3.64-1.19,5.82s.4,4.09,1.19,5.75c.79,1.66,1.9,2.94,3.3,3.83,1.41.89,3.03,1.34,4.87,1.34,1.48,0,2.8-.31,3.97-.92,1.17-.61,2.08-1.46,2.72-2.55v3.14h6.23v-21.21h-6.23v3.01ZM43.71,49.78c-.84,1.06-2.03,1.59-3.6,1.59s-2.81-.52-3.66-1.57c-.85-1.05-1.28-2.56-1.28-4.54s.43-3.53,1.3-4.64c.86-1.11,2.08-1.67,3.64-1.67s2.76.54,3.6,1.61c.84,1.07,1.26,2.61,1.26,4.62s-.42,3.54-1.26,4.6Z"/>
+        <path d="M72.31,35.46c-1.42-.91-3.05-1.36-4.89-1.36-1.45,0-2.77.31-3.95.94-1.19.63-2.09,1.49-2.7,2.57v-12.55h-6.32v30.79h6.28v-3.18c.61,1.09,1.51,1.95,2.7,2.57,1.18.63,2.52.94,3.99.94,1.81,0,3.43-.47,4.85-1.4,1.42-.93,2.53-2.24,3.33-3.93.79-1.69,1.19-3.62,1.19-5.79s-.39-4.09-1.17-5.75c-.78-1.66-1.88-2.94-3.3-3.85ZM69.21,49.74c-.84,1.09-2.04,1.63-3.6,1.63s-2.77-.54-3.62-1.61c-.85-1.07-1.28-2.61-1.28-4.62s.42-3.51,1.28-4.58c.85-1.07,2.06-1.61,3.62-1.61s2.76.53,3.6,1.59c.84,1.06,1.25,2.57,1.25,4.52s-.42,3.6-1.25,4.68Z"/>
+        <path d="M90.33,43.38l-3.56-.79c-.89-.2-1.51-.44-1.86-.73-.35-.29-.52-.68-.52-1.15,0-.64.29-1.14.88-1.51.59-.36,1.39-.54,2.43-.54s2.15.2,3.28.59c1.13.39,2.24.96,3.33,1.71l1.76-4.22c-1.14-.84-2.44-1.48-3.89-1.95-1.45-.46-2.93-.69-4.43-.69-1.78,0-3.36.29-4.73.86-1.37.57-2.43,1.37-3.2,2.41-.77,1.03-1.15,2.2-1.15,3.51,0,1.62.48,2.91,1.44,3.89.96.98,2.46,1.69,4.5,2.13l3.47.79c1.06.22,1.8.49,2.22.79.42.31.63.73.63,1.25,0,.64-.29,1.13-.88,1.47-.59.33-1.42.5-2.51.5-1.42,0-2.82-.22-4.18-.65-1.37-.43-2.61-1.05-3.72-1.86l-1.67,4.39c2.31,1.73,5.48,2.59,9.5,2.59,2.82,0,5.03-.59,6.65-1.76,1.62-1.17,2.43-2.76,2.43-4.77,0-1.67-.49-3.01-1.46-4.02-.98-1-2.55-1.76-4.73-2.26Z"/>
+        <path d="M122.67,35.21c-1.13.71-1.96,1.74-2.49,3.07l-.42-3.64h-5.94c.22,1.78.33,3.81.33,6.07v15.14h6.32v-11.09c0-1.62.44-2.88,1.32-3.79.88-.91,2.16-1.36,3.83-1.36,1.03,0,2.06.24,3.1.71l.04-5.77c-.61-.28-1.37-.42-2.26-.42-1.42,0-2.7.36-3.83,1.07Z"/>
+        <path d="M145.68,37.65c-.64-1.09-1.55-1.95-2.72-2.59-1.17-.64-2.49-.96-3.97-.96-1.81,0-3.43.47-4.85,1.4-1.42.93-2.53,2.25-3.33,3.95-.79,1.7-1.19,3.64-1.19,5.82s.4,4.09,1.19,5.75c.8,1.66,1.9,2.94,3.3,3.83,1.41.89,3.03,1.34,4.87,1.34,1.48,0,2.8-.31,3.97-.92,1.17-.61,2.08-1.46,2.72-2.55v3.14h6.23v-21.21h-6.23v3.01ZM144.43,49.78c-.84,1.06-2.04,1.59-3.6,1.59s-2.81-.52-3.66-1.57c-.85-1.05-1.28-2.56-1.28-4.54s.43-3.53,1.3-4.64,2.08-1.67,3.64-1.67,2.76.54,3.6,1.61c.84,1.07,1.26,2.61,1.26,4.62s-.42,3.54-1.26,4.6Z"/>
+        <polygon points="176.96 34.68 169.38 34.68 161.44 43.76 161.44 25.06 155.12 25.06 155.12 55.85 161.44 55.85 161.44 46.35 169.76 55.85 177.5 55.85 167.96 44.85 176.96 34.68"/>
+        <path d="M54.29,19.5s-.07-.35-.16-.68c.14-13.18-20.39-7.24-36.37-17.1,0,0,.26,3.12,2.92,5,.67.47,1.48.87,2.48,1.11,0,0-.81-.09-2.15-.28C16.27,6.87,4.97,4.77,0,0c0,0,.3,6.49,7.29,15.81,0,0-1.13-.58-1.52-1.03,0,0,.76,11.77,4.76,18.34-3.8,1.13,1.04,10.59,3.27,10.24-.53.08,2.35,7.1,2.67,7.67,1.39,2.51,3.25,4.79,5.55,6.53,3.1,2.34,6.64,3.26,10.2,3.07,0,0,0,0,.01,0,.68.04,1.37.03,2.06-.02-.28-.02-.55-.05-.82-.09-1.05-.15-2.09-.43-3.1-.84-1.01-.42-1.98-.97-2.91-1.67-1.47-1.11-2.73-2.49-3.77-4.01-.35-.51-.67-1.03-.97-1.57-.07-.12-.27-.59-.53-1.22-.13-.32-.28-.67-.42-1.05-.08-.19-.15-.38-.23-.57-.53-1.36-1.05-2.83-1.14-3.43-.02-.17-.01-.27.04-.28-.24.04-.51-.06-.8-.25-.36-.24-.75-.64-1.12-1.14-.07-.1-.15-.2-.22-.31-.37-.53-.72-1.16-1.01-1.8-.06-.13-.12-.26-.17-.39-.11-.26-.21-.53-.29-.79-.09-.27-.16-.53-.22-.78-.09-.39-.14-.76-.16-1.11,0-.12,0-.23,0-.34,0-.11.01-.22.03-.32.1-.73.46-1.28,1.17-1.5-.53-.88-1-1.86-1.41-2.9-.24-.62-.47-1.27-.67-1.91-.14-.43-.26-.87-.38-1.31-1.3-4.8-1.61-9.55-1.61-9.55.34.39,1.3.88,1.3.88-5.97-7.96-6.23-13.51-6.23-13.51,2.2,1.2,5.7,2.85,10.24,3.91,3.93.92,5.49.65,14.86,1.27.45.03.88.06,1.31.09,2.56.18,4.79.38,6.77.68.66.1,1.29.21,1.9.33,1.82.37,3.42.85,4.87,1.53.24.11.48.23.72.35,3.37,1.78,4.7,4.06,5.13,5.09.06-.96,0-1.82-.15-2.58Z"/>
+        <path d="M190.42,39.37v-4.73h-5.4v-7.03l-6.32,2.05v4.98h-.01v4.73h.01v8.37c0,2.68.69,4.75,2.07,6.23,1.38,1.48,3.38,2.22,6,2.22,1.42,0,2.64-.2,3.64-.58v-4.9c-.78.2-1.48.29-2.09.29-.98,0-1.77-.27-2.39-.82-.61-.54-.92-1.4-.92-2.57v-8.24h5.4Z"/>
+        <path d="M105.54,27.61l-6.32,2.05v4.98h-.01v4.73h.01v8.37c0,2.68.69,4.75,2.07,6.23,1.38,1.48,3.38,2.22,6,2.22,1.42,0,2.63-.2,3.64-.58v-4.9c-.78.2-1.48.29-2.09.29-.98,0-1.77-.27-2.39-.82-.61-.54-.92-1.4-.92-2.57v-8.24h5.4v-4.73h-5.4v-7.03Z"/>
+      </g>
+    </svg>
+  );
+}
+
+/* ── Shared Components ── */
+function ScoreRing({ score, size = 130, t }) {
+  const r = (size - 14) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (score / 100) * circ;
+  const color = score >= 70 ? brand.talentTeal : score >= 45 ? brand.inboundOrange : brand.pipelineRed;
+  const glowColor = score >= 70 ? "rgba(66,191,186,0.25)" : score >= 45 ? "rgba(244,111,10,0.25)" : "rgba(255,33,15,0.25)";
+  return (
+    <div style={{ position: "relative", width: size, height: size, margin: "0 auto 14px" }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)", filter: `drop-shadow(0 0 12px ${glowColor})` }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(128,128,128,0.15)" strokeWidth="9" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth="9"
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontSize: size * 0.3, fontWeight: 700, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{score}</span>
+        <span style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 500 }}>/ 100</span>
+      </div>
+    </div>
+  );
+}
+
+function MetricRow({ label, value, status, detail, impact, source, t }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+      transition: "background 0.2s", cursor: "default",
+    }}
+      onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: detail ? 3 : 0 }}>
+          <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{label}</span>
+          {impact && <WeightBadge impact={impact} />}
+          {source && <SourceBadge source={source} />}
+        </div>
+        {detail && <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{detail}</div>}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: 12 }}>
+        <span style={{ fontSize: 13, color: t.body, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
+        <span style={{
+          width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 700, color: "#fff", background: statusColor(status),
+        }}>{statusIcon(status)}</span>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, children, t, style: s }) {
+  return (
+    <div style={{
+      background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14,
+      overflow: "hidden", backdropFilter: "blur(8px)", ...s,
+    }}>
+      {title && (
+        <div style={{
+          padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`, fontSize: 12,
+          fontWeight: 600, color: accent, textTransform: "uppercase", letterSpacing: 2,
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <span style={{ width: 3, height: 14, background: accent, borderRadius: 2, display: "inline-block" }} />
+          {title}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function CollapsibleCard({ title, children, t, defaultOpen = true, style: s }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{
+      background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14,
+      overflow: "hidden", backdropFilter: "blur(8px)", ...s,
+    }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          padding: "14px 18px", borderBottom: open ? `1px solid ${t.cardBorder}` : "none",
+          fontSize: 12, fontWeight: 600, color: accent, textTransform: "uppercase", letterSpacing: 2,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          cursor: "pointer", userSelect: "none",
+          transition: "background 0.2s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 3, height: 14, background: accent, borderRadius: 2, display: "inline-block" }} />
+          {title}
+        </div>
+        <span style={{ fontSize: 14, color: t.subtle, transition: "transform 0.25s", display: "inline-block", transform: open ? "rotate(0deg)" : "rotate(-90deg)" }}>▾</span>
+      </div>
+      {open && children}
+    </div>
+  );
+}
+
+function RecommendationList({ items, t }) {
+  return (
+    <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
+      {items.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <span style={{
+            width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: "#fff",
+            background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+            flexShrink: 0, marginTop: 1,
+          }}>{i + 1}</span>
+          <span style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>{r}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Critical Fixes Block (3-item, bottom of every tab) ── */
+function CriticalFixes({ items, t }) {
+  // items: [{ title, reason }] — exactly 3
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, rgba(255,33,15,0.05) 0%, rgba(244,111,10,0.03) 100%)`,
+      border: `1px solid rgba(255,33,15,0.18)`, borderRadius: 14, overflow: "hidden",
+    }}>
+      <div style={{
+        padding: "13px 18px", borderBottom: `1px solid rgba(255,33,15,0.12)`,
+        fontSize: 12, fontWeight: 700, color: brand.pipelineRed,
+        textTransform: "uppercase", letterSpacing: 2,
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <span style={{ width: 3, height: 14, background: brand.pipelineRed, borderRadius: 2, display: "inline-block" }} />
+        Critical Fixes — Start Here
+      </div>
+      {items.slice(0, 3).map((item, i) => (
+        <div key={i} style={{
+          display: "flex", alignItems: "flex-start", gap: 14, padding: "16px 18px",
+          borderBottom: i < 2 ? `1px solid rgba(255,33,15,0.08)` : "none",
+          transition: "background 0.2s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,33,15,0.03)"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        >
+          <span style={{
+            width: 24, height: 24, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: "#fff",
+            background: brand.pipelineRed,
+          }}>{i + 1}</span>
+          <div>
+            <div style={{ fontSize: 14, color: t.text, fontWeight: 600, marginBottom: 3 }}>{item.title}</div>
+            <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.5 }}>{item.reason}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Lead Capture Card ── */
+function LeadCaptureCard({ t, compAvgTraffic, yourTraffic, gapMultiple }) {
+  const monthlyLeadsLost = Math.round((compAvgTraffic - yourTraffic) * 0.038);
+  return (
+    <div style={{
+      background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14, overflow: "hidden",
+    }}>
+      <div style={{
+        padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+        fontSize: 12, fontWeight: 600, color: accent,
+        textTransform: "uppercase", letterSpacing: 2,
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <span style={{ width: 3, height: 14, background: accent, borderRadius: 2, display: "inline-block" }} />
+        Leads Going to Competitors
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+        {[
+          { label: "Competitor Avg Traffic", value: compAvgTraffic.toLocaleString(), sub: "visits/mo", color: brand.pipelineRed },
+          { label: "Your Traffic",           value: yourTraffic.toLocaleString(),    sub: "visits/mo", color: brand.inboundOrange },
+          { label: "Leads You're Missing",   value: `~${monthlyLeadsLost}`,          sub: "per month",  color: brand.talentTeal },
+        ].map((stat, i) => (
+          <div key={i} style={{
+            padding: "22px 18px", textAlign: "center",
+            borderRight: i < 2 ? `1px solid ${t.cardBorder}` : "none",
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: stat.color, marginBottom: 8 }}>{stat.label}</div>
+            <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1 }}>{stat.value}</div>
+            <div style={{ fontSize: 10, color: t.subtle, marginTop: 4 }}>{stat.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{
+        padding: "12px 18px", borderTop: `1px solid ${t.cardBorder}`,
+        background: `rgba(66,191,186,0.03)`, fontSize: 11, color: t.subtle,
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <span style={{ fontSize: 13, color: brand.inboundOrange }}>⚠</span>
+        Your competitors are {gapMultiple}x more visible — every day without action is leads going to them.
+      </div>
+    </div>
+  );
+}
+
+/* ── Dual-Line Sparkline (inline SVG) ── */
+function DualSparkline({ data, width = 540, height = 80 }) {
+  const allVals = data.flatMap(d => [d.you, d.comp]);
+  const min = Math.min(...allVals) - 2;
+  const max = Math.max(...allVals) + 2;
+  const range = max - min || 1;
+  const n = data.length;
+
+  function toPoints(key) {
+    return data.map((d, i) => {
+      const x = (i / (n - 1)) * width;
+      const y = height - ((d[key] - min) / range) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+  }
+
+  const youPts = toPoints("you");
+  const compPts = toPoints("comp");
+  const lastYou = data[n - 1];
+  const lastComp = data[n - 1];
+  const lyx = width;
+  const lyy = height - ((lastYou.you - min) / range) * height;
+  const lcx = width;
+  const lcy = height - ((lastComp.comp - min) / range) * height;
+
+  return (
+    <svg width={width} height={height} style={{ overflow: "visible", display: "block" }}>
+      <polyline points={compPts} fill="none" stroke={brand.pipelineRed} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5,3" />
+      <polyline points={youPts} fill="none" stroke={brand.talentTeal} strokeWidth="2.5"
+        strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={lyx} cy={lyy} r="4" fill={brand.talentTeal} />
+      <circle cx={lcx} cy={lcy} r="4" fill={brand.pipelineRed} />
+    </svg>
+  );
+}
+
+/* ── Light/Dark Toggle ── */
+function ModeToggle({ mode, setMode, t }) {
+  return (
+    <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{
+      display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20,
+      border: `1px solid ${t.toggleBorder}`, background: t.toggleBg,
+      color: t.subtle, fontSize: 12, fontWeight: 500, cursor: "pointer",
+      transition: "all 0.25s", letterSpacing: 0.3,
+    }}>
+      <span style={{ fontSize: 15 }}>{mode === "dark" ? "☀" : "☾"}</span>
+      {mode === "dark" ? "Light" : "Dark"}
+    </button>
+  );
+}
+
+/* ----------------------------------------
+   TAB 1 — Technical Foundation
+---------------------------------------- */
+function TechnicalFoundationTab({ t }) {
+  const score = calculateModuleScore(techMetrics);
+  const semrushIssues = [
+    { issue: "Broken Internal Links", count: 23, severity: "high", detail: "Pages returning 4xx errors hurt crawlability and user experience" },
+    { issue: "Slow Page Load (>3s)", count: 18, severity: "high", detail: "18 pages exceed the 3-second threshold — primarily image-heavy landing pages" },
+    { issue: "Images Without Alt Text", count: 31, severity: "high", detail: "Missing alt attributes hurt accessibility and image search rankings" },
+    { issue: "Missing Meta Descriptions", count: 14, severity: "medium", detail: "Pages without meta descriptions lose click-through potential in SERPs" },
+    { issue: "Redirect Chains", count: 11, severity: "medium", detail: "Multiple sequential redirects (3+ hops) slowing crawl efficiency" },
+    { issue: "Duplicate Title Tags", count: 9, severity: "medium", detail: "Identical titles across service pages reduce search differentiation" },
+    { issue: "Mixed Content (HTTP/HTTPS)", count: 6, severity: "low", detail: "Some resources still loading over HTTP on secure pages" },
+    { issue: "Orphan Pages", count: 4, severity: "low", detail: "Pages with no internal links — invisible to crawlers" },
+  ];
+
+  const quickFixes = [
+    { issue: "Broken Navigation Link",    time: "2 minutes",  detail: "A nav link is returning a 404 — visitors and crawlers hit a dead end" },
+    { issue: "Missing XML Sitemap",       time: "5 minutes",  detail: "No sitemap found — Google can't efficiently discover all your pages" },
+    { issue: "Missing Meta Descriptions", time: "10 minutes", detail: "14 pages have no meta description — losing click-throughs in search results" },
+    { issue: "Uncompressed Images",       time: "15 minutes", detail: "17 images not optimized — easy PageSpeed win with WebP conversion" },
+    { issue: "Missing Alt Tags",          time: "20 minutes", detail: "31 images lack alt text — quick accessibility and SEO fix" },
+  ];
+
+  // Mock sr.competitors data — mirrors buildSEOMetrics() competitorSummary shape
+  const competitorSummary = [
+    { domain: "ridgemontconstruction.com",  traffic: 3200, keywords: 230 },
+    { domain: "abccommercialbuilders.com",  traffic: 2700, keywords: 180 },
+    { domain: "summitbuildgroup.com",       traffic: 1900, keywords: 140 },
+    { domain: "pinnaclecontractors.com",    traffic: 1100, keywords: 95  },
+    { domain: "yourwebsite.com",            traffic: 90,   keywords: 10, isYou: true },
+  ];
+  const maxTraffic = Math.max(...competitorSummary.map(c => c.traffic));
+
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+
+      <Card title="Core Technical Metrics" t={t}>
+        {techMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+      </Card>
+
+      <Card title="SEMrush Site Health — Top Issues" t={t}>
+        {semrushIssues.map((item, i) => {
+          const sevColor = item.severity === "high" ? brand.pipelineRed : item.severity === "medium" ? brand.inboundOrange : brand.talentTeal;
+          return (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+              transition: "background 0.2s", cursor: "default",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{item.issue}</span>
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+                    padding: "2px 7px", borderRadius: 4,
+                    color: sevColor, background: `${sevColor}18`, border: `1px solid ${sevColor}33`,
+                  }}>{item.severity}</span>
+                </div>
+                <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4, marginTop: 3 }}>{item.detail}</div>
+              </div>
+              <div style={{
+                fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                color: sevColor, minWidth: 36, textAlign: "right",
+              }}>{item.count}</div>
+            </div>
+          );
+        })}
+      </Card>
+
+      {/* Competitor Technical Benchmark */}
+      <Card title="Competitor Technical Benchmark" t={t}>
+        <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${t.cardBorder}`, background: "rgba(66,191,186,0.03)" }}>
+          <p style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>
+            How your technical performance stacks up against competitors in your market.
+            Data sourced from <strong style={{ color: t.text }}>SEMrush sr.competitors</strong>.
+          </p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 110px 100px", padding: "10px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8 }}>
+          {["Domain", "Est. Traffic/mo", "Keywords", "Share"].map(h => (
+            <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 600 }}>{h}</span>
+          ))}
+        </div>
+        {competitorSummary.map((c, i) => {
+          const sharePct = Math.round((c.traffic / maxTraffic) * 100);
+          const isYou = c.isYou;
+          return (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 110px 110px 100px",
+              alignItems: "center", padding: "13px 18px", gap: 8,
+              borderBottom: i < competitorSummary.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+              background: isYou ? "rgba(255,33,15,0.03)" : "transparent",
+              transition: "background 0.2s",
+            }}
+              onMouseEnter={e => !isYou && (e.currentTarget.style.background = t.hoverRow)}
+              onMouseLeave={e => !isYou && (e.currentTarget.style.background = "transparent")}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{
+                  width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                  background: isYou ? brand.pipelineRed : brand.talentTeal,
+                }} />
+                <span style={{ fontSize: 13, fontWeight: isYou ? 700 : 400, color: isYou ? brand.pipelineRed : t.text, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {c.domain}{isYou ? " ←" : ""}
+                </span>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: isYou ? brand.pipelineRed : t.text, fontFamily: "'JetBrains Mono', monospace" }}>{c.traffic.toLocaleString()}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: isYou ? brand.pipelineRed : t.text, fontFamily: "'JetBrains Mono', monospace" }}>{c.keywords}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ flex: 1, height: 5, borderRadius: 3, background: t.toggleBg, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${sharePct}%`, borderRadius: 3, background: isYou ? brand.pipelineRed : brand.talentTeal }} />
+                </div>
+                <span style={{ fontSize: 10, color: t.subtle, fontFamily: "'JetBrains Mono', monospace" }}>{sharePct}%</span>
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ padding: "10px 18px", background: "rgba(66,191,186,0.03)", borderTop: `1px solid ${t.cardBorder}`, fontSize: 11, color: t.subtle }}>
+          ★ Source: SEMrush competitor discovery · audit.competitors · organic traffic and keyword data
+        </div>
+      </Card>
+
+      {/* Quick Fixes */}
+      <Card title="Quick Fixes — We Can Start Today" t={t}>
+        <div style={{
+          padding: "14px 20px 12px", borderBottom: `1px solid ${t.cardBorder}`,
+          background: `rgba(66,191,186,0.04)`,
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span style={{ fontSize: 18 }}>⚡</span>
+          <p style={{ fontSize: 13, color: t.body, lineHeight: 1.5 }}>
+            These issues take minutes to fix — and show immediate impact. We can start on these <strong style={{ color: t.text }}>today.</strong>
+          </p>
+        </div>
+        {quickFixes.map((fix, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "14px 20px",
+            borderBottom: i < quickFixes.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+            gap: 16, transition: "background 0.2s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, color: t.text, fontWeight: 600, marginBottom: 3 }}>{fix.issue}</div>
+              <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{fix.detail}</div>
+            </div>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+              padding: "5px 12px", borderRadius: 20,
+              background: `rgba(66,191,186,0.08)`, border: `1px solid rgba(66,191,186,0.2)`,
+            }}>
+              <span style={{ fontSize: 11, color: brand.talentTeal, fontWeight: 700 }}>⏱</span>
+              <span style={{ fontSize: 12, color: brand.talentTeal, fontWeight: 600, whiteSpace: "nowrap" }}>Fix time: {fix.time}</span>
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      <Card title="Recommendations" t={t}>
+        <RecommendationList t={t} items={[
+          "Fix all broken internal links — crawl errors directly suppress page rankings",
+          "Compress and convert images to WebP to pass Core Web Vitals LCP threshold",
+          "Set explicit width/height on all images and embeds to eliminate CLS issues",
+          "Implement server-side caching to bring TTFB below 200ms",
+          "Defer non-critical JavaScript to improve First Input Delay and INP scores",
+        ]} />
+      </Card>
+
+      <CriticalFixes t={t} items={[
+        { title: "23 broken internal links killing crawlability", reason: "Every broken link signals site neglect to Google — crawlers stop indexing deeper pages when they hit 404s." },
+        { title: "LCP at 3.8s — failing Core Web Vitals", reason: "Google uses CWV as a direct ranking factor. Failing LCP hurts both rankings and conversion rate." },
+        { title: "58% of images missing alt text", reason: "Alt tags are required for accessibility compliance and signal image content to search engines. Missing them costs rankings." },
+      ]} />
+    </div>
+  );
+}
+/* ----------------------------------------
+   TAB 2 — Authority & Search
+---------------------------------------- */
+function AuthoritySearchTab({ t, ind, loc }) {
+  const score = calculateModuleScore(searchMetrics);
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+      <Card title="Search Authority Metrics" t={t}>
+        {searchMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+      </Card>
+
+      <SearchDemandCard ind={ind} loc={loc} t={t} />
+
+      <Card title="Recommendations" t={t}>
+        <RecommendationList t={t} items={[
+          "Launch a digital PR campaign to earn 20+ referring domains in the next 90 days",
+          "Target 10–15 long-tail keywords with clear commercial intent — these convert 3x better",
+          "Optimize meta descriptions on all top-traffic pages with CTAs that drive clicks",
+          "Improve mobile PSI score by eliminating render-blocking resources",
+          "Build internal links from high-authority pages to underperforming service pages",
+        ]} />
+      </Card>
+
+      <CriticalFixes t={t} items={[
+        { title: "Only 14 keywords in top-3 positions", reason: "Top-3 organic positions capture 60%+ of clicks. 14 keywords means you're nearly invisible for your highest-value terms." },
+        { title: "Domain Authority 32 — below competitive threshold", reason: "B2B competitors average DA 40+. Low DA means Google doesn't trust your domain enough to rank it for competitive queries." },
+        { title: "Mobile PSI at 54/100 — failing Google's benchmark", reason: "Google's mobile-first index penalizes slow mobile scores. A 54 puts you at risk on the ranking factor that matters most." },
+      ]} />
+    </div>
+  );
+}
+
+/* ── Mock Data: Industry Expansion Opportunities ── */
+const industryExpansionOpportunities = [
+  {
+    keyword: "Healthcare Construction",
+    volume: 110,
+    difficulty: "Low",
+    intent: "Commercial",
+    opportunity: "high",
+    detail: "High-value niche with low competition — ideal first mover advantage",
+  },
+  {
+    keyword: "Commercial Renovation",
+    volume: 170,
+    difficulty: "Medium",
+    intent: "Commercial",
+    opportunity: "medium",
+    detail: "Strong search demand — competitive but winnable with dedicated landing page",
+  },
+  {
+    keyword: "Medical Office Buildouts",
+    volume: 90,
+    difficulty: "Low",
+    intent: "Commercial",
+    opportunity: "high",
+    detail: "Niche vertical with low KD and high buyer intent — low effort, high return",
+  },
+  {
+    keyword: "Dental Office Construction",
+    volume: 70,
+    difficulty: "Low",
+    intent: "Commercial",
+    opportunity: "high",
+    detail: "Adjacent to healthcare construction — quick topical authority win",
+  },
+  {
+    keyword: "Tenant Improvement Contractor",
+    volume: 140,
+    difficulty: "Medium",
+    intent: "Commercial",
+    opportunity: "medium",
+    detail: "Broad commercial intent — pair with case studies to convert",
+  },
+];
+
+const recommendedNewPages = [
+  "Healthcare Construction",
+  "Medical Office Buildouts",
+  "Commercial Renovation",
+  "Dental Office Construction",
+  "Tenant Improvement Contractor",
+];
+
+/* ----------------------------------------
+   TAB 3 — Content & Topical Depth
+---------------------------------------- */
+function ContentTopicalDepthTab({ t, ind, loc, targetIndustries = [] }) {
+  const score = calculateModuleScore(contentMetrics);
+  const city = (loc || "Dallas, TX").split(",")[0].trim();
+
+  const base = ind || "Commercial Construction";
+
+  // Industry-aware expansion opps — pull from targetIndustries if available
+  const oppPool = {
+    Healthcare:    { keyword: `Healthcare ${base}`,      volume: 110, difficulty: "Easy",   opportunity: "high",   detail: "High buyer intent, low competition — first mover advantage" },
+    Retail:        { keyword: `Retail ${base}`,          volume: 140, difficulty: "Medium", opportunity: "medium", detail: "Adjacent vertical — broadens your addressable market" },
+    Industrial:    { keyword: `Industrial ${base}`,      volume: 160, difficulty: "Medium", opportunity: "medium", detail: "Strong commercial intent — dedicated page converts well" },
+    Office:        { keyword: `Office Buildouts`,        volume: 120, difficulty: "Easy",   opportunity: "high",   detail: "High-intent niche with low KD — fast ranking win" },
+    Education:     { keyword: `Education ${base}`,       volume: 90,  difficulty: "Easy",   opportunity: "high",   detail: "Underserved vertical with growing public spend" },
+    Government:    { keyword: `Government ${base}`,      volume: 80,  difficulty: "Easy",   opportunity: "high",   detail: "Long contract cycles but high deal values" },
+    Hospitality:   { keyword: `Hospitality ${base}`,     volume: 100, difficulty: "Medium", opportunity: "medium", detail: "Renovation-heavy sector — strong recurring pipeline" },
+  };
+  const defaults = [
+    { keyword: `Commercial Renovation`,   volume: 170, difficulty: "Medium", opportunity: "medium", detail: "Strong demand — winnable with a dedicated landing page" },
+    { keyword: `Dental Office ${base}`,   volume: 90,  difficulty: "Easy",   opportunity: "high",   detail: "Niche vertical with low KD and high buyer intent" },
+    { keyword: `Renovation Specialization`, volume: 80, difficulty: "Easy",  opportunity: "high",   detail: "Upsell opportunity — specialists convert faster" },
+  ];
+  const selectedOpps = targetIndustries.length > 0
+    ? targetIndustries.map(key => oppPool[key]).filter(Boolean)
+    : Object.values(oppPool).slice(0, 5);
+  const expansionOpps = [...selectedOpps, ...defaults.filter(d => !selectedOpps.find(s => s.keyword === d.keyword))].slice(0, 5);
+  const recommendedPages = expansionOpps.map(o => o.keyword);
+
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+      {/* ── Service Expansion Opportunity ── */}
+      <Card title="Service Expansion Opportunity" t={t}>
+        <div style={{ padding: "16px 18px", borderBottom: `1px solid ${t.cardBorder}` }}>
+          <p style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>
+            Buyers are searching for these adjacent services in your market — and your site has
+            <strong style={{ color: brand.pipelineRed }}> zero pages</strong> targeting them.
+            Each row below is a ranking opportunity your competitors may not have claimed yet.
+          </p>
+        </div>
+
+        {/* Opportunity rows */}
+        {expansionOpps.map((opp, i) => {
+          const diffColor = opp.difficulty === "Easy" ? brand.talentTeal : opp.difficulty === "Medium" ? brand.inboundOrange : brand.pipelineRed;
+          const oppColor = opp.opportunity === "high" ? brand.talentTeal : brand.inboundOrange;
+          return (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "16px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+              transition: "background 0.2s", cursor: "default", gap: 16,
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, color: t.text, fontWeight: 600, marginBottom: 4 }}>{opp.keyword}</div>
+                <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{opp.detail}</div>
+              </div>
+              <div style={{ display: "flex", gap: 20, alignItems: "center", flexShrink: 0 }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: t.text, lineHeight: 1 }}>{opp.volume}</div>
+                  <div style={{ fontSize: 9, color: t.subtle, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 2 }}>searches/mo</div>
+                </div>
+                <div style={{ textAlign: "center", minWidth: 64 }}>
+                  <span style={{
+                    display: "block", fontSize: 11, fontWeight: 700, padding: "5px 10px", borderRadius: 6,
+                    color: diffColor, background: `${diffColor}18`, border: `1px solid ${diffColor}33`,
+                    textTransform: "uppercase", letterSpacing: 0.8,
+                  }}>{opp.difficulty}</span>
+                  <div style={{ fontSize: 9, color: t.subtle, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 3 }}>Difficulty</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Recommended New Pages */}
+        <div style={{ padding: "20px 18px" }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, color: accent,
+            textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 14,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
+            Recommended New Pages — 30-Page Site Expansion
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {recommendedPages.map((page, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 16px", borderRadius: 8,
+                background: `${accent}10`, border: `1px solid ${accent}25`,
+              }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: accent,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>+</span>
+                <span style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{page}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: t.subtle, marginTop: 14, lineHeight: 1.6 }}>
+            Each page targets a high-intent keyword cluster — building topical authority and capturing buyers your competitors miss.
+            This is the foundation of a <strong style={{ color: t.text }}>30-page inbound site</strong> designed to dominate your market.
+          </p>
+        </div>
+      </Card>
+
+      {/* ── Website Structure Gap ── */}
+      <Card title="Website Structure Gap" t={t}>
+        {/* Current structure */}
+        <div style={{ padding: "18px 18px 16px", borderBottom: `1px solid ${t.cardBorder}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 14 }}>
+            Current Site Structure
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            {[
+              { label: "Pages Detected", value: "5",  color: t.text },
+              { label: "Service Pages",  value: "0",  color: brand.pipelineRed },
+              { label: "Industry Pages", value: "0",  color: brand.pipelineRed },
+              { label: "Portfolio Pages",value: "2",  color: brand.inboundOrange },
+            ].map((stat, i) => (
+              <div key={i} style={{
+                padding: "14px 12px", borderRadius: 10, textAlign: "center",
+                background: t.cardBg, border: `1px solid ${t.cardBorder}`,
+              }}>
+                <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 6, lineHeight: 1.3 }}>{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recommended structure */}
+        <div style={{ padding: "18px 18px 20px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 16 }}>
+            Recommended Structure
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {[
+              {
+                group: "Services",
+                color: brand.talentTeal,
+                pages: ["Commercial Renovation", "Design Build", "Office Buildouts"],
+              },
+              {
+                group: "Industries",
+                color: brand.cloudBlue,
+                pages: targetIndustries.length > 0 ? targetIndustries.slice(0, 4) : ["Healthcare", "Retail", "Industrial"],
+              },
+              {
+                group: "Markets",
+                color: brand.inboundOrange,
+                pages: [`${city} Construction`, `${base} Construction`],
+              },
+            ].map((group, gi) => (
+              <div key={gi} style={{
+                padding: "14px 16px", borderRadius: 10,
+                background: `${group.color}08`, border: `1px solid ${group.color}22`,
+              }}>
+                <div style={{
+                  fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                  letterSpacing: 1.5, color: group.color, marginBottom: 12,
+                }}>{group.group}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {group.pages.map((page, pi) => (
+                    <div key={pi} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{page}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: t.subtle, marginTop: 14, lineHeight: 1.6 }}>
+            This structure forms the backbone of a <strong style={{ color: t.text }}>30-page inbound site</strong> — built to rank for every service, industry, and market your buyers are searching for.
+          </p>
+        </div>
+
+      {/* ── Recommended Website Map ── */}
+      {(() => {
+        // Mirrors: const servicePages = (sr?.topKeywords || []).filter(...).map(k => k.keyword)
+        const servicePages = [
+          `${base} Services`,
+          `Commercial Renovation`,
+          `Design Build`,
+          `Office Buildouts`,
+          `Tenant Improvement`,
+        ];
+        const industryPages = (targetIndustries.length > 0 ? targetIndustries : ["Healthcare", "Retail", "Industrial"])
+          .map(i => `${i} ${base}`);
+        const city2 = (loc || "Dallas, TX").split("/")[0].trim().split(",")[0].trim();
+        const city3 = (loc || "Dallas, TX").includes("/") ? loc.split("/")[1].trim().split(",")[0].trim() : `${city2} Metro`;
+        const marketPages = [
+          `${city2} ${base}`,
+          `${city3} ${base}`,
+          `${city2} General Contractor`,
+        ];
+        const contentPages = [
+          `${base} Cost Guide`,
+          `How to Hire a ${base} Contractor`,
+          ...industryPages.slice(0,2).map(p => `${p} Requirements`),
+          `Commercial Renovation Guide`,
+        ];
+
+        const siteMap = [
+          { group: "Services",   color: brand.talentTeal,      pages: servicePages },
+          { group: "Industries", color: brand.cloudBlue,       pages: industryPages },
+          { group: "Markets",    color: brand.inboundOrange,   pages: marketPages },
+          { group: "Content",    color: brand.creativePink,    pages: contentPages },
+        ];
+
+        const currentPages = ["Home", "Projects", "About", "Contact", "Services"];
+        const totalRecommended = siteMap.reduce((s, g) => s + g.pages.length, 0);
+        const totalWithCurrent = currentPages.length + totalRecommended;
+
+        return (
+          <Card title="Recommended Website Map — 30-Page Strategy" t={t}>
+            {/* Hero comparison */}
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 1fr",
+              borderBottom: `1px solid ${t.cardBorder}`,
+            }}>
+              {/* Current */}
+              <div style={{ padding: "20px 22px", borderRight: `1px solid ${t.cardBorder}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: brand.pipelineRed, marginBottom: 14 }}>
+                  Current Site Map
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
+                  <span style={{ fontSize: 40, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed, lineHeight: 1 }}>
+                    {currentPages.length}
+                  </span>
+                  <span style={{ fontSize: 13, color: t.subtle }}>pages detected</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {currentPages.map((p, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: "50%", background: brand.pipelineRed, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: t.subtle }}>{p}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Recommended total */}
+              <div style={{ padding: "20px 22px", background: "rgba(66,191,186,0.03)" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: brand.talentTeal, marginBottom: 14 }}>
+                  Recommended Structure
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 40, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.talentTeal, lineHeight: 1 }}>
+                    {totalWithCurrent}
+                  </span>
+                  <span style={{ fontSize: 13, color: t.subtle }}>total pages</span>
+                </div>
+                <div style={{ fontSize: 12, color: t.subtle, lineHeight: 1.5 }}>
+                  +{totalRecommended} new pages targeting high-intent keywords across services, industries, and markets
+                </div>
+                <div style={{
+                  marginTop: 14, display: "inline-block",
+                  fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+                  color: brand.talentTeal, background: "rgba(66,191,186,0.1)",
+                  border: "1px solid rgba(66,191,186,0.25)", borderRadius: 20, padding: "4px 14px",
+                }}>30-Page Site Strategy</div>
+              </div>
+            </div>
+
+            {/* Grouped page map */}
+            <div style={{ padding: "18px 20px 8px" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
+                New Pages to Build — auto-generated from keyword data
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                {siteMap.map((group, gi) => (
+                  <div key={gi} style={{
+                    padding: "14px 16px", borderRadius: 10,
+                    background: `${group.color}08`, border: `1px solid ${group.color}22`,
+                  }}>
+                    <div style={{
+                      fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                      letterSpacing: 1.5, color: group.color, marginBottom: 10,
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                    }}>
+                      <span>{group.group}</span>
+                      <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>{group.pages.length} pages</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                      {group.pages.map((page, pi) => (
+                        <div key={pi} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: group.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 13, color: t.text, fontWeight: 400 }}>{page}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer pitch */}
+            <div style={{
+              margin: "8px 20px 20px", padding: "14px 18px", borderRadius: 10,
+              background: `linear-gradient(135deg, rgba(255,33,15,0.05) 0%, rgba(66,191,186,0.04) 100%)`,
+              border: `1px solid ${t.cardBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap",
+            }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 3 }}>
+                  {"You have "}{currentPages.length}{" pages — you need "}{totalWithCurrent}{"."}
+                
+                </div>
+                <div style={{ fontSize: 12, color: t.subtle }}>
+                  Each new page targets a keyword your buyers are searching for right now.
+                  Auto-generated from <strong style={{ color: t.text }}>sr.topKeywords</strong> + industry + market data.
+                </div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: brand.pipelineRed, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>+{totalRecommended}</div>
+                <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>New Pages</div>
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
+
+      </Card>
+
+      <Card title="Content Performance Metrics" t={t}>
+        {contentMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+      </Card>
+
+      <Card title="Recommendations" t={t}>
+        <RecommendationList t={t} items={[
+          "Publish new content immediately — no posts in 30+ days signals inactivity to Google",
+          "Build dedicated landing pages for each industry expansion opportunity above",
+          "Develop 3 content clusters around your core service topics to build topical authority",
+          "Increase average word count to 1,200+ words on key landing pages — depth wins rankings",
+          "Add 5–10 internal links per page to improve crawlability and time on site",
+          "Add FAQ sections with schema markup to target featured snippets and AI Overviews",
+        ]} />
+      </Card>
+
+      <CriticalFixes t={t} items={[
+        { title: "Zero content published in 30+ days", reason: "Content freshness is a ranking signal. A month of inactivity tells Google this site isn't a live, authoritative resource." },
+        { title: "Average word count 620 — less than half of top competitors", reason: "Thin content can't compete for high-intent queries. Competitors averaging 1,400+ words are winning the rankings you're missing." },
+        { title: "No dedicated service or industry pages", reason: "Without pages for each service and industry, you can't rank for the specific searches your best buyers use." },
+      ]} />
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   TAB 4 — Entity & Brand Authority
+---------------------------------------- */
+function EntityBrandAuthorityTab({ t }) {
+  const score = calculateModuleScore(entityMetrics);
+
+  // AI Search signals — derived from existing site data
+  const aiSignals = [
+    {
+      label: "Structured Data",
+      status: "partial",
+      value: "Partial",
+      detail: "Org schema found — missing Service and LocalBusiness types",
+      weight: "high",
+    },
+    {
+      label: "FAQ Schema",
+      status: "missing",
+      value: "Missing",
+      detail: "No FAQ schema detected — high-value signal for AI citation",
+      weight: "high",
+    },
+    {
+      label: "Entity Signals",
+      status: "weak",
+      value: "Weak",
+      detail: "4 NAP mismatches, no knowledge graph presence, limited co-citations",
+      weight: "high",
+    },
+    {
+      label: "Content Depth",
+      status: "moderate",
+      value: "Moderate",
+      detail: "Avg 620 words/page — LLMs prefer 1,200+ for citation likelihood",
+      weight: "medium",
+    },
+    {
+      label: "Topic Clusters",
+      status: "missing",
+      value: "Missing",
+      detail: "No pillar-cluster content structure found — limits topical authority signals",
+      weight: "medium",
+    },
+    {
+      label: "Author / E-E-A-T Signals",
+      status: "weak",
+      value: "Weak",
+      detail: "No author bios, credentials, or expertise signals detected on pages",
+      weight: "medium",
+    },
+  ];
+
+  const signalScore = Math.round(
+    aiSignals.reduce((sum, s) => {
+      const val = s.status === "strong" ? 100 : s.status === "partial" || s.status === "moderate" ? 50 : 0;
+      const w = s.weight === "high" ? 1.5 : 1;
+      return sum + val * w;
+    }, 0) /
+    aiSignals.reduce((sum, s) => sum + (s.weight === "high" ? 1.5 : 1), 0)
+  );
+  const citationLevel = signalScore >= 70 ? "MODERATE" : signalScore >= 40 ? "LOW" : "VERY LOW";
+  const citationColor = signalScore >= 70 ? brand.inboundOrange : signalScore >= 40 ? brand.pipelineRed : brand.pipelineRed;
+
+  const statusConfig = {
+    strong:   { color: brand.talentTeal,    label: "Strong" },
+    partial:  { color: brand.inboundOrange, label: "Partial" },
+    moderate: { color: brand.inboundOrange, label: "Moderate" },
+    weak:     { color: brand.pipelineRed,   label: "Weak" },
+    missing:  { color: brand.pipelineRed,   label: "Missing" },
+  };
+
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+
+      {/* AI Search Visibility */}
+      <Card title="AI Search Visibility Analysis" t={t}>
+        {/* Callout banner */}
+        <div style={{
+          padding: "16px 20px", borderBottom: `1px solid ${t.cardBorder}`,
+          background: "rgba(66,191,186,0.04)",
+          display: "flex", alignItems: "flex-start", gap: 12,
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>🤖</span>
+          <div>
+            <div style={{ fontSize: 13, color: t.text, fontWeight: 600, marginBottom: 4 }}>
+              ChatGPT, Perplexity, and Google AI Overviews are becoming primary search surfaces.
+            </div>
+            <div style={{ fontSize: 12, color: t.subtle, lineHeight: 1.5 }}>
+              LLMs cite pages with strong structured data, deep content, and clear entity signals.
+              This site currently has <strong style={{ color: brand.pipelineRed }}>low citation likelihood</strong>.
+            </div>
+          </div>
+        </div>
+
+        {/* Signal rows */}
+        {aiSignals.map((sig, i) => {
+          const cfg = statusConfig[sig.status];
+          return (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "14px 20px",
+              borderBottom: i < aiSignals.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+              gap: 16, transition: "background 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <span style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{sig.label}</span>
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8,
+                    padding: "2px 7px", borderRadius: 4,
+                    color: sig.weight === "high" ? brand.pipelineRed : t.subtle,
+                    background: sig.weight === "high" ? "rgba(255,33,15,0.08)" : t.toggleBg,
+                    border: `1px solid ${sig.weight === "high" ? "rgba(255,33,15,0.2)" : t.cardBorder}`,
+                  }}>{sig.weight === "high" ? "High Impact" : "Medium Impact"}</span>
+                </div>
+                <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{sig.detail}</div>
+              </div>
+              <span style={{
+                fontSize: 12, fontWeight: 700, padding: "5px 14px", borderRadius: 20, flexShrink: 0,
+                color: cfg.color, background: `${cfg.color}14`, border: `1px solid ${cfg.color}30`,
+                textTransform: "uppercase", letterSpacing: 0.8,
+              }}>{cfg.label}</span>
+            </div>
+          );
+        })}
+
+        {/* Citation likelihood footer */}
+        <div style={{
+          padding: "18px 20px",
+          background: `linear-gradient(90deg, rgba(255,33,15,0.05) 0%, rgba(66,191,186,0.03) 100%)`,
+          borderTop: `1px solid ${t.cardBorder}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600, marginBottom: 4 }}>
+              AI Citation Likelihood
+            </div>
+            <div style={{ fontSize: 13, color: t.body }}>
+              Based on structured data, content depth, and entity signal analysis
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <span style={{
+              fontSize: 14, fontWeight: 700, padding: "6px 20px", borderRadius: 20,
+              color: citationColor, background: `${citationColor}14`,
+              border: `1px solid ${citationColor}30`,
+              textTransform: "uppercase", letterSpacing: 1.5,
+            }}>{citationLevel}</span>
+            <div style={{ fontSize: 10, color: t.subtle, marginTop: 4 }}>AI Readiness Score: {signalScore}/100</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Actions to appear in AI answers */}
+      <Card title="Actions to Appear in AI Answers" t={t}>
+        <div style={{ padding: "14px 20px 10px", borderBottom: `1px solid ${t.cardBorder}` }}>
+          <p style={{ fontSize: 13, color: t.body, lineHeight: 1.5 }}>
+            These changes directly increase the likelihood that ChatGPT, Perplexity, and Google AI Overviews cite your site.
+          </p>
+        </div>
+        <RecommendationList t={t} items={[
+          "Add FAQ schema to every service page — directly increases AI answer citation rate",
+          "Expand key pages to 1,200+ words with clear headers, definitions, and expert commentary",
+          "Build topic clusters: 1 pillar page + 4–6 supporting posts per core service",
+          "Strengthen entity signals: consistent NAP, Wikipedia/Wikidata entry, Crunchbase profile",
+          "Add author bios with credentials and industry expertise to all content pages",
+          "Implement structured data for Service, LocalBusiness, FAQPage, and BreadcrumbList",
+        ]} />
+      </Card>
+
+      <Card title="Entity & Brand Signals" t={t}>
+        {entityMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+      </Card>
+
+      <Card title="Recommendations" t={t}>
+        <RecommendationList t={t} items={[
+          "Expand schema markup to include LocalBusiness, Service, and FAQ types",
+          "Audit and fix all NAP inconsistencies across directories — use a citation management tool",
+          "Actively solicit Google reviews — respond to all reviews within 48 hours",
+          "Build out Crunchbase and LinkedIn company profiles with consistent brand info",
+          "Claim and optimize Bing Places listing for additional local visibility",
+          "Create a brand journalism strategy to generate co-citations from industry publications",
+        ]} />
+      </Card>
+
+      <CriticalFixes t={t} items={[
+        { title: "No Knowledge Graph presence for brand searches", reason: "Without a Knowledge Panel, your brand doesn't look established to Google or AI engines — competitors with one win branded comparisons." },
+        { title: "4 NAP mismatches across directories", reason: "Inconsistent Name/Address/Phone confuses Google's local algorithm and actively suppresses local pack rankings." },
+        { title: "Missing FAQ and Service schema — low AI citation likelihood", reason: "LLMs and AI Overviews cite structured data first. Without it, your content won't appear in AI-generated answers." },
+      ]} />
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   TAB 5 — Revenue & Attribution
+---------------------------------------- */
+function RevenueAttributionTab({ t, ind, loc, projectSize = "" }) {
+  const passCount = attributionChecks.filter(c => c.pass).length;
+  const infraScore = Math.round((passCount / attributionChecks.length) * 100);
+  const riskLevel = infraScore >= 70 ? "low" : infraScore >= 40 ? "medium" : "high";
+  const riskConfig = {
+    low: { label: "✅ Low Risk", color: brand.talentTeal },
+    medium: { label: "👀 Medium Risk", color: brand.inboundOrange },
+    high: { label: "👋 High Revenue Risk", color: brand.pipelineRed },
+  };
+  const risk = riskConfig[riskLevel];
+
+  // Module scores for RVI
+  const techScore = calculateModuleScore(techMetrics);
+  const searchScore = calculateModuleScore(searchMetrics);
+  const contentScore = calculateModuleScore(contentMetrics);
+  const entityScore = calculateModuleScore(entityMetrics);
+
+  const rvi = Math.round(
+    searchScore * rviWeights.searchAuthority +
+    contentScore * rviWeights.content +
+    infraScore * rviWeights.infrastructure +
+    techScore * rviWeights.technical +
+    entityScore * rviWeights.entity
+  );
+
+  const scenarioKeys = ["conservative", "expected", "aggressive"];
+  const scenarios = scenarioKeys.map(k => ({
+    ...revenueScenarios[k],
+    ...calcScenario(revenueScenarios[k]),
+  }));
+
+  // ── Revenue Opportunity — audit.revenueOpportunity ──
+  // Mirrors live app: const searches = kwCount || 0;
+  const kwCount = 1720; // in live app: sr.topKeywords?.length * avg monthly volume
+  const searches = kwCount || 0;
+  const estimatedVisitors = searches * 0.05;
+  const estimatedLeads = estimatedVisitors * 0.05;
+
+  // Parse project size from form selection (overrides default $250k)
+  const sizeMap = {
+    "Under $50k":    { value: 35000,   label: "~$35k" },
+    "$50k–$150k":    { value: 100000,  label: "~$100k" },
+    "$150k–$500k":   { value: 300000,  label: "~$300k" },
+    "$500k–$1M":     { value: 750000,  label: "~$750k" },
+    "$1M+":          { value: 1250000, label: "$1M+" },
+  };
+  const sizeEntry = sizeMap[projectSize] || { value: 250000, label: "$250k+" };
+  const avgDeal = sizeEntry.value;
+  const avgProjectLabel = sizeEntry.label;
+  const annualRevenue = estimatedLeads * avgDeal * 12;
+
+  // audit.revenueOpportunity shape (attach to audit object in live app)
+  const revenueOpportunity = {
+    searches,
+    estimatedVisitors: Math.round(estimatedVisitors),
+    estimatedLeads: Math.round(estimatedLeads),
+    avgDeal,
+    annualRevenue: Math.round(annualRevenue),
+  };
+
+  const totalSearchVolume = searches;
+  const formatRev = (n) => n >= 1000000 ? `$${(n/1000000).toFixed(1)}M` : `$${Math.round(n/1000)}k`;
+  const revLow = Math.round(annualRevenue * 0.75);
+  const revHigh = Math.round(annualRevenue * 1.25);
+  const projectsLow = Math.max(2, Math.round(estimatedLeads * 0.6 * 12));
+  const projectsHigh = Math.max(4, Math.round(estimatedLeads * 0.8 * 12));
+  const avgProjectValue = avgDeal;
+
+  const rviPillars = [
+    { label: "Search Authority", score: searchScore, weight: "30%", color: brand.cloudBlue },
+    { label: "Content & Topical Depth", score: contentScore, weight: "20%", color: brand.talentTeal },
+    { label: "Revenue Infrastructure", score: infraScore, weight: "20%", color: brand.inboundOrange },
+    { label: "Technical Foundation", score: techScore, weight: "15%", color: brand.creativePink },
+    { label: "Entity & Brand Authority", score: entityScore, weight: "15%", color: brand.enterpriseMaroon },
+  ];
+
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+
+      {/* Revenue Opportunity Calculator */}
+      <Card title="Inbound Revenue Opportunity Calculator" t={t}>
+        {/* Austin quote */}
+        <div style={{
+          padding: "14px 20px", borderBottom: `1px solid ${t.cardBorder}`,
+          background: "rgba(255,33,15,0.04)",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span style={{ fontSize: 16, color: brand.pipelineRed, flexShrink: 0 }}>"</span>
+          <p style={{ fontSize: 13, color: t.body, lineHeight: 1.5, fontStyle: "italic" }}>
+            If we got 3 projects a year from inbound, it would pay for itself.
+          </p>
+          <span style={{ fontSize: 16, color: brand.pipelineRed, flexShrink: 0, alignSelf: "flex-end" }}>"</span>
+        </div>
+
+        {/* Step-by-step funnel */}
+        {[
+          {
+            step: "01", label: "Local Searches / Month",
+            value: totalSearchVolume.toLocaleString(),
+            sub: `for ${ind || "your industry"} services in ${loc || "your market"} · kwCount from sr.topKeywords`,
+            color: t.text, arrow: true,
+          },
+          {
+            step: "02", label: "Estimated Click Rate",
+            value: "5%",
+            sub: "avg organic CTR for local service keywords",
+            color: brand.cloudBlue, arrow: true,
+          },
+          {
+            step: "03", label: "Visitors / Month",
+            value: `~${revenueOpportunity.estimatedVisitors}`,
+            sub: "estimated monthly organic visitors",
+            color: brand.cloudBlue, arrow: true,
+          },
+          {
+            step: "04", label: "Lead Conversion Rate",
+            value: "5%",
+            sub: "visitors who become inbound leads",
+            color: brand.inboundOrange, arrow: true,
+          },
+          {
+            step: "05", label: "Leads / Month",
+            value: `~${revenueOpportunity.estimatedLeads}`,
+            sub: "estimated qualified inbound leads per month",
+            color: brand.inboundOrange, arrow: true,
+          },
+          {
+            step: "06", label: "Average Project Value",
+            value: avgProjectLabel,
+            sub: projectSize ? `selected: ${projectSize}` : "typical commercial project",
+            color: brand.talentTeal, arrow: true,
+          },
+          {
+            step: "07", label: "Annual Opportunity",
+            value: `${formatRev(revLow)}–${formatRev(revHigh)}+`,
+            sub: "estimated annual revenue from inbound alone",
+            color: brand.pipelineRed, arrow: false, highlight: true,
+          },
+        ].map((row, i) => (
+          <div key={i}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: row.highlight ? "20px 20px" : "14px 20px",
+              background: row.highlight
+                ? `linear-gradient(135deg, rgba(255,33,15,0.07) 0%, rgba(66,191,186,0.04) 100%)`
+                : "transparent",
+              borderTop: row.highlight ? `1px solid ${t.cardBorder}` : "none",
+              gap: 16, transition: "background 0.2s",
+            }}
+              onMouseEnter={e => !row.highlight && (e.currentTarget.style.background = t.hoverRow)}
+              onMouseLeave={e => !row.highlight && (e.currentTarget.style.background = "transparent")}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1 }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: row.highlight ? brand.pipelineRed : t.subtle,
+                  fontFamily: "'JetBrains Mono', monospace", flexShrink: 0, minWidth: 20,
+                }}>{row.step}</span>
+                <div>
+                  <div style={{ fontSize: row.highlight ? 15 : 14, color: t.text, fontWeight: row.highlight ? 700 : 500, marginBottom: 2 }}>{row.label}</div>
+                  <div style={{ fontSize: 11, color: t.subtle }}>{row.sub}</div>
+                </div>
+              </div>
+              <div style={{
+                fontSize: row.highlight ? 26 : 18,
+                fontWeight: 700, color: row.color,
+                fontFamily: "'JetBrains Mono', monospace",
+                flexShrink: 0, textAlign: "right",
+              }}>{row.value}</div>
+            </div>
+            {row.arrow && (
+              <div style={{ textAlign: "center", padding: "2px 0", color: t.cardBorder, fontSize: 14, lineHeight: 1 }}>↓</div>
+            )}
+          </div>
+        ))}
+
+        {/* Closer */}
+        <div style={{
+          padding: "16px 20px", borderTop: `1px solid ${t.cardBorder}`,
+          background: "rgba(66,191,186,0.03)",
+          display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 3 }}>3 projects pays for the program.</div>
+            <div style={{ fontSize: 12, color: t.subtle }}>Abstrakt's inbound program is designed to deliver exactly this within 12 months.</div>
+          </div>
+          <div style={{
+            padding: "8px 20px", borderRadius: 20, flexShrink: 0,
+            background: "rgba(255,33,15,0.08)", border: "1px solid rgba(255,33,15,0.2)",
+            fontSize: 13, fontWeight: 700, color: brand.pipelineRed,
+          }}>ROI in Year 1</div>
+        </div>
+      </Card>
+
+      {/* RVI Score Ring */}
+      <div style={{ textAlign: "center" }}>
+        <ScoreRing score={rvi} size={140} t={t} />
+        <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>Revenue Visibility Index</div>
+        <div style={{ fontSize: 11, color: t.subtle, marginTop: 6 }}>
+          B2B Weighted: Search 30% · Content 20% · Infrastructure 20% · Technical 15% · Entity 15%
+        </div>
+      </div>
+
+      {/* RVI Pillar Breakdown */}
+      <Card title="Revenue Visibility Index — Pillar Breakdown" t={t}>
+        <div style={{ padding: 18 }}>
+          {rviPillars.map((row, i) => (
+            <div key={i} style={{ marginBottom: i < rviPillars.length - 1 ? 16 : 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{row.label}</span>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ fontSize: 10, color: t.subtle, fontFamily: "'JetBrains Mono', monospace" }}>weight {row.weight}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{row.score}</span>
+                </div>
+              </div>
+              <div style={{ height: 6, background: t.cardBorder, borderRadius: 3, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", width: `${row.score}%`, background: row.color,
+                  borderRadius: 3, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Revenue Infrastructure Health */}
+      <Card title="Revenue Infrastructure Health" t={t}>
+        <div style={{
+          padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div>
+            <div style={{ fontSize: 13, color: t.text, fontWeight: 600 }}>{passCount} of {attributionChecks.length} checks passing</div>
+            <div style={{ fontSize: 11, color: t.subtle, marginTop: 2 }}>Attribution and conversion infrastructure audit</div>
+          </div>
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20,
+            color: risk.color, background: `${risk.color}18`, border: `1px solid ${risk.color}33`,
+            textTransform: "uppercase", letterSpacing: 0.8, whiteSpace: "nowrap",
+          }}>{risk.label}</span>
+        </div>
+        {attributionChecks.map((c, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "13px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+            transition: "background 0.2s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{c.label}</span>
+                {c.impact && <WeightBadge impact={c.impact} />}
+                <SourceBadge source={c.source} />
+              </div>
+              <div style={{ fontSize: 11, color: t.subtle }}>{c.detail}</div>
+            </div>
+            <span style={{
+              width: 24, height: 24, borderRadius: "50%", display: "flex",
+              alignItems: "center", justifyContent: "center",
+              fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 12,
+              color: "#fff", background: c.pass ? brand.talentTeal : brand.pipelineRed,
+            }}>{c.pass ? "✓" : "✗"}</span>
+          </div>
+        ))}
+      </Card>
+
+      {/* 3-Scenario Revenue Model */}
+      <Card title="Pipeline Opportunity — 3-Scenario Revenue Model" t={t}>
+        <div style={{ padding: 18 }}>
+          <div style={{ fontSize: 12, color: t.subtle, marginBottom: 16, lineHeight: 1.5 }}>
+            Based on current site traffic (est. 1,200 visitors/mo) with optimized conversion infrastructure. Scenarios reflect what Abstrakt's inbound program can achieve at different performance levels.
+          </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            {scenarios.map((s, i) => (
+              <div key={i} style={{
+                padding: "18px 20px", borderRadius: 10,
+                border: `1px solid ${s.color}33`, background: `${s.color}08`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: s.color, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: t.subtle }}>
+                      Conv. {(s.conversionRate * 100).toFixed(1)}% · Close {(s.closeRate * 100).toFixed(0)}% · Avg deal ${s.avgDealSize.toLocaleString()}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: s.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
+                      ${s.monthlyRevenue.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>/month</div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  {[
+                    { label: "Leads/Mo", value: s.leads },
+                    { label: "Closed Deals", value: s.closedDeals },
+                    { label: "Annual Pipeline", value: `$${(s.monthlyRevenue * 12).toLocaleString()}` },
+                  ].map((stat, j) => (
+                    <div key={j} style={{
+                      padding: "8px 10px", background: t.cardBg,
+                      borderRadius: 6, border: `1px solid ${t.cardBorder}`, textAlign: "center",
+                    }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{stat.value}</div>
+                      <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 0.8, marginTop: 2 }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Recommendations" t={t}>
+        <RecommendationList t={t} items={[
+          "Configure GA4 conversion events now — you cannot optimize what you cannot measure",
+          "Set up call tracking with dynamic number insertion to attribute phone leads to channels",
+          "Add UTM parameters to all paid, email, and social campaigns consistently",
+          "Configure a Thank You page to track form submission conversions in GA4",
+          "Launch Google and Meta remarketing campaigns to re-engage the 97% who don't convert on first visit",
+        ]} />
+      </Card>
+
+      <CriticalFixes t={t} items={[
+        { title: "No conversion events in GA4 — leads are invisible", reason: "If you can't measure inbound leads, you can't optimize for them. Every untracked form submission is lost attribution data." },
+        { title: "Call tracking not installed — phone leads are unattributed", reason: "B2B buyers call before they fill out forms. Without DNI, your best leads have no source and can't be tied to marketing spend." },
+        { title: "UTM parameters not used — paid spend is untracked", reason: "Without UTMs, Google Ads and paid campaigns show zero lead attribution. You're spending with no ability to prove ROI." },
+      ]} />
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   COMPETITOR VISIBILITY GAP
+---------------------------------------- */
+function CompetitorVisibilityGap({ t }) {
+  const youKeywords = 10;
+  const compKeywords = 140;
+  const maxR = 110;
+  const minR = 28;
+  const compR = maxR;
+  const youR = minR;
+  const svgW = 420;
+  const svgH = 260;
+  const compCx = 195;
+  const compCy = 130;
+  // Place "you" circle outside and to the right of the comp circle
+  const youCx = compCx + compR + youR + 28;
+  const youCy = compCy + 30;
+
+  return (
+    <div style={{
+      background: t.cardBg, border: `1px solid ${t.cardBorder}`,
+      borderRadius: 14, overflow: "hidden", marginBottom: 30,
+    }}>
+      {/* Card header */}
+      <div style={{
+        padding: "14px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+        fontSize: 12, fontWeight: 600, color: accent,
+        textTransform: "uppercase", letterSpacing: 2,
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <span style={{ width: 3, height: 14, background: accent, borderRadius: 2, display: "inline-block" }} />
+        Competitor Visibility Gap
+      </div>
+
+      <div style={{ padding: "24px 28px" }}>
+        <p style={{ fontSize: 13, color: t.body, marginBottom: 24, lineHeight: 1.6 }}>
+          Your competitors dominate search results for your services.
+          You're effectively <strong style={{ color: brand.pipelineRed }}>invisible</strong> in this market.
+        </p>
+
+        {/* Bubble visualization */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40, flexWrap: "wrap" }}>
+          <div style={{ position: "relative", width: svgW, maxWidth: "100%" }}>
+            <svg viewBox={`0 0 ${svgW} ${svgH}`} width="100%" style={{ overflow: "visible" }}>
+              <defs>
+                <radialGradient id="compGrad" cx="40%" cy="35%" r="60%">
+                  <stop offset="0%" stopColor={brand.pipelineRed} stopOpacity="0.22" />
+                  <stop offset="100%" stopColor={brand.pipelineRed} stopOpacity="0.06" />
+                </radialGradient>
+                <radialGradient id="youGrad" cx="40%" cy="35%" r="60%">
+                  <stop offset="0%" stopColor={brand.talentTeal} stopOpacity="0.3" />
+                  <stop offset="100%" stopColor={brand.talentTeal} stopOpacity="0.08" />
+                </radialGradient>
+              </defs>
+
+              {/* Competitor circle */}
+              <circle cx={compCx} cy={compCy} r={compR}
+                fill="url(#compGrad)"
+                stroke={brand.pipelineRed} strokeWidth="1.5" strokeOpacity="0.35" />
+
+              {/* Competitor label inside */}
+              <text x={compCx} y={compCy - 14} textAnchor="middle"
+                fontSize="11" fontWeight="600" fill={brand.pipelineRed} opacity="0.9"
+                fontFamily="'Barlow', sans-serif">
+                Competitor Avg
+              </text>
+              <text x={compCx} y={compCy + 14} textAnchor="middle"
+                fontSize="34" fontWeight="700" fill={brand.pipelineRed}
+                fontFamily="'JetBrains Mono', monospace">
+                {compKeywords}
+              </text>
+              <text x={compCx} y={compCy + 34} textAnchor="middle"
+                fontSize="10" fill={brand.pipelineRed} opacity="0.7"
+                fontFamily="'Barlow', sans-serif">
+                ranking keywords
+              </text>
+
+              {/* Dashed "outside" connector line */}
+              <line
+                x1={compCx + compR} y1={compCy}
+                x2={youCx - youR} y2={youCy}
+                stroke={brand.talentTeal} strokeWidth="1.2"
+                strokeDasharray="5,4" strokeOpacity="0.4" />
+
+              {/* "You" circle — small, outside */}
+              <circle cx={youCx} cy={youCy} r={youR}
+                fill="url(#youGrad)"
+                stroke={brand.talentTeal} strokeWidth="1.5" strokeOpacity="0.5" />
+
+              <text x={youCx} y={youCy - 6} textAnchor="middle"
+                fontSize="10" fontWeight="600" fill={brand.talentTeal}
+                fontFamily="'Barlow', sans-serif">
+                You
+              </text>
+              <text x={youCx} y={youCy + 12} textAnchor="middle"
+                fontSize="18" fontWeight="700" fill={brand.talentTeal}
+                fontFamily="'JetBrains Mono', monospace">
+                {youKeywords}
+              </text>
+            </svg>
+          </div>
+
+          {/* Stat callouts */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 180 }}>
+            <div style={{
+              padding: "16px 20px", borderRadius: 10,
+              background: "rgba(255,33,15,0.06)", border: "1px solid rgba(255,33,15,0.18)",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: brand.pipelineRed, marginBottom: 6 }}>
+                Competitor Average
+              </div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: brand.pipelineRed, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
+                {compKeywords}
+              </div>
+              <div style={{ fontSize: 11, color: t.subtle, marginTop: 4 }}>ranking keywords</div>
+            </div>
+            <div style={{
+              padding: "16px 20px", borderRadius: 10,
+              background: "rgba(66,191,186,0.06)", border: "1px solid rgba(66,191,186,0.18)",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: brand.talentTeal, marginBottom: 6 }}>
+                Your Domain
+              </div>
+              <div style={{ fontSize: 32, fontWeight: 700, color: brand.talentTeal, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
+                {youKeywords}
+              </div>
+              <div style={{ fontSize: 11, color: t.subtle, marginTop: 4 }}>ranking keywords</div>
+            </div>
+            <div style={{
+              padding: "12px 20px", borderRadius: 10,
+              background: t.cardBg, border: `1px solid ${t.cardBorder}`,
+              textAlign: "center",
+            }}>
+              <div style={{ fontSize: 11, color: t.subtle, marginBottom: 4 }}>Visibility Gap</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: brand.inboundOrange, fontFamily: "'JetBrains Mono', monospace" }}>
+                {compKeywords - youKeywords}x
+              </div>
+              <div style={{ fontSize: 10, color: t.subtle }}>behind competitors</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   COMPETITORS TAB
+---------------------------------------- */
+function CompetitorsTab({ t, loc, ind }) {
+  const city = (loc || "Dallas, TX").split(",")[0].trim();
+
+  // Mock SEMrush sr.competitors data — in live app these come from sr.competitors
+  const competitors = [
+    { name: "Ridgemont Construction",   keywords: 230, traffic: 3200, trend: "up",   da: 38 },
+    { name: "ABC Commercial Builders",  keywords: 180, traffic: 2700, trend: "up",   da: 34 },
+    { name: "Summit Build Group",       keywords: 140, traffic: 1900, trend: "flat", da: 29 },
+    { name: "Pinnacle Contractors",     keywords: 95,  traffic: 1100, trend: "down", da: 26 },
+  ];
+  const yourSite = { name: "Your Website", keywords: 10, traffic: 90, da: 18, isYou: true };
+  const allRows = [...competitors, yourSite];
+
+  const compAvgKeywords = Math.round(competitors.reduce((s, c) => s + c.keywords, 0) / competitors.length);
+  const compAvgTraffic  = Math.round(competitors.reduce((s, c) => s + c.traffic, 0) / competitors.length);
+  const gapMultiple     = Math.round(compAvgKeywords / yourSite.keywords);
+  const maxKeywords     = Math.max(...allRows.map(r => r.keywords));
+
+  return (
+    <div style={{ display: "grid", gap: 24 }}>
+
+      {/* ── Digital Competitors Discovery ── */}
+      <Card title={`Digital Competitors in ${city}`} t={t}>
+        <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${t.cardBorder}`, background: "rgba(66,191,186,0.03)" }}>
+          <p style={{ fontSize: 13, color: t.body, lineHeight: 1.6 }}>
+            These companies are actively capturing inbound leads in your market.
+            Pulled from <strong style={{ color: t.text }}>SEMrush competitor discovery</strong> — ranked by organic keyword footprint.
+          </p>
+        </div>
+
+        {/* Column headers */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 120px 140px 80px 100px",
+          padding: "10px 18px", borderBottom: `1px solid ${t.cardBorder}`, gap: 8,
+        }}>
+          {["Company", "Keywords", "Est. Traffic/mo", "DA", "Visibility"].map(h => (
+            <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.2, fontWeight: 600 }}>{h}</span>
+          ))}
+        </div>
+
+        {/* Competitor rows */}
+        {allRows.map((row, i) => {
+          const barPct = Math.round((row.keywords / maxKeywords) * 100);
+          const isYou = row.isYou;
+          const trendColor = !isYou && row.trend === "up" ? brand.talentTeal : row.trend === "down" ? brand.pipelineRed : t.subtle;
+          const trendIcon = !isYou ? (row.trend === "up" ? "↑" : row.trend === "down" ? "↓" : "→") : null;
+          return (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 120px 140px 80px 100px",
+              alignItems: "center", padding: "15px 18px",
+              borderBottom: i < allRows.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+              gap: 8, transition: "background 0.2s",
+              background: isYou ? `rgba(255,33,15,0.03)` : "transparent",
+            }}
+              onMouseEnter={e => !isYou && (e.currentTarget.style.background = t.hoverRow)}
+              onMouseLeave={e => !isYou && (e.currentTarget.style.background = "transparent")}
+            >
+              {/* Name */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{
+                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                  background: isYou ? brand.pipelineRed : brand.talentTeal,
+                  boxShadow: isYou ? "0 0 6px rgba(255,33,15,0.4)" : "0 0 6px rgba(66,191,186,0.3)",
+                }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: isYou ? 700 : 500, color: isYou ? brand.pipelineRed : t.text }}>{row.name}</div>
+                  {isYou && <div style={{ fontSize: 10, color: brand.pipelineRed, fontWeight: 600, marginTop: 1 }}>← That's you</div>}
+                </div>
+              </div>
+              {/* Keywords */}
+              <div style={{ fontSize: 15, fontWeight: 700, color: isYou ? brand.pipelineRed : t.text, fontFamily: "'JetBrains Mono', monospace" }}>
+                {row.keywords.toLocaleString()}
+                {trendIcon && <span style={{ fontSize: 11, color: trendColor, marginLeft: 4 }}>{trendIcon}</span>}
+              </div>
+              {/* Traffic */}
+              <div style={{ fontSize: 14, fontWeight: 600, color: isYou ? brand.pipelineRed : t.text, fontFamily: "'JetBrains Mono', monospace" }}>
+                {row.traffic.toLocaleString()}
+              </div>
+              {/* DA */}
+              <div style={{ fontSize: 13, color: t.subtle, fontFamily: "'JetBrains Mono', monospace" }}>{row.da}</div>
+              {/* Visibility bar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: t.toggleBg, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", width: `${barPct}%`, borderRadius: 3,
+                    background: isYou ? brand.pipelineRed : brand.talentTeal,
+                    transition: "width 0.6s ease",
+                  }} />
+                </div>
+                <span style={{ fontSize: 10, color: t.subtle, fontFamily: "'JetBrains Mono', monospace", minWidth: 24 }}>{barPct}%</span>
+              </div>
+            </div>
+          );
+        })}
+
+        <div style={{
+          padding: "10px 18px", background: `rgba(66,191,186,0.03)`,
+          borderTop: `1px solid ${t.cardBorder}`, fontSize: 11, color: t.subtle,
+        }}>
+          ★ Source: SEMrush competitor discovery · sr.competitors · organic keyword and traffic data
+        </div>
+      </Card>
+
+      {/* ── Inbound Visibility Gap ── */}
+      <Card title="Inbound Visibility Gap" t={t}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+          {[
+            { label: "Competitor Avg Keywords", value: compAvgKeywords, color: brand.inboundOrange, sub: "avg across top 4 competitors" },
+            { label: "Your Keywords",           value: yourSite.keywords, color: brand.pipelineRed, sub: "currently indexed by Google" },
+            { label: "Visibility Gap",          value: `${gapMultiple}x`, color: brand.talentTeal, sub: "opportunity multiplier", big: true },
+          ].map((stat, i) => (
+            <div key={i} style={{
+              padding: "28px 24px", textAlign: "center",
+              borderRight: i < 2 ? `1px solid ${t.cardBorder}` : "none",
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: stat.color, marginBottom: 12 }}>{stat.label}</div>
+              <div style={{
+                fontSize: stat.big ? 40 : 44, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1, marginBottom: 8,
+              }}>{stat.value}</div>
+              <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{
+          padding: "16px 24px", borderTop: `1px solid ${t.cardBorder}`,
+          background: `linear-gradient(90deg, rgba(255,33,15,0.04) 0%, rgba(66,191,186,0.03) 100%)`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
+        }}>
+          <div>
+            <span style={{
+              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5,
+              color: brand.pipelineRed, background: "rgba(255,33,15,0.08)",
+              border: "1px solid rgba(255,33,15,0.2)", borderRadius: 20, padding: "3px 12px",
+              marginRight: 12,
+            }}>Opportunity Score: HIGH</span>
+            <span style={{ fontSize: 13, color: t.body }}>
+              Your competitors are capturing <strong style={{ color: t.text }}>{compAvgTraffic.toLocaleString()} visits/mo</strong> you're not seeing.
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: t.subtle }}>
+            Avg competitor traffic: {compAvgTraffic.toLocaleString()}/mo vs your {yourSite.traffic}/mo
+          </div>
+        </div>
+      </Card>
+
+      <RankingGapCard t={t} />
+
+      {/* Competitive Velocity */}
+      {(() => {
+        const daGap = competitiveVelocity[competitiveVelocity.length - 1].comp - competitiveVelocity[competitiveVelocity.length - 1].you;
+        return (
+          <Card title="Competitive Velocity — 12-Month Domain Authority Trend" t={t}>
+            <div style={{ padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+                <div>
+                  <div style={{ fontSize: 13, color: t.body, marginBottom: 8, lineHeight: 1.5 }}>
+                    Your domain authority is growing slowly while competitors accelerate.
+                  </div>
+                  <div style={{ display: "flex", gap: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ width: 20, height: 2.5, background: brand.talentTeal, borderRadius: 1 }} />
+                      <span style={{ fontSize: 11, color: t.subtle }}>Your Domain</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ width: 20, height: 2, background: brand.pipelineRed, borderRadius: 1, opacity: 0.8 }} />
+                      <span style={{ fontSize: 11, color: t.subtle }}>Avg. Competitor (dashed)</span>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed, lineHeight: 1 }}>
+                    -{daGap}
+                  </div>
+                  <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>DA Gap</div>
+                </div>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <DualSparkline data={competitiveVelocity} width={540} height={80} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                {competitiveVelocity.map((d, i) => (
+                  <span key={i} style={{ fontSize: 9, color: t.subtle, textTransform: "uppercase", letterSpacing: 0.5 }}>{d.month}</span>
+                ))}
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
+
+      <CompetitorVisibilityGap t={t} />
+
+      <LeadCaptureCard t={t} compAvgTraffic={compAvgTraffic} yourTraffic={yourSite.traffic} gapMultiple={gapMultiple} />
+
+      <CriticalFixes t={t} items={[
+        { title: `Competitors averaging ${compAvgKeywords} keywords — you have ${yourSite.keywords}`, reason: "Keyword footprint is the clearest proxy for search visibility. A 14x gap means competitors appear for nearly every relevant search you're missing." },
+        { title: "Domain authority trending flat while competitors accelerate", reason: "The DA gap is widening every month. The longer this continues, the harder it becomes to close — compounding disadvantage." },
+        { title: "Competitor average traffic is 35x yours", reason: "Every visit going to a competitor is a buyer who found them before you. At 3,200 vs 90 visits/mo, the pipeline impact is severe." },
+      ]} />
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   RANKING GAP CARD (top of report)
+---------------------------------------- */
+function RankingGapCard({ t }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 30 }}>
+      {[
+        {
+          label: "You Rank For",
+          value: "0",
+          sub: "of these keywords",
+          color: brand.pipelineRed,
+          bg: "rgba(255,33,15,0.06)",
+          border: "rgba(255,33,15,0.18)",
+        },
+        {
+          label: "Competitors Ranking",
+          value: "6",
+          sub: "capturing your leads",
+          color: brand.inboundOrange,
+          bg: "rgba(244,111,10,0.06)",
+          border: "rgba(244,111,10,0.18)",
+        },
+        {
+          label: "Opportunity",
+          value: "HIGH",
+          sub: "demand with no competition from you",
+          color: brand.talentTeal,
+          bg: "rgba(66,191,186,0.06)",
+          border: "rgba(66,191,186,0.18)",
+        },
+      ].map((stat, i) => (
+        <div key={i} style={{
+          padding: "20px 22px", borderRadius: 12, textAlign: "center",
+          background: stat.bg, border: `1px solid ${stat.border}`,
+        }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.8,
+            color: stat.color, marginBottom: 10,
+          }}>{stat.label}</div>
+          <div style={{
+            fontSize: stat.value === "HIGH" ? 28 : 40, fontWeight: 700,
+            color: stat.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
+            marginBottom: 8,
+          }}>{stat.value}</div>
+          <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{stat.sub}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   SEARCH DEMAND CARD (middle of report)
+---------------------------------------- */
+function SearchDemandCard({ ind, loc, t }) {
+  const city = loc.split(",")[0].trim();
+  const keywords = [
+    { term: `${ind} services ${city}`,       volume: 390, trend: "up"   },
+    { term: `${ind} companies near me`,       volume: 720, trend: "up"   },
+    { term: `best ${ind} contractor ${city}`, volume: 210, trend: "up"   },
+    { term: `${ind} ${city} reviews`,         volume: 170, trend: "flat" },
+    { term: `${ind} cost estimate ${city}`,   volume: 140, trend: "up"   },
+    { term: `hire ${ind} company ${city}`,    volume: 90,  trend: "up"   },
+  ];
+  const totalVolume = keywords.reduce((s, k) => s + k.volume, 0);
+  const estimatedLeads = Math.round(totalVolume * 0.038);
+
+  function TrendArrow({ trend }) {
+    return (
+      <span style={{ fontSize: 12, color: trend === "up" ? brand.talentTeal : brand.inboundOrange, fontWeight: 700 }}>
+        {trend === "up" ? "↑" : "→"}
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      {/* Hero stat banner */}
+      <div style={{
+        padding: "28px 32px", borderRadius: 14, marginBottom: 12,
+        background: `linear-gradient(135deg, rgba(255,33,15,0.06) 0%, rgba(66,191,186,0.04) 100%)`,
+        border: `1px solid rgba(255,33,15,0.15)`,
+        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20,
+      }}>
+        <div>
+          <div style={{
+            fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2,
+            color: brand.pipelineRed, marginBottom: 10,
+          }}>Market Demand — {loc}</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <span style={{
+              fontSize: 52, fontWeight: 700, color: t.text,
+              fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
+            }}>{totalVolume.toLocaleString()}</span>
+            <span style={{ fontSize: 16, color: t.subtle, fontWeight: 500 }}>searches / month</span>
+          </div>
+          <div style={{ fontSize: 13, color: t.body, marginTop: 8 }}>
+            for <strong style={{ color: t.text }}>{ind}</strong> services in your market
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ padding: "16px 22px", borderRadius: 10, textAlign: "center", background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: brand.talentTeal, fontFamily: "'JetBrains Mono', monospace" }}>~{estimatedLeads}</div>
+            <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginTop: 4 }}>Est. Leads / Mo</div>
+            <div style={{ fontSize: 10, color: t.subtle, marginTop: 2 }}>if you ranked #1</div>
+          </div>
+          <div style={{ padding: "16px 22px", borderRadius: 10, textAlign: "center", background: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: brand.inboundOrange, fontFamily: "'JetBrains Mono', monospace" }}>{keywords.length}</div>
+            <div style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1, marginTop: 4 }}>Keyword Gaps</div>
+            <div style={{ fontSize: 10, color: t.subtle, marginTop: 2 }}>uncaptured demand</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Keyword rows */}
+      <div style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14, overflow: "hidden" }}>
+        <div style={{
+          padding: "12px 18px", borderBottom: `1px solid ${t.cardBorder}`,
+          display: "grid", gridTemplateColumns: "1fr 100px 60px 80px", gap: 8,
+        }}>
+          {["Search Term", "Monthly Volume", "Trend", "Opportunity"].map(h => (
+            <span key={h} style={{ fontSize: 10, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 600 }}>{h}</span>
+          ))}
+        </div>
+        {keywords.map((kw, i) => {
+          const oppColor = kw.volume >= 300 ? brand.pipelineRed : kw.volume >= 150 ? brand.inboundOrange : brand.talentTeal;
+          const oppLabel = kw.volume >= 300 ? "High" : kw.volume >= 150 ? "Medium" : "Low";
+          return (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 100px 60px 80px",
+              alignItems: "center", padding: "13px 18px",
+              borderBottom: i < keywords.length - 1 ? `1px solid ${t.cardBorder}` : "none",
+              gap: 8, transition: "background 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: 13, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{kw.term}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{kw.volume.toLocaleString()}</span>
+              <TrendArrow trend={kw.trend} />
+              <span style={{
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+                color: oppColor, background: `${oppColor}18`, border: `1px solid ${oppColor}33`,
+                padding: "3px 8px", borderRadius: 4, textAlign: "center",
+              }}>{oppLabel}</span>
+            </div>
+          );
+        })}
+        <div style={{
+          padding: "12px 18px", background: `rgba(66,191,186,0.04)`,
+          borderTop: `1px solid ${t.cardBorder}`, fontSize: 11, color: t.subtle,
+        }}>
+          ★ Source: Estimated via SEMrush keyword data · volumes reflect avg monthly searches in target geo
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   SDR MODE — Condensed 4-section view
+---------------------------------------- */
+function SDRModeView({ t, ind, loc, projectSize, domain }) {
+  const techScore = calculateModuleScore(techMetrics);
+  const searchScore = calculateModuleScore(searchMetrics);
+  const entityScore = calculateModuleScore(entityMetrics);
+  const passCount = attributionChecks.filter(c => c.pass).length;
+  const infraScore = Math.round((passCount / attributionChecks.length) * 100);
+
+  const city = (loc || "Dallas, TX").split(",")[0].trim();
+  const base = ind || "Commercial Construction";
+
+  const keywords = [
+    { term: `${base} services ${city}`,       volume: 390 },
+    { term: `${base} companies near me`,       volume: 720 },
+    { term: `best ${base} contractor ${city}`, volume: 210 },
+    { term: `${base} cost estimate ${city}`,   volume: 140 },
+  ];
+  const totalVolume = keywords.reduce((s, k) => s + k.volume, 0);
+  const estimatedLeads = Math.round(totalVolume * 0.038);
+
+  const sizeMap = {
+    "Under $50k":    { value: 35000,   label: "~$35k" },
+    "$50k–$150k":    { value: 100000,  label: "~$100k" },
+    "$150k–$500k":   { value: 300000,  label: "~$300k" },
+    "$500k–$1M":     { value: 750000,  label: "~$750k" },
+    "$1M+":          { value: 1250000, label: "$1M+" },
+  };
+  const sizeEntry = sizeMap[projectSize] || { value: 250000, label: "$250k+" };
+  const monthlyRevOpp = Math.round(estimatedLeads * sizeEntry.value);
+  const formatRev = (n) => n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : `$${Math.round(n / 1000)}k`;
+
+  const criticalIssues = [
+    { title: "No conversion tracking installed", reason: "Leads are invisible. You cannot optimize what you cannot measure." },
+    { title: "Below-threshold page speed on mobile", reason: "54/100 PSI score — Google's ranking algorithm penalizes slow mobile sites directly." },
+    { title: "Zero content published in 30+ days", reason: "Without new content, you're invisible at the moment of intent." },
+  ];
+
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* Market demand */}
+      <Card title="Market Demand" t={t}>
+        <div style={{ padding: "20px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>{base} searches in {city}</div>
+            <div style={{ fontSize: 44, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: t.text, lineHeight: 1 }}>{totalVolume.toLocaleString()}</div>
+            <div style={{ fontSize: 13, color: t.subtle, marginTop: 4 }}>searches / month — buyers actively looking for services like yours</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Est. Leads if Ranked #1</div>
+            <div style={{ fontSize: 36, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.talentTeal, lineHeight: 1 }}>~{estimatedLeads}</div>
+            <div style={{ fontSize: 12, color: t.subtle, marginTop: 4 }}>per month</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          {keywords.map((kw, i) => (
+            <div key={i} style={{
+              display: "flex", justifyContent: "space-between", padding: "11px 20px",
+              borderTop: `1px solid ${t.cardBorder}`, transition: "background 0.2s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = t.hoverRow}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              <span style={{ fontSize: 13, color: t.text, fontFamily: "'JetBrains Mono', monospace" }}>{kw.term}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: brand.inboundOrange, fontFamily: "'JetBrains Mono', monospace" }}>{kw.volume.toLocaleString()}/mo</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Visibility gap */}
+      <Card title="Visibility Gap" t={t}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+          {[
+            { label: "Your Score", value: Math.round((searchScore + techScore + entityScore) / 3), suffix: "/100", color: brand.pipelineRed },
+            { label: "Competitor Avg", value: "71", suffix: "/100", color: brand.inboundOrange },
+            { label: "Gap", value: `${71 - Math.round((searchScore + techScore + entityScore) / 3)}`, suffix: " pts", color: brand.talentTeal },
+          ].map((stat, i) => (
+            <div key={i} style={{ padding: "24px 20px", textAlign: "center", borderRight: i < 2 ? `1px solid ${t.cardBorder}` : "none" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5, color: stat.color, marginBottom: 10 }}>{stat.label}</div>
+              <div style={{ fontSize: 38, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: stat.color, lineHeight: 1 }}>{stat.value}<span style={{ fontSize: 14, color: t.subtle }}>{stat.suffix}</span></div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Revenue opportunity */}
+      <Card title="Revenue Opportunity" t={t}>
+        <div style={{ padding: "24px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 6 }}>Monthly Pipeline Opportunity</div>
+            <div style={{ fontSize: 42, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: brand.pipelineRed, lineHeight: 1 }}>
+              {formatRev(monthlyRevOpp * 0.9)}–{formatRev(monthlyRevOpp * 1.1)}
+            </div>
+            <div style={{ fontSize: 12, color: t.subtle, marginTop: 6 }}>
+              {estimatedLeads} leads × {sizeEntry.label} avg deal · Conservative estimate
+            </div>
+          </div>
+          <div style={{
+            padding: "10px 18px", borderRadius: 20,
+            background: "rgba(255,33,15,0.08)", border: "1px solid rgba(255,33,15,0.2)",
+            fontSize: 13, fontWeight: 700, color: brand.pipelineRed,
+          }}>
+            3 projects pays for the program
+          </div>
+        </div>
+      </Card>
+
+      {/* Critical issues */}
+      <CriticalFixes t={t} items={criticalIssues} />
+    </div>
+  );
+}
+
+/* ----------------------------------------
+   MAIN COMPONENT
+---------------------------------------- */
+export default function DigitalHealthAssessment() {
+  const [view, setView] = useState("results");
+  const [activeTab, setActiveTab] = useState(0);
+  const [mode, setMode] = useState("dark");
+  const [reportMode, setReportMode] = useState("sdr");
+  const [industry, setIndustry] = useState("");
+  const [location, setLocation] = useState("");
+  const [primaryMarket, setPrimaryMarket] = useState("");
+  const [targetIndustries, setTargetIndustries] = useState([]);
+  const [avgProjectSize, setAvgProjectSize] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loadStep, setLoadStep] = useState(0);
+  const loadTimer = useRef(null);
+
+  const LOAD_STEPS = [
+    "Crawling website structure...",
+    "Analyzing keyword rankings...",
+    "Scanning competitor visibility...",
+    "Reviewing Google Business profile...",
+    "Calculating revenue opportunity...",
+    "Audit complete.",
+  ];
+
+  const runAudit = () => {
+    setLoading(true);
+    setLoadStep(0);
+    let step = 0;
+    const tick = () => {
+      step++;
+      setLoadStep(step);
+      if (step < LOAD_STEPS.length - 1) {
+        loadTimer.current = setTimeout(tick, 700);
+      } else {
+        loadTimer.current = setTimeout(() => {
+          setLoading(false);
+          setView("results");
+        }, 800);
+      }
+    };
+    loadTimer.current = setTimeout(tick, 700);
+  };
+  const t = getTheme(mode);
+  const industryLabel = industry.trim() ? `${industry.trim()} buyers` : "buyers";
+  const ind = industry.trim() || "Commercial Construction";
+  const loc = primaryMarket.trim() || location.trim() || "Dallas, TX";
+  const projectSize = avgProjectSize.trim() || "$250,000";
+
+  const INDUSTRY_OPTIONS = ["Healthcare", "Retail", "Industrial", "Office", "Education", "Government", "Hospitality"];
+  const toggleIndustry = (opt) => setTargetIndustries(prev =>
+    prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]
+  );
+
+  // Dynamic CTA — Expected → Aggressive
+  const expResult = calcScenario(revenueScenarios.expected);
+  const aggResult = calcScenario(revenueScenarios.aggressive);
+  const ctaLow = expResult.monthlyRevenue.toLocaleString();
+  const ctaHigh = aggResult.monthlyRevenue.toLocaleString();
+
+  const techScore2 = calculateModuleScore(techMetrics);
+  const searchScore2 = calculateModuleScore(searchMetrics);
+  const entityScore2 = calculateModuleScore(entityMetrics);
+  const inboundOppScore = Math.round((searchScore2 * 0.5) + (techScore2 * 0.3) + (entityScore2 * 0.2));
+  const localVisScore = Math.round((entityScore2 * 0.6) + (searchScore2 * 0.4));
+
+  const scorecards = [
+    {
+      label: "Inbound Opportunity Score",
+      score: inboundOppScore,
+      color: brand.pipelineRed,
+      sub: "Search + Technical + Entity",
+      icon: "🎯",
+    },
+    {
+      label: "Technical Health Score",
+      score: techScore2,
+      color: brand.cloudBlue,
+      sub: "Site speed, crawlability, core web vitals",
+      icon: "⚙️",
+    },
+    {
+      label: "Local Visibility Score",
+      score: localVisScore,
+      color: brand.talentTeal,
+      sub: "GBP, NAP, entity signals",
+      icon: "📍",
+    },
+  ];
+
+  const tabScores = [
+    { score: calculateModuleScore(techMetrics), label: "Technical Foundation Score" },
+    { score: calculateModuleScore(searchMetrics), label: "Authority & Search Score" },
+    { score: null, label: "Competitor Analysis" },
+    { score: calculateModuleScore(contentMetrics), label: "Content & Topical Depth Score" },
+    { score: calculateModuleScore(entityMetrics), label: "Entity & Brand Authority Score" },
+    { score: null, label: "Revenue & Attribution" },
+  ];
+
+  const tabContent = [
+    <TechnicalFoundationTab t={t} />,
+    <AuthoritySearchTab t={t} ind={ind} loc={loc} />,
+    <CompetitorsTab t={t} loc={loc} ind={ind} />,
+    <ContentTopicalDepthTab t={t} ind={ind} loc={loc} targetIndustries={targetIndustries} />,
+    <EntityBrandAuthorityTab t={t} />,
+    <RevenueAttributionTab t={t} ind={ind} loc={loc} projectSize={projectSize} />,
+  ];
+
+
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: t.bgGrad, color: t.text,
+      fontFamily: "'Barlow', 'Helvetica Neue', sans-serif",
+      transition: "background 0.4s, color 0.3s",
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: ${t.scrollThumb}; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: ${t.scrollHover}; }
+      `}</style>
+
+      <div style={{ maxWidth: 920, margin: "0 auto", padding: "40px 20px" }}>
+
+        {/* Top Bar */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
+          <AbstraktLogo fill={t.logoFill} height={26} />
+          <ModeToggle mode={mode} setMode={setMode} t={t} />
+        </div>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "6px 16px", borderRadius: 20,
+            background: t.badgeBg, border: `1px solid ${t.badgeBorder}`,
+            fontSize: 11, color: t.badgeText, textTransform: "uppercase", letterSpacing: 2.5, fontWeight: 600,
+            marginBottom: 20,
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: t.badgeDot, boxShadow: "0 0 8px rgba(239,239,239,0.3)" }} />
+            Abstrakt Marketing Group
+          </div>
+          <h1 style={{
+            fontSize: 32, fontWeight: 700, letterSpacing: -0.5, lineHeight: 1.2, marginBottom: 10,
+            color: brand.pipelineRed,
+          }}>
+            Inbound Opportunity Audit
+          </h1>
+          <p style={{ fontSize: 16, color: t.body, letterSpacing: 0.1, marginBottom: 10, fontWeight: 500 }}>
+            See how many {industryLabel} are searching for your services online.
+          </p>
+          <p style={{ fontSize: 14, color: t.subtle, letterSpacing: 0.2, maxWidth: 520, margin: "0 auto" }}>
+            We analyze search demand, competitors, and your website's ability to capture inbound leads.
+          </p>
+        </div>
+
+        {/* View Toggle */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 36 }}>
+          {["form", "results"].map(v => (
+            <button key={v} onClick={() => setView(v)} style={{
+              padding: "9px 22px", borderRadius: 8,
+              border: `1px solid ${v === view ? accent : t.cardBorder}`,
+              background: v === view ? accent : "transparent",
+              color: v === view ? "#fff" : t.subtle,
+              fontSize: 12, fontWeight: 600, cursor: "pointer", textTransform: "uppercase", letterSpacing: 1.2,
+              transition: "all 0.25s ease",
+            }}>
+              {v === "form" ? "Form View" : "Results View"}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <Card t={t}>
+            <div style={{ padding: "60px 36px", textAlign: "center" }}>
+              {/* Spinner */}
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%", margin: "0 auto 32px",
+                border: `3px solid ${t.cardBorder}`,
+                borderTopColor: accent,
+                animation: "spin 0.9s linear infinite",
+              }} />
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <div style={{ fontSize: 18, fontWeight: 600, color: t.text, marginBottom: 24 }}>
+                Running Audit
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 340, margin: "0 auto" }}>
+                {LOAD_STEPS.map((step, i) => {
+                  const done = i < loadStep;
+                  const active = i === loadStep;
+                  return (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "10px 16px", borderRadius: 10,
+                      background: done ? `${accent}12` : active ? `${accent}06` : "transparent",
+                      border: `1px solid ${done ? accent + "30" : active ? accent + "18" : t.cardBorder}`,
+                      transition: "all 0.4s",
+                    }}>
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>
+                        {done ? "✅" : active ? "⏳" : "○"}
+                      </span>
+                      <span style={{
+                        fontSize: 13, fontWeight: active ? 600 : 400,
+                        color: done ? accent : active ? t.text : t.subtle,
+                        transition: "color 0.3s",
+                      }}>{step}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </Card>
+        ) : view === "form" ? (
+          <Card t={t}>
+            <div style={{ padding: 36 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6, textAlign: "center", color: t.text }}>
+                Client Opportunity Audit
+              </h2>
+              <p style={{ fontSize: 14, color: t.subtle, textAlign: "center", marginBottom: 36 }}>
+                Fill in the details below — the audit output tailors itself to this client
+              </p>
+
+              {/* Section: Contact Info */}
+              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
+                Contact Info
+              </div>
+              {[
+                { label: "Full Name",      placeholder: "Client full name",       type: "text",  onChange: undefined },
+                { label: "Email Address",  placeholder: "client@company.com",     type: "email", onChange: undefined },
+                { label: "Business Name",  placeholder: "Company name",           type: "text",  onChange: undefined },
+                { label: "Website URL",    placeholder: "https://theirsite.com",  type: "text",  onChange: undefined },
+              ].map((field, i) => (
+                <div key={i} style={{ marginBottom: 18 }}>
+                  <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>{field.label}</label>
+                  <input type={field.type} placeholder={field.placeholder} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+                    onFocus={e => e.target.style.borderColor = accent}
+                    onBlur={e => e.target.style.borderColor = t.cardBorder}
+                  />
+                </div>
+              ))}
+
+              {/* Section: Market Profile */}
+              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, margin: "28px 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
+                Market Profile
+              </div>
+
+              {/* Primary Service / Industry */}
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>Primary Service / Industry</label>
+                <input type="text" placeholder="e.g. Commercial Construction, HVAC, Roofing"
+                  onChange={e => setIndustry(e.target.value)}
+                  style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+                  onFocus={e => e.target.style.borderColor = accent}
+                  onBlur={e => e.target.style.borderColor = t.cardBorder}
+                />
+              </div>
+
+              {/* Primary Market */}
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>Primary Market</label>
+                <input type="text" placeholder="e.g. Dallas / Fort Worth, Austin, Houston"
+                  onChange={e => setPrimaryMarket(e.target.value)}
+                  style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+                  onFocus={e => e.target.style.borderColor = accent}
+                  onBlur={e => e.target.style.borderColor = t.cardBorder}
+                />
+              </div>
+
+              {/* Target Industries */}
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10, fontWeight: 500 }}>Target Industries</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {INDUSTRY_OPTIONS.map(opt => {
+                    const active = targetIndustries.includes(opt);
+                    return (
+                      <button key={opt} onClick={() => toggleIndustry(opt)} style={{
+                        padding: "7px 16px", borderRadius: 20, border: `1px solid ${active ? accent : t.cardBorder}`,
+                        background: active ? `${accent}18` : "transparent",
+                        color: active ? accent : t.subtle,
+                        fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}>{opt}</button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Average Project Size */}
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>Average Project Size</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {["Under $50k", "$50k–$150k", "$150k–$500k", "$500k–$1M", "$1M+"].map(size => {
+                    const active = avgProjectSize === size;
+                    return (
+                      <button key={size} onClick={() => setAvgProjectSize(size)} style={{
+                        padding: "7px 16px", borderRadius: 20, border: `1px solid ${active ? brand.inboundOrange : t.cardBorder}`,
+                        background: active ? `${brand.inboundOrange}18` : "transparent",
+                        color: active ? brand.inboundOrange : t.subtle,
+                        fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}>{size}</button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Section: Competitors */}
+              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, margin: "28px 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
+                Competitors
+              </div>
+              {[
+                { label: "Competitor 1 URL", placeholder: "https://competitor1.com" },
+                { label: "Competitor 2 URL", placeholder: "https://competitor2.com" },
+              ].map((field, i) => (
+                <div key={i} style={{ marginBottom: 18 }}>
+                  <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>{field.label}</label>
+                  <input type="text" placeholder={field.placeholder} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
+                    onFocus={e => e.target.style.borderColor = accent}
+                    onBlur={e => e.target.style.borderColor = t.cardBorder}
+                  />
+                </div>
+              ))}
+
+              <button onClick={runAudit} style={{
+                width: "100%", padding: "15px", borderRadius: 10, border: "none", marginTop: 10,
+                background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+                color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                textTransform: "uppercase", letterSpacing: 1.5,
+                boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
+              }}>
+                Run Audit →
+              </button>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {/* SDR / Deep Dive Mode Toggle */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 28, padding: 4, background: t.toggleBg, borderRadius: 10, border: `1px solid ${t.cardBorder}` }}>
+              {[
+                { id: "sdr",      label: "⚡  SDR Mode",      sub: "Quick call view" },
+                { id: "deepdive", label: "🔍  Deep Dive",     sub: "Full audit detail" },
+              ].map(m => (
+                <button key={m.id} onClick={() => setReportMode(m.id)} style={{
+                  flex: 1, padding: "10px 16px", borderRadius: 7, border: "none",
+                  background: reportMode === m.id ? `linear-gradient(135deg, ${brand.pipelineRed}, ${brand.inboundOrange})` : "transparent",
+                  color: reportMode === m.id ? "#fff" : t.subtle,
+                  fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+                  letterSpacing: 0.3,
+                }}>{m.label}</button>
+              ))}
+            </div>
+
+            {reportMode === "sdr" ? (
+              <SDRModeView t={t} ind={ind} loc={loc} projectSize={avgProjectSize} domain="" />
+            ) : (
+              <>
+            {/* Scorecard Row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 28 }}>
+              {scorecards.map((card, i) => {
+                const pct = card.score;
+                const status = pct >= 70 ? "Healthy" : pct >= 45 ? "Opportunity" : "Needs Attention";
+                const statusColor = pct >= 70 ? brand.talentTeal : pct >= 45 ? brand.inboundOrange : brand.pipelineRed;
+                return (
+                  <div key={i} style={{
+                    padding: "20px", borderRadius: 14,
+                    background: t.cardBg, border: `1px solid ${t.cardBorder}`,
+                    display: "flex", flexDirection: "column", gap: 10,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 18 }}>{card.icon}</span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1,
+                        color: statusColor, background: `${statusColor}15`,
+                        border: `1px solid ${statusColor}30`, borderRadius: 20, padding: "2px 10px",
+                      }}>{status}</span>
+                    </div>
+                    {/* Progress bar */}
+                    <div style={{ height: 5, borderRadius: 3, background: t.toggleBg, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: card.color, transition: "width 0.8s ease" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                      <span style={{ fontSize: 28, fontWeight: 700, color: card.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{pct}</span>
+                      <span style={{ fontSize: 13, color: t.subtle }}>/100</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, color: t.text, fontWeight: 600, marginBottom: 2 }}>{card.label}</div>
+                      <div style={{ fontSize: 11, color: t.subtle }}>{card.sub}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tab Bar */}
+            <div style={{
+              display: "flex", gap: 4, marginBottom: 30, overflowX: "auto",
+              padding: "5px", background: t.toggleBg, borderRadius: 12,
+              border: `1px solid ${t.cardBorder}`,
+            }}>
+              {tabs.map((tab, i) => (
+                <button key={tab} onClick={() => setActiveTab(i)} style={{
+                  flex: "0 0 auto", padding: "10px 16px", borderRadius: 8, border: "none",
+                  background: i === activeTab ? `linear-gradient(135deg, ${accent}, ${accentAlt})` : "transparent",
+                  color: i === activeTab ? "#fff" : t.subtle,
+                  fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  whiteSpace: "nowrap", transition: "all 0.25s", letterSpacing: 0.3,
+                  boxShadow: i === activeTab ? "0 2px 10px rgba(66,191,186,0.2)" : "none",
+                }}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Shared Tab Score */}
+            {tabScores[activeTab].score !== null && (
+              <div style={{ textAlign: "center", marginBottom: 30 }}>
+                <ScoreRing score={tabScores[activeTab].score} size={140} t={t} />
+                <div style={{ fontSize: 12, color: t.subtle, textTransform: "uppercase", letterSpacing: 2, fontWeight: 500 }}>
+                  {tabScores[activeTab].label}
+                </div>
+              </div>
+            )}
+
+            {tabContent[activeTab]}
+
+
+            {/* Dynamic CTA Banner */}
+            <div style={{
+              textAlign: "center", marginTop: 40, padding: "44px 24px",
+              background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14,
+              position: "relative", overflow: "hidden",
+            }}>
+              <div style={{
+                position: "absolute", top: -60, right: -60, width: 200, height: 200,
+                background: "radial-gradient(circle, rgba(255,33,15,0.08) 0%, transparent 70%)", borderRadius: "50%",
+              }} />
+              <div style={{
+                position: "absolute", bottom: -40, left: -40, width: 160, height: 160,
+                background: "radial-gradient(circle, rgba(66,191,186,0.06) 0%, transparent 70%)", borderRadius: "50%",
+              }} />
+              <div style={{
+                display: "inline-block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2,
+                color: brand.pipelineRed, background: "rgba(255,33,15,0.08)", border: "1px solid rgba(255,33,15,0.15)",
+                padding: "5px 14px", borderRadius: 20, marginBottom: 16, position: "relative",
+              }}>Pipeline Opportunity</div>
+              <h3 style={{
+                fontSize: 24, fontWeight: 700, marginBottom: 14, position: "relative",
+                color: t.text, lineHeight: 1.3,
+              }}>
+                You're Leaving{" "}
+                <span style={{ color: brand.pipelineRed }}>${ctaLow}–${ctaHigh}</span>
+                <br />in Monthly Pipeline Untapped
+              </h3>
+              <p style={{
+                fontSize: 15, color: t.body, maxWidth: 520,
+                margin: "0 auto 28px", position: "relative", lineHeight: 1.6,
+              }}>
+                Fix your digital visibility gaps and Abstrakt can help you capture this pipeline within 90 days.
+              </p>
+              <button style={{
+                padding: "15px 40px", borderRadius: 10, border: "none",
+                background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
+                color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer",
+                letterSpacing: 0.5, position: "relative",
+                boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
+              }}>
+                Get Your Personalized Strategy →
+              </button>
+            </div>
+              </>
+            )}
+          </>
+        )}
+
+        <div style={{
+          textAlign: "center", padding: "28px", color: t.subtle, fontSize: 10,
+          textTransform: "uppercase", letterSpacing: 1.5, marginTop: 20,
+        }}>
+          Built by Abstrakt Marketing Group | Digital Visibility & Performance Audit
+        </div>
+      </div>
+    </div>
+  );
+}
