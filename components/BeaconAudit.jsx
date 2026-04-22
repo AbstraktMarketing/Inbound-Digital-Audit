@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 /* ── Brand Palette ── */
 const brand = {
@@ -15,31 +15,7 @@ const brand = {
 const accent = brand.talentTeal;
 const accentAlt = brand.cloudBlue;
 
-/* ── Theme Tokens ── */
-function getTheme(mode) {
-  if (mode === "dark") return {
-    bg: "#111114", bgGrad: "linear-gradient(180deg, #111114 0%, #0d0d12 50%, #0f1015 100%)",
-    cardBg: "rgba(255,255,255,0.035)", cardBorder: "rgba(255,255,255,0.07)",
-    subtle: "rgba(239,239,239,0.45)", body: "rgba(239,239,239,0.72)",
-    text: "#EFEFEF", inputBg: "rgba(255,255,255,0.025)",
-    scrollThumb: "rgba(66,191,186,0.2)", scrollHover: "rgba(66,191,186,0.35)",
-    hoverRow: "rgba(66,191,186,0.03)", logoFill: "#EFEFEF",
-    toggleBg: "rgba(255,255,255,0.06)", toggleBorder: "rgba(255,255,255,0.1)",
-    badgeBg: "rgba(66,191,186,0.08)", badgeBorder: "rgba(66,191,186,0.15)",
-    ctaBtnColor: "#fff", statusDot: "#0a0a0a", badgeText: "#EFEFEF", badgeDot: "#EFEFEF",
-  };
-  return {
-    bg: "#f5f5f7", bgGrad: "linear-gradient(180deg, #f5f5f7 0%, #eeeef0 50%, #e8e8ec 100%)",
-    cardBg: "rgba(255,255,255,0.85)", cardBorder: "rgba(0,0,0,0.08)",
-    subtle: "rgba(51,51,51,0.5)", body: "rgba(51,51,51,0.75)",
-    text: "#1a1a1a", inputBg: "rgba(0,0,0,0.03)",
-    scrollThumb: "rgba(66,191,186,0.3)", scrollHover: "rgba(66,191,186,0.5)",
-    hoverRow: "rgba(66,191,186,0.05)", logoFill: "#333333",
-    toggleBg: "rgba(0,0,0,0.04)", toggleBorder: "rgba(0,0,0,0.1)",
-    badgeBg: "rgba(255,33,15,0.06)", badgeBorder: "rgba(255,33,15,0.12)",
-    ctaBtnColor: "#fff", statusDot: "#fff", badgeText: brand.enterpriseMaroon, badgeDot: brand.enterpriseMaroon,
-  };
-}
+/* ── Theme: now provided via props from app/page.js ── */
 
 /* ── Growth-Narrative Tabs ── */
 const tabs = [
@@ -51,17 +27,6 @@ const tabs = [
   "Revenue & Attribution",
 ];
 
-/* ── Canonical Scoring Engine ── */
-function calculateModuleScore(metrics) {
-  const sv = { good: 100, warning: 50, poor: 0 };
-  let totalWeight = 0, totalScore = 0;
-  metrics.forEach(m => {
-    const w = m.impact === "high" ? 1.25 : m.impact === "low" ? 0.75 : 1.0;
-    totalWeight += w;
-    totalScore += w * (sv[m.status] ?? 0);
-  });
-  return Math.round(totalScore / (totalWeight || 1));
-}
 
 /* ── Revenue Scenarios Config ── */
 const revenueScenarios = {
@@ -107,32 +72,7 @@ const rviWeights = {
   entity: 0.15,
 };
 
-/* ── Mock Data: Technical Foundation ── */
-const techMetrics = [
-  { label: "SEMrush Site Health", value: "68%", status: "poor", impact: "high", source: "measured", detail: "Overall site health from SEMrush audit — aim for 90%+" },
-  { label: "Core Web Vitals — LCP", value: "3.8s", status: "poor", impact: "high", source: "measured", detail: "Largest Contentful Paint — target under 2.5s" },
-  { label: "Core Web Vitals — CLS", value: "0.12", status: "warning", impact: "high", source: "measured", detail: "Cumulative Layout Shift — target under 0.1" },
-  { label: "Core Web Vitals — FID", value: "68ms", status: "good", impact: "medium", source: "measured", detail: "First Input Delay — target under 100ms" },
-  { label: "Mobile Friendly", value: "Yes", status: "good", impact: "high", source: "measured", detail: "Passes Google mobile-friendly test" },
-  { label: "SSL Certificate", value: "Valid", status: "good", impact: "medium", source: "measured", detail: "Expires in 243 days" },
-  { label: "HTTP/2 Protocol", value: "Enabled", status: "good", impact: "low", source: "measured", detail: "Modern protocol active — improves load parallelization" },
-  { label: "Image Optimization", value: "34% unoptimized", status: "poor", impact: "medium", source: "measured", detail: "17 of 50 images need compression or WebP conversion" },
-  { label: "Alt Tags", value: "58% missing", status: "poor", impact: "medium", source: "measured", detail: "31 of 53 images lack descriptive alt text — hurts accessibility and SEO" },
-];
 
-/* ── Mock Data: Authority & Search ── */
-const searchMetrics = [
-  { label: "Domain Authority", value: "32/100", status: "warning", impact: "high", source: "measured", detail: "Moz DA — competitive baseline is 40+ for B2B" },
-  { label: "Organic Keywords Ranking", value: "312", status: "warning", impact: "high", source: "measured", detail: "Keywords with a SERP position — aim for 500+" },
-  { label: "Top 3 Keyword Rankings", value: "14", status: "poor", impact: "high", source: "measured", detail: "Only 14 keywords rank in positions 1–3" },
-  { label: "Indexed Pages", value: "156", status: "good", impact: "medium", source: "measured", detail: "Google index coverage looks healthy" },
-  { label: "Backlinks (Total)", value: "423", status: "warning", impact: "high", source: "measured", detail: "Low for domain age — active link building needed" },
-  { label: "Referring Domains", value: "87", status: "warning", impact: "high", source: "measured", detail: "Unique linking domains — diversity matters more than volume" },
-  { label: "Page Speed (Mobile PSI)", value: "54/100", status: "poor", impact: "medium", source: "measured", detail: "Google PageSpeed Insights mobile score — target 80+" },
-  { label: "Meta Descriptions", value: "68% optimized", status: "warning", impact: "medium", source: "measured", detail: "32% of pages missing or using duplicate meta descriptions" },
-  { label: "Sitemap", value: "Found", status: "good", impact: "low", source: "measured", detail: "XML sitemap submitted and accessible" },
-  { label: "Robots.txt", value: "Configured", status: "good", impact: "low", source: "measured", detail: "No critical crawl blocks detected" },
-];
 
 const competitiveVelocity = [
   { month: "Mar", you: 28, comp: 41 },
@@ -149,33 +89,7 @@ const competitiveVelocity = [
   { month: "Feb", you: 32, comp: 75 },
 ];
 
-/* ── Mock Data: Content & Topical Depth ── */
-const contentMetrics = [
-  { label: "Blog / Content Hub Exists", value: "Yes", status: "good", impact: "high", source: "measured", detail: "A dedicated blog page was detected" },
-  { label: "Content Published (Last 30 Days)", value: "None", status: "poor", impact: "high", source: "measured", detail: "No new content detected in the last 30 days" },
-  { label: "Avg. Word Count (Top Pages)", value: "~620 avg", status: "poor", impact: "high", source: "estimated", detail: "Competitors average 1,400+ words on key pages" },
-  { label: "Topical Coverage Depth", value: "Below Average", status: "poor", impact: "high", source: "estimated", detail: "Missing content clusters for core service topics" },
-  { label: "Content Freshness", value: "38 days avg", status: "warning", impact: "medium", source: "measured", detail: "Last blog post: 52 days ago" },
-  { label: "Internal Links / Page", value: "2.1 avg", status: "poor", impact: "medium", source: "measured", detail: "Best practice is 5–10 per page" },
-  { label: "Readability Score", value: "Grade 11", status: "warning", impact: "medium", source: "estimated", detail: "Aim for Grade 8 for broader reach" },
-  { label: "Content-to-Code Ratio", value: "18%", status: "warning", impact: "low", source: "measured", detail: "Aim for 25%+" },
-  { label: "Duplicate Content", value: "3 pages flagged", status: "poor", impact: "medium", source: "measured", detail: "Near-duplicate meta descriptions detected" },
-  { label: "FAQ / Schema Content", value: "Not Found", status: "poor", impact: "medium", source: "measured", detail: "FAQ schema helps capture featured snippet real estate" },
-];
 
-/* ── Mock Data: Entity & Brand Authority ── */
-const entityMetrics = [
-  { label: "Schema Markup", value: "Organization only", status: "warning", impact: "high", source: "measured", detail: "Missing LocalBusiness, Service, and FAQ schema types" },
-  { label: "NAP Consistency", value: "4 mismatches", status: "poor", impact: "high", source: "measured", detail: "Name/Address/Phone inconsistencies across 4 directories" },
-  { label: "Google Business Profile", value: "Claimed & Verified", status: "good", impact: "high", source: "measured", detail: "GBP listing active with photos and hours" },
-  { label: "GBP Reviews", value: "4.2★ (89 reviews)", status: "good", impact: "high", source: "measured", detail: "Strong rating — response rate below average" },
-  { label: "Knowledge Graph", value: "Not Present", status: "poor", impact: "high", source: "measured", detail: "No Knowledge Panel detected for brand searches" },
-  { label: "Brand SERP Control", value: "Partial", status: "warning", impact: "medium", source: "estimated", detail: "3rd-party review sites ranking above owned content" },
-  { label: "Entity Associations", value: "Weak", status: "poor", impact: "medium", source: "estimated", detail: "Limited co-citation with relevant industry entities" },
-  { label: "Same-As Links", value: "2 found", status: "warning", impact: "medium", source: "measured", detail: "LinkedIn and Facebook — missing Wikidata, Crunchbase" },
-  { label: "Local Citation Count", value: "34 found", status: "warning", impact: "medium", source: "measured", detail: "Target 50+ consistent citations across directories" },
-  { label: "Bing Places", value: "Not Claimed", status: "poor", impact: "low", source: "measured", detail: "Missing Bing local presence" },
-];
 
 /* ── Mock Data: Revenue Infrastructure (8 pass/fail) ── */
 const attributionChecks = [
@@ -278,7 +192,11 @@ function ScoreRing({ score, size = 130, t }) {
   );
 }
 
-function MetricRow({ label, value, status, detail, impact, source, t }) {
+function MetricRow({ label, value, status, detail, impact, source, estimated, t }) {
+  // API metrics carry `estimated: true` on unmeasurable signals; old mock
+  // constants used `source: "measured"|"estimated"`. Translate either into
+  // a single effective badge so both data sources render correctly.
+  const effectiveSource = source || (estimated ? "estimated" : null);
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -292,7 +210,7 @@ function MetricRow({ label, value, status, detail, impact, source, t }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: detail ? 3 : 0 }}>
           <span style={{ fontSize: 14, color: t.text, fontWeight: 500 }}>{label}</span>
           {impact && <WeightBadge impact={impact} />}
-          {source && <SourceBadge source={source} />}
+          {effectiveSource && <SourceBadge source={effectiveSource} />}
         </div>
         {detail && <div style={{ fontSize: 11, color: t.subtle, lineHeight: 1.4 }}>{detail}</div>}
       </div>
@@ -303,6 +221,53 @@ function MetricRow({ label, value, status, detail, impact, source, t }) {
           fontSize: 11, fontWeight: 700, color: "#fff", background: statusColor(status),
         }}>{statusIcon(status)}</span>
       </div>
+    </div>
+  );
+}
+
+/* ── Provider Notice ── Inline notice shown inside a tab when a data source is missing/failed */
+function ProviderNotice({ message, t }) {
+  if (!message) return null;
+  return (
+    <div style={{
+      padding: "12px 16px",
+      marginBottom: 16,
+      borderRadius: 10,
+      background: "rgba(244,111,10,0.06)",
+      border: `1px solid rgba(244,111,10,0.20)`,
+      fontSize: 12,
+      lineHeight: 1.5,
+      color: t.body,
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 10,
+    }}>
+      <span style={{ fontSize: 14, flexShrink: 0, marginTop: -1 }}>ⓘ</span>
+      <span>{message}</span>
+    </div>
+  );
+}
+
+/* ── Pending Providers Banner ── Shown at top of results when some providers are still processing or failed */
+function PendingBanner({ pendingProviders, t }) {
+  if (!pendingProviders || pendingProviders.length === 0) return null;
+  const labels = {
+    pageSpeed: "Page Speed", crawl: "Site Crawl", semrush: "SEMrush", places: "Google Business",
+  };
+  const names = pendingProviders.map(p => labels[p] || p).join(", ");
+  return (
+    <div style={{
+      padding: "10px 16px",
+      marginBottom: 20,
+      borderRadius: 10,
+      background: "rgba(4,129,163,0.06)",
+      border: `1px solid rgba(4,129,163,0.20)`,
+      fontSize: 12,
+      lineHeight: 1.5,
+      color: t.body,
+      textAlign: "center",
+    }}>
+      <strong style={{ color: t.text }}>Partial data:</strong> {names} unavailable for this audit — scores reflect only measured signals.
     </div>
   );
 }
@@ -499,26 +464,12 @@ function DualSparkline({ data, width = 540, height = 80 }) {
   );
 }
 
-/* ── Light/Dark Toggle ── */
-function ModeToggle({ mode, setMode, t }) {
-  return (
-    <button onClick={() => setMode(mode === "dark" ? "light" : "dark")} style={{
-      display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20,
-      border: `1px solid ${t.toggleBorder}`, background: t.toggleBg,
-      color: t.subtle, fontSize: 12, fontWeight: 500, cursor: "pointer",
-      transition: "all 0.25s", letterSpacing: 0.3,
-    }}>
-      <span style={{ fontSize: 15 }}>{mode === "dark" ? "☀" : "☾"}</span>
-      {mode === "dark" ? "Light" : "Dark"}
-    </button>
-  );
-}
+/* ── Light/Dark Toggle: now handled by app/page.js ── */
 
 /* ----------------------------------------
    TAB 1 — Technical Foundation
 ---------------------------------------- */
-function TechnicalFoundationTab({ t }) {
-  const score = calculateModuleScore(techMetrics);
+function TechnicalFoundationTab({ t, metrics = [] }) {
   const semrushIssues = [
     { issue: "Broken Internal Links", count: 23, severity: "high", detail: "Pages returning 4xx errors hurt crawlability and user experience" },
     { issue: "Slow Page Load (>3s)", count: 18, severity: "high", detail: "18 pages exceed the 3-second threshold — primarily image-heavy landing pages" },
@@ -552,7 +503,7 @@ function TechnicalFoundationTab({ t }) {
     <div style={{ display: "grid", gap: 24 }}>
 
       <Card title="Core Technical Metrics" t={t}>
-        {techMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+        {metrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
       </Card>
 
       <Card title="SEMrush Site Health — Top Issues" t={t}>
@@ -698,12 +649,14 @@ function TechnicalFoundationTab({ t }) {
 /* ----------------------------------------
    TAB 2 — Authority & Search
 ---------------------------------------- */
-function AuthoritySearchTab({ t, ind, loc }) {
-  const score = calculateModuleScore(searchMetrics);
+function AuthoritySearchTab({ t, ind, loc, metrics = [], providerError = null }) {
   return (
     <div style={{ display: "grid", gap: 24 }}>
+      {providerError && (
+        <ProviderNotice message={`SEMrush data unavailable for this domain — keyword, backlink, and competitor metrics are shown as estimates. (${providerError})`} t={t} />
+      )}
       <Card title="Search Authority Metrics" t={t}>
-        {searchMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+        {metrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
       </Card>
 
       <SearchDemandCard ind={ind} loc={loc} t={t} />
@@ -782,8 +735,7 @@ const recommendedNewPages = [
 /* ----------------------------------------
    TAB 3 — Content & Topical Depth
 ---------------------------------------- */
-function ContentTopicalDepthTab({ t, ind, loc, targetIndustries = [] }) {
-  const score = calculateModuleScore(contentMetrics);
+function ContentTopicalDepthTab({ t, ind, loc, targetIndustries = [], metrics = [] }) {
   const city = (loc || "Dallas, TX").split(",")[0].trim();
 
   const base = ind || "Commercial Construction";
@@ -1109,7 +1061,7 @@ function ContentTopicalDepthTab({ t, ind, loc, targetIndustries = [] }) {
       </Card>
 
       <Card title="Content Performance Metrics" t={t}>
-        {contentMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+        {metrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
       </Card>
 
       <Card title="Recommendations" t={t}>
@@ -1135,8 +1087,7 @@ function ContentTopicalDepthTab({ t, ind, loc, targetIndustries = [] }) {
 /* ----------------------------------------
    TAB 4 — Entity & Brand Authority
 ---------------------------------------- */
-function EntityBrandAuthorityTab({ t }) {
-  const score = calculateModuleScore(entityMetrics);
+function EntityBrandAuthorityTab({ t, metrics = [], gbpFound = true }) {
 
   // AI Search signals — derived from existing site data
   const aiSignals = [
@@ -1205,6 +1156,9 @@ function EntityBrandAuthorityTab({ t }) {
 
   return (
     <div style={{ display: "grid", gap: 24 }}>
+      {!gbpFound && (
+        <ProviderNotice message="No Google Business Profile found for this business — local search metrics below are estimates only. Claim and verify your GBP to unlock measurement." t={t} />
+      )}
 
       {/* AI Search Visibility */}
       <Card title="AI Search Visibility Analysis" t={t}>
@@ -1306,7 +1260,7 @@ function EntityBrandAuthorityTab({ t }) {
       </Card>
 
       <Card title="Entity & Brand Signals" t={t}>
-        {entityMetrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
+        {metrics.map((m, i) => <MetricRow key={i} {...m} t={t} />)}
       </Card>
 
       <Card title="Recommendations" t={t}>
@@ -1332,7 +1286,7 @@ function EntityBrandAuthorityTab({ t }) {
 /* ----------------------------------------
    TAB 5 — Revenue & Attribution
 ---------------------------------------- */
-function RevenueAttributionTab({ t, ind, loc, projectSize = "" }) {
+function RevenueAttributionTab({ t, ind, loc, projectSize = "", scores = {} }) {
   const passCount = attributionChecks.filter(c => c.pass).length;
   const infraScore = Math.round((passCount / attributionChecks.length) * 100);
   const riskLevel = infraScore >= 70 ? "low" : infraScore >= 40 ? "medium" : "high";
@@ -1343,11 +1297,11 @@ function RevenueAttributionTab({ t, ind, loc, projectSize = "" }) {
   };
   const risk = riskConfig[riskLevel];
 
-  // Module scores for RVI
-  const techScore = calculateModuleScore(techMetrics);
-  const searchScore = calculateModuleScore(searchMetrics);
-  const contentScore = calculateModuleScore(contentMetrics);
-  const entityScore = calculateModuleScore(entityMetrics);
+  // Module scores for RVI — provided by parent (computed server-side by /api/audit)
+  const techScore = scores.tech ?? 0;
+  const searchScore = scores.search ?? 0;
+  const contentScore = scores.content ?? 0;
+  const entityScore = scores.entity ?? 0;
 
   const rvi = Math.round(
     searchScore * rviWeights.searchAuthority +
@@ -1815,22 +1769,35 @@ function CompetitorVisibilityGap({ t }) {
 /* ----------------------------------------
    COMPETITORS TAB
 ---------------------------------------- */
-function CompetitorsTab({ t, loc, ind }) {
+function CompetitorsTab({ t, loc, ind, competitors: competitorsProp = [] }) {
   const city = (loc || "Dallas, TX").split(",")[0].trim();
 
-  // Mock SEMrush sr.competitors data — in live app these come from sr.competitors
-  const competitors = [
+  // Mock SEMrush sr.competitors data — used as fallback when prop is empty
+  const mockCompetitors = [
     { name: "Ridgemont Construction",   keywords: 230, traffic: 3200, trend: "up",   da: 38 },
     { name: "ABC Commercial Builders",  keywords: 180, traffic: 2700, trend: "up",   da: 34 },
     { name: "Summit Build Group",       keywords: 140, traffic: 1900, trend: "flat", da: 29 },
     { name: "Pinnacle Contractors",     keywords: 95,  traffic: 1100, trend: "down", da: 26 },
   ];
+
+  // Real API shape: { domain, commonKeywords, organicKeywords, organicTraffic, organicCost }
+  // Normalize to the internal shape this component renders.
+  const competitors = competitorsProp.length > 0
+    ? competitorsProp.slice(0, 4).map(c => ({
+        name: c.name || c.domain || "Unknown",
+        keywords: c.keywords ?? c.organicKeywords ?? 0,
+        traffic: c.traffic ?? c.organicTraffic ?? 0,
+        trend: c.trend || null,
+        da: c.da ?? "—",
+      }))
+    : mockCompetitors;
+
   const yourSite = { name: "Your Website", keywords: 10, traffic: 90, da: 18, isYou: true };
   const allRows = [...competitors, yourSite];
 
-  const compAvgKeywords = Math.round(competitors.reduce((s, c) => s + c.keywords, 0) / competitors.length);
-  const compAvgTraffic  = Math.round(competitors.reduce((s, c) => s + c.traffic, 0) / competitors.length);
-  const gapMultiple     = Math.round(compAvgKeywords / yourSite.keywords);
+  const compAvgKeywords = Math.round(competitors.reduce((s, c) => s + c.keywords, 0) / (competitors.length || 1));
+  const compAvgTraffic  = Math.round(competitors.reduce((s, c) => s + c.traffic, 0) / (competitors.length || 1));
+  const gapMultiple     = Math.round(compAvgKeywords / (yourSite.keywords || 1));
   const maxKeywords     = Math.max(...allRows.map(r => r.keywords));
 
   return (
@@ -2181,10 +2148,10 @@ function SearchDemandCard({ ind, loc, t }) {
 /* ----------------------------------------
    SDR MODE — Condensed 4-section view
 ---------------------------------------- */
-function SDRModeView({ t, ind, loc, projectSize, domain }) {
-  const techScore = calculateModuleScore(techMetrics);
-  const searchScore = calculateModuleScore(searchMetrics);
-  const entityScore = calculateModuleScore(entityMetrics);
+function SDRModeView({ t, ind, loc, projectSize, domain, scores = {} }) {
+  const techScore = scores.tech ?? 0;
+  const searchScore = scores.search ?? 0;
+  const entityScore = scores.entity ?? 0;
   const passCount = attributionChecks.filter(c => c.pass).length;
   const infraScore = Math.round((passCount / attributionChecks.length) * 100);
 
@@ -2296,57 +2263,20 @@ function SDRModeView({ t, ind, loc, projectSize, domain }) {
 /* ----------------------------------------
    MAIN COMPONENT
 ---------------------------------------- */
-export default function DigitalHealthAssessment() {
-  const [view, setView] = useState("results");
+export default function DigitalHealthAssessment({ data, theme, onReset }) {
   const [activeTab, setActiveTab] = useState(0);
-  const [mode, setMode] = useState("dark");
   const [reportMode, setReportMode] = useState("sdr");
-  const [industry, setIndustry] = useState("");
-  const [location, setLocation] = useState("");
-  const [primaryMarket, setPrimaryMarket] = useState("");
-  const [targetIndustries, setTargetIndustries] = useState([]);
-  const [avgProjectSize, setAvgProjectSize] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadStep, setLoadStep] = useState(0);
-  const loadTimer = useRef(null);
 
-  const LOAD_STEPS = [
-    "Crawling website structure...",
-    "Analyzing keyword rankings...",
-    "Scanning competitor visibility...",
-    "Reviewing Google Business profile...",
-    "Calculating revenue opportunity...",
-    "Audit complete.",
-  ];
+  const t = theme;
 
-  const runAudit = () => {
-    setLoading(true);
-    setLoadStep(0);
-    let step = 0;
-    const tick = () => {
-      step++;
-      setLoadStep(step);
-      if (step < LOAD_STEPS.length - 1) {
-        loadTimer.current = setTimeout(tick, 700);
-      } else {
-        loadTimer.current = setTimeout(() => {
-          setLoading(false);
-          setView("results");
-        }, 800);
-      }
-    };
-    loadTimer.current = setTimeout(tick, 700);
-  };
-  const t = getTheme(mode);
-  const industryLabel = industry.trim() ? `${industry.trim()} buyers` : "buyers";
-  const ind = industry.trim() || "Commercial Construction";
-  const loc = primaryMarket.trim() || location.trim() || "Dallas, TX";
-  const projectSize = avgProjectSize.trim() || "$250,000";
-
-  const INDUSTRY_OPTIONS = ["Healthcare", "Retail", "Industrial", "Office", "Education", "Government", "Hospitality"];
-  const toggleIndustry = (opt) => setTargetIndustries(prev =>
-    prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]
-  );
+  // Industry/market/projectSize: used for prose interpolation in tabs.
+  // Phase 3 will derive these from data.places where available; for now
+  // we keep the original component's defaults so tab rendering is unchanged.
+  const industryLabel = "buyers";
+  const ind = "Commercial Construction";
+  const loc = "Dallas, TX";
+  const projectSize = "$250,000";
+  const targetIndustries = [];
 
   // Dynamic CTA — Expected → Aggressive
   const expResult = calcScenario(revenueScenarios.expected);
@@ -2354,9 +2284,22 @@ export default function DigitalHealthAssessment() {
   const ctaLow = expResult.monthlyRevenue.toLocaleString();
   const ctaHigh = aggResult.monthlyRevenue.toLocaleString();
 
-  const techScore2 = calculateModuleScore(techMetrics);
-  const searchScore2 = calculateModuleScore(searchMetrics);
-  const entityScore2 = calculateModuleScore(entityMetrics);
+  // Module scores now come from the API (computed server-side by /api/audit).
+  // These replace the old calculateModuleScore(xxxMetrics) calls that ran
+  // against hardcoded mock data.
+  const techScore2 = data?.webPerf?.score ?? 0;
+  const searchScore2 = data?.seo?.score ?? 0;
+  const contentScore2 = data?.content?.score ?? 0;
+  const entityScore2 = data?.entity?.score ?? 0;
+
+  // Packaged scores object passed to SDRModeView and RevenueAttributionTab
+  const scores = {
+    tech: techScore2,
+    search: searchScore2,
+    content: contentScore2,
+    entity: entityScore2,
+  };
+
   const inboundOppScore = Math.round((searchScore2 * 0.5) + (techScore2 * 0.3) + (entityScore2 * 0.2));
   const localVisScore = Math.round((entityScore2 * 0.6) + (searchScore2 * 0.4));
 
@@ -2385,21 +2328,21 @@ export default function DigitalHealthAssessment() {
   ];
 
   const tabScores = [
-    { score: calculateModuleScore(techMetrics), label: "Technical Foundation Score" },
-    { score: calculateModuleScore(searchMetrics), label: "Authority & Search Score" },
+    { score: techScore2, label: "Technical Foundation Score" },
+    { score: searchScore2, label: "Authority & Search Score" },
     { score: null, label: "Competitor Analysis" },
-    { score: calculateModuleScore(contentMetrics), label: "Content & Topical Depth Score" },
-    { score: calculateModuleScore(entityMetrics), label: "Entity & Brand Authority Score" },
+    { score: contentScore2, label: "Content & Topical Depth Score" },
+    { score: entityScore2, label: "Entity & Brand Authority Score" },
     { score: null, label: "Revenue & Attribution" },
   ];
 
   const tabContent = [
-    <TechnicalFoundationTab t={t} />,
-    <AuthoritySearchTab t={t} ind={ind} loc={loc} />,
-    <CompetitorsTab t={t} loc={loc} ind={ind} />,
-    <ContentTopicalDepthTab t={t} ind={ind} loc={loc} targetIndustries={targetIndustries} />,
-    <EntityBrandAuthorityTab t={t} />,
-    <RevenueAttributionTab t={t} ind={ind} loc={loc} projectSize={projectSize} />,
+    <TechnicalFoundationTab t={t} metrics={data?.webPerf?.metrics || []} />,
+    <AuthoritySearchTab t={t} ind={ind} loc={loc} metrics={data?.seo?.metrics || []} providerError={data?.errors?.semrush || null} />,
+    <CompetitorsTab t={t} loc={loc} ind={ind} competitors={data?.competitors || []} />,
+    <ContentTopicalDepthTab t={t} ind={ind} loc={loc} targetIndustries={targetIndustries} metrics={data?.content?.metrics || []} />,
+    <EntityBrandAuthorityTab t={t} metrics={data?.entity?.metrics || []} gbpFound={!!data?.places} />,
+    <RevenueAttributionTab t={t} ind={ind} loc={loc} projectSize={projectSize} scores={scores} />,
   ];
 
 
@@ -2424,7 +2367,17 @@ export default function DigitalHealthAssessment() {
         {/* Top Bar */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
           <AbstraktLogo fill={t.logoFill} height={26} />
-          <ModeToggle mode={mode} setMode={setMode} t={t} />
+          {onReset && (
+            <button onClick={onReset} style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20,
+              border: `1px solid ${t.toggleBorder}`, background: t.toggleBg,
+              color: t.subtle, fontSize: 12, fontWeight: 500, cursor: "pointer",
+              transition: "all 0.25s", letterSpacing: 0.3, fontFamily: "inherit",
+            }}>
+              <span style={{ fontSize: 13 }}>{"\u2190"}</span>
+              New Audit
+            </button>
+          )}
         </div>
 
         {/* Header */}
@@ -2453,189 +2406,11 @@ export default function DigitalHealthAssessment() {
           </p>
         </div>
 
-        {/* View Toggle */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 36 }}>
-          {["form", "results"].map(v => (
-            <button key={v} onClick={() => setView(v)} style={{
-              padding: "9px 22px", borderRadius: 8,
-              border: `1px solid ${v === view ? accent : t.cardBorder}`,
-              background: v === view ? accent : "transparent",
-              color: v === view ? "#fff" : t.subtle,
-              fontSize: 12, fontWeight: 600, cursor: "pointer", textTransform: "uppercase", letterSpacing: 1.2,
-              transition: "all 0.25s ease",
-            }}>
-              {v === "form" ? "Form View" : "Results View"}
-            </button>
-          ))}
-        </div>
+        {/* View toggle removed — view state managed by app/page.js */}
 
-        {loading ? (
-          <Card t={t}>
-            <div style={{ padding: "60px 36px", textAlign: "center" }}>
-              {/* Spinner */}
-              <div style={{
-                width: 56, height: 56, borderRadius: "50%", margin: "0 auto 32px",
-                border: `3px solid ${t.cardBorder}`,
-                borderTopColor: accent,
-                animation: "spin 0.9s linear infinite",
-              }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              <div style={{ fontSize: 18, fontWeight: 600, color: t.text, marginBottom: 24 }}>
-                Running Audit
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 340, margin: "0 auto" }}>
-                {LOAD_STEPS.map((step, i) => {
-                  const done = i < loadStep;
-                  const active = i === loadStep;
-                  return (
-                    <div key={i} style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "10px 16px", borderRadius: 10,
-                      background: done ? `${accent}12` : active ? `${accent}06` : "transparent",
-                      border: `1px solid ${done ? accent + "30" : active ? accent + "18" : t.cardBorder}`,
-                      transition: "all 0.4s",
-                    }}>
-                      <span style={{ fontSize: 14, flexShrink: 0 }}>
-                        {done ? "✅" : active ? "⏳" : "○"}
-                      </span>
-                      <span style={{
-                        fontSize: 13, fontWeight: active ? 600 : 400,
-                        color: done ? accent : active ? t.text : t.subtle,
-                        transition: "color 0.3s",
-                      }}>{step}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </Card>
-        ) : view === "form" ? (
-          <Card t={t}>
-            <div style={{ padding: 36 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6, textAlign: "center", color: t.text }}>
-                Client Opportunity Audit
-              </h2>
-              <p style={{ fontSize: 14, color: t.subtle, textAlign: "center", marginBottom: 36 }}>
-                Fill in the details below — the audit output tailors itself to this client
-              </p>
+            {/* Pending providers banner (shown when some data sources failed or are still processing) */}
+            <PendingBanner pendingProviders={data?.pendingProviders || []} t={t} />
 
-              {/* Section: Contact Info */}
-              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
-                Contact Info
-              </div>
-              {[
-                { label: "Full Name",      placeholder: "Client full name",       type: "text",  onChange: undefined },
-                { label: "Email Address",  placeholder: "client@company.com",     type: "email", onChange: undefined },
-                { label: "Business Name",  placeholder: "Company name",           type: "text",  onChange: undefined },
-                { label: "Website URL",    placeholder: "https://theirsite.com",  type: "text",  onChange: undefined },
-              ].map((field, i) => (
-                <div key={i} style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>{field.label}</label>
-                  <input type={field.type} placeholder={field.placeholder} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-                    onFocus={e => e.target.style.borderColor = accent}
-                    onBlur={e => e.target.style.borderColor = t.cardBorder}
-                  />
-                </div>
-              ))}
-
-              {/* Section: Market Profile */}
-              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, margin: "28px 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
-                Market Profile
-              </div>
-
-              {/* Primary Service / Industry */}
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>Primary Service / Industry</label>
-                <input type="text" placeholder="e.g. Commercial Construction, HVAC, Roofing"
-                  onChange={e => setIndustry(e.target.value)}
-                  style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-                  onFocus={e => e.target.style.borderColor = accent}
-                  onBlur={e => e.target.style.borderColor = t.cardBorder}
-                />
-              </div>
-
-              {/* Primary Market */}
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>Primary Market</label>
-                <input type="text" placeholder="e.g. Dallas / Fort Worth, Austin, Houston"
-                  onChange={e => setPrimaryMarket(e.target.value)}
-                  style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-                  onFocus={e => e.target.style.borderColor = accent}
-                  onBlur={e => e.target.style.borderColor = t.cardBorder}
-                />
-              </div>
-
-              {/* Target Industries */}
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10, fontWeight: 500 }}>Target Industries</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {INDUSTRY_OPTIONS.map(opt => {
-                    const active = targetIndustries.includes(opt);
-                    return (
-                      <button key={opt} onClick={() => toggleIndustry(opt)} style={{
-                        padding: "7px 16px", borderRadius: 20, border: `1px solid ${active ? accent : t.cardBorder}`,
-                        background: active ? `${accent}18` : "transparent",
-                        color: active ? accent : t.subtle,
-                        fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}>{opt}</button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Average Project Size */}
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>Average Project Size</label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {["Under $50k", "$50k–$150k", "$150k–$500k", "$500k–$1M", "$1M+"].map(size => {
-                    const active = avgProjectSize === size;
-                    return (
-                      <button key={size} onClick={() => setAvgProjectSize(size)} style={{
-                        padding: "7px 16px", borderRadius: 20, border: `1px solid ${active ? brand.inboundOrange : t.cardBorder}`,
-                        background: active ? `${brand.inboundOrange}18` : "transparent",
-                        color: active ? brand.inboundOrange : t.subtle,
-                        fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}>{size}</button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Section: Competitors */}
-              <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: "uppercase", letterSpacing: 2, margin: "28px 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 3, height: 12, background: accent, borderRadius: 2, display: "inline-block" }} />
-                Competitors
-              </div>
-              {[
-                { label: "Competitor 1 URL", placeholder: "https://competitor1.com" },
-                { label: "Competitor 2 URL", placeholder: "https://competitor2.com" },
-              ].map((field, i) => (
-                <div key={i} style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 11, color: t.subtle, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 7, fontWeight: 500 }}>{field.label}</label>
-                  <input type="text" placeholder={field.placeholder} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, border: `1px solid ${t.cardBorder}`, background: t.inputBg, color: t.text, fontSize: 14, outline: "none", transition: "border-color 0.2s" }}
-                    onFocus={e => e.target.style.borderColor = accent}
-                    onBlur={e => e.target.style.borderColor = t.cardBorder}
-                  />
-                </div>
-              ))}
-
-              <button onClick={runAudit} style={{
-                width: "100%", padding: "15px", borderRadius: 10, border: "none", marginTop: 10,
-                background: `linear-gradient(135deg, ${accent}, ${accentAlt})`,
-                color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
-                textTransform: "uppercase", letterSpacing: 1.5,
-                boxShadow: "0 4px 20px rgba(66,191,186,0.25)",
-              }}>
-                Run Audit →
-              </button>
-            </div>
-          </Card>
-        ) : (
-          <>
             {/* SDR / Deep Dive Mode Toggle */}
             <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 28, padding: 4, background: t.toggleBg, borderRadius: 10, border: `1px solid ${t.cardBorder}` }}>
               {[
@@ -2653,7 +2428,7 @@ export default function DigitalHealthAssessment() {
             </div>
 
             {reportMode === "sdr" ? (
-              <SDRModeView t={t} ind={ind} loc={loc} projectSize={avgProjectSize} domain="" />
+              <SDRModeView t={t} ind={ind} loc={loc} projectSize={projectSize} domain={data?.meta?.url || ""} scores={scores} />
             ) : (
               <>
             {/* Scorecard Row */}
@@ -2771,8 +2546,6 @@ export default function DigitalHealthAssessment() {
             </div>
               </>
             )}
-          </>
-        )}
 
         <div style={{
           textAlign: "center", padding: "28px", color: t.subtle, fontSize: 10,
