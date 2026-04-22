@@ -66,6 +66,7 @@ export async function POST(request) {
       webPerf: buildWebPerfMetrics(ps, cr, hasSitemap, siteAudit),
       seo: buildSEOMetrics(sr, hasSitemap, hasRobots),
       keywords: buildKeywords(sr),
+      competitors: sr?.competitors || [],
       content: buildContentMetrics(cr, ps),
       socialLocal: buildSocialMetrics(cr),
       aiSeo: buildAISEOMetrics(cr),
