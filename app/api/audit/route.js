@@ -92,10 +92,13 @@ export async function POST(request) {
     if (!plHasData) pending.push("places");
     if (pending.length > 0) audit.pendingProviders = pending;
 
-    // Store in KV with unique ID
+    // Store in KV with unique ID — fire-and-forget so KV failures (e.g.
+    // missing env vars, Upstash timeout) don't crash the audit response.
     const id = generateId();
     audit.id = id;
-    await kv.set(`audit:${id}`, JSON.stringify(audit));
+    kv.set(`audit:${id}`, JSON.stringify(audit)).catch(err =>
+      console.error("KV store failed:", err.message)
+    );
 
     // Log to Google Sheets (fire-and-forget — don't block response)
     appendAuditToSheet(audit).catch(err => console.error("Sheets log failed:", err.message));
