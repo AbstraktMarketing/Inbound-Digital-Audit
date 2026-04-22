@@ -111,7 +111,10 @@ async function fetchPSI(url, strategy, keyParam) {
   const categories = "category=performance&category=seo&category=accessibility&category=best-practices";
   const apiUrl = `${PSI_BASE}?url=${encodeURIComponent(url)}&strategy=${strategy}&${categories}${keyParam}`;
 
-  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(30000) });
+  // 45s timeout — some sites (especially with many resources) need > 30s
+  // for PSI to complete the audit. Vercel maxDuration is 60s so this leaves
+  // 15s buffer for the other parallel providers.
+  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(45000) });
 
   if (!res.ok) {
     const errBody = await res.text();
